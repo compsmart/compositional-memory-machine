@@ -111,3 +111,39 @@ Next:
   be retrieved through the same interface as fact queries.
 - Stress the adapter path with noisy value vectors and partial-value prompts to
   see where decode quality drops before any stronger generation claims.
+
+### 2026-04-22 - Web UI demo prototype
+
+Scope:
+
+- Added `web.py` as a local HTTP server with an HHR `WebState` that owns seeded
+  AMM memory, FactGraph state, ingestion, structured SVO querying, demo reset,
+  and compositional-value demo endpoints.
+- Added `web_static/index.html`, `web_static/app.css`, and `web_static/app.js`
+  to mirror the `nexus-16` dashboard design and 3D fact visualization while
+  swapping in HHR-native controls.
+- Added `tests/test_web.py` to cover status, facts, structured query, ingestion,
+  compositional demo, and graph-export routes.
+- Updated README, roadmap, and results docs so the browser UI is tracked as a
+  product-shaped demo surface rather than an undocumented side artifact.
+
+Verification:
+
+- `python -m pytest tests/test_web.py`
+- `python -m pytest`
+
+Observed repo-local behavior:
+
+- The browser UI now exposes seeded HHR fact memory through the same dashboard
+  pattern used in `nexus-16`, including the 3D fact graph and node inspector.
+- Structured SVO queries return template answers plus top nearest-neighbour
+  evidence, and the graph view focuses on the retrieved answer path.
+- The compositional demo card surfaces the shared `D-2838` decoder logic in the
+  browser without exposing raw vectors to the frontend.
+
+Next:
+
+- Add a dedicated value-memory query surface so compositional values are queried
+  alongside SVO facts instead of only through a fixed demo card.
+- Decide whether to add manual fact authoring and graph revision controls to the
+  UI or keep the browser demo narrower and benchmark-focused.

@@ -118,6 +118,9 @@ The repo currently implements:
   unbinding and a linear ridge-regression decoding head.
 - A D-2839-style sequence-chain benchmark that measures the prefix length needed
   to disambiguate a rule family.
+- A browser UI demo in `web.py` + `web_static/` that mirrors the `nexus-16`
+  dashboard style and 3D fact visualization while using HHR-native structured
+  query and ingestion flows.
 - A relation registry that canonicalizes extracted relation labels, deduplicates
   aliases before memory writes, and stores provenance payloads for each triple.
 
@@ -125,7 +128,7 @@ Verified locally:
 
 ```text
 python -m pytest
-20 passed
+23 passed
 ```
 
 The important caveat: this repo's AMM is full-vector nearest-neighbor memory,
@@ -432,6 +435,12 @@ frozen prototype for controlled compositional values, not an open-ended decoder.
 ## Product Direction: MemoryWorkbench
 
 The most useful next product artifact is a `MemoryWorkbench` CLI or minimal UI:
+
+Status: an initial browser UI prototype now exists in `web.py` +
+`web_static/`. It demonstrates structured SVO querying, text ingestion,
+resettable demo memory, compositional value decoding, and a `nexus-16`-style 3D
+fact graph. The remaining gap is to turn this into a fuller workbench rather
+than a fixed demo surface.
 
 - ingest text,
 - ingest code,

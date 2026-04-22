@@ -6,6 +6,7 @@ Generated on 2026-04-22.
 
 ```powershell
 python -m pytest
+python -m pytest tests/test_web.py
 python experiments/exp_d2824_ci_storage.py
 python experiments/exp_d2825_composition.py
 python experiments/exp_d2827_dimension_sweep.py
@@ -24,7 +25,7 @@ python experiments/exp_projected_address_sweep.py --dim 512 --addr-dims 64 128 2
 
 ## Current Findings
 
-- Unit tests: 20 passed.
+- Unit tests: 23 passed.
 - CI storage at `d=2048`: 100% top-1 retrieval across 3 seeds and 10 cycles.
 - Composition holdout at `d=2048`: 100% cluster-EM across 3 seeds, 0.2 random baseline.
 - Chain3 FactGraph revision: 100% exact match across entry, middle, and terminal updates.
@@ -69,6 +70,12 @@ python experiments/exp_projected_address_sweep.py --dim 512 --addr-dims 64 128 2
     both the benchmark and the frozen adapter path.
   - `demo.py` now answers a controlled compositional query with
     `entity_demo has property silver signal.`
+- Web UI demo prototype:
+  - `web.py` plus `web_static/` now serve a local browser dashboard using the
+    same visual system and 3D fact graph pattern as `nexus-16`.
+  - The UI exposes seeded fact memory, structured SVO querying, Gemini-backed
+    text ingestion when configured, demo reset, and the controlled compositional
+    value decode card.
 - Projected address key-family sweep:
   - Bounded repo run at `dim=512`, 300 items, 3 seeds, `addr_dim={64,128,256,512}`.
   - At `noise=0.5`, all families reached 1.0 exact and noisy top-1.

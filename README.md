@@ -44,6 +44,8 @@ template answer or optional generator
 - Sequence-chain prefix disambiguation for variable-length HRR rule prefixes.
 - A frozen generation adapter that can decode retrieved compositional value
   vectors into 2-token outputs in the controlled D-2838 setting.
+- A browser UI demo with the `nexus-16` dashboard design and 3D fact
+  visualization, adapted to HHR-native query and ingestion flows.
 - Scripted memory-grounded conversation demo.
 - Projected-address sweep harness for one-hot, HRR SVO, HRR n-gram, and
   continuous context keys.
@@ -88,7 +90,7 @@ Verified locally:
 
 ```text
 python -m pytest
-20 passed
+23 passed
 ```
 
 Representative outcomes:
@@ -106,6 +108,9 @@ Representative outcomes:
   rules), while `K={3,5,7,10}` reaches 1.0 EM across 3 seeds.
 - The demo now includes a compositional value answer generated from a retrieved
   HRR value vector: `entity_demo has property silver signal.`
+- The web UI now mirrors the `nexus-16` dashboard style while exposing HHR
+  structured querying, text ingestion, resettable seed memory, and the same 3D
+  fact visualization pattern.
 - FactGraph chain3 revision: 100% exact match across tested positions.
 - Bounded projected-address sweep: top-1 stayed high in the small repo run, but
   candidate contamination separated key families; see
@@ -132,6 +137,14 @@ Run the scripted conversation demo:
 ```powershell
 python conversation_demo.py
 ```
+
+Run the web UI:
+
+```powershell
+python web.py
+```
+
+Then open `http://127.0.0.1:8765`.
 
 Run core experiments:
 
@@ -195,6 +208,8 @@ language/         n-gram prediction and context word-learning primitives
 generation/       optional frozen-generator adapter interface
 experiments/      reproducible PoC experiments
 tests/            focused unit tests
+web_static/       browser dashboard assets
+web.py            local HTTP server for the web UI demo
 reports/          result notes
 docs/             research roadmap and design notes
 ```
