@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from dataclasses import dataclass
 from typing import Literal
 
@@ -12,6 +11,7 @@ from factgraph import FactGraph
 from hrr.datasets import fact_key
 from hrr.encoder import SVOEncoder, SVOFact
 from memory.amm import AMM
+from .relations import RelationRegistry
 
 
 class ExtractedFact(BaseModel):
@@ -35,6 +35,7 @@ class IngestionResult:
     pass2_count: int
     estimated_fact_count: int
     written_facts: int
+    relation_stats: dict[str, int]
 
     @property
     def enrichment(self) -> float:
@@ -130,29 +131,38 @@ class TextIngestionPipeline:
         factgraph: FactGraph,
         *,
         extractor: GeminiExtractor | None = None,
+        relation_registry: RelationRegistry | None = None,
         min_confidence: float = 0.5,
     ) -> None:
         self.encoder = encoder
         self.memory = memory
         self.factgraph = factgraph
         self.extractor = extractor or GeminiExtractor()
+        self.relation_registry = relation_registry or RelationRegistry()
         self.min_confidence = min_confidence
 
     def ingest_text(self, text: str, *, source: str = "text", domain: str = "real_text") -> IngestionResult:
         pass1, pass2 = self.extractor.extract(text, source=source)
         facts = self._deduplicate([*pass1.facts, *pass2.facts])
         written = 0
+        raw_relations: set[str] = set()
+        normalized_relations: set[str] = set()
+        alias_hits = 0
         for fact in facts:
             if fact.confidence < self.min_confidence:
                 continue
-            relation = self._canonical_relation(fact.relation)
+            normalized = self.relation_registry.normalize(fact.relation)
+            raw_relations.add(normalized.raw)
+            normalized_relations.add(normalized.canonical)
+            alias_hits += int(normalized.matched_alias)
             svo = SVOFact(
                 subject=self._clean_slot(fact.subject),
-                verb=relation,
+                verb=normalized.canonical,
                 object=self._clean_slot(fact.object),
             )
             key = fact_key(domain, svo)
             vector = self.encoder.encode_fact(svo)
+            source_name = fact.source or source
             payload = {
                 "domain": domain,
                 "subject": svo.subject,
@@ -160,7 +170,15 @@ class TextIngestionPipeline:
                 "object": svo.object,
                 "confidence": fact.confidence,
                 "kind": fact.kind,
-                "source": fact.source or source,
+                "source": source_name,
+                "raw_relation": normalized.raw,
+                "normalized_relation": normalized.canonical,
+                "provenance": {
+                    "source": source_name,
+                    "kind": fact.kind,
+                    "confidence": fact.confidence,
+                    "raw_relation": normalized.raw,
+                },
             }
             self.memory.write(key, vector, payload)
             self.factgraph.write(svo.subject, svo.verb, svo.object)
@@ -171,6 +189,12 @@ class TextIngestionPipeline:
             pass2_count=len(pass2.facts),
             estimated_fact_count=pass1.estimated_fact_count,
             written_facts=written,
+            relation_stats={
+                "raw_relation_labels": len(raw_relations),
+                "normalized_relation_labels": len(normalized_relations),
+                "alias_hits": alias_hits,
+                "unresolved_relation_labels": len(raw_relations) - alias_hits,
+            },
         )
 
     def _deduplicate(self, facts: list[ExtractedFact]) -> list[ExtractedFact]:
@@ -178,18 +202,13 @@ class TextIngestionPipeline:
         for fact in facts:
             key = (
                 self._clean_slot(fact.subject).lower(),
-                self._canonical_relation(fact.relation),
+                self.relation_registry.normalize(fact.relation).canonical,
                 self._clean_slot(fact.object).lower(),
             )
             existing = seen.get(key)
             if existing is None or fact.confidence > existing.confidence:
                 seen[key] = fact
         return list(seen.values())
-
-    @staticmethod
-    def _canonical_relation(value: str) -> str:
-        relation = re.sub(r"[^a-zA-Z0-9]+", "_", value.strip().lower()).strip("_")
-        return relation or "related_to"
 
     @staticmethod
     def _clean_slot(value: str) -> str:

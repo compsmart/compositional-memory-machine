@@ -14,7 +14,7 @@ class FakeExtractor(GeminiExtractor):
             facts=[
                 ExtractedFact(
                     subject="Ada Lovelace",
-                    relation="worked with",
+                    relation="collaborated with",
                     object="Charles Babbage",
                     confidence=0.95,
                     kind="explicit",
@@ -24,6 +24,14 @@ class FakeExtractor(GeminiExtractor):
         )
         pass2 = ExtractionResponse(
             facts=[
+                ExtractedFact(
+                    subject="Ada Lovelace",
+                    relation="worked on with",
+                    object="Charles Babbage",
+                    confidence=0.6,
+                    kind="missed",
+                    source=source,
+                ),
                 ExtractedFact(
                     subject="Ada Lovelace",
                     relation="described",
@@ -48,6 +56,13 @@ def test_text_ingestion_writes_extracted_facts_to_memory_and_graph() -> None:
     probe = query.ask_svo("Ada Lovelace", "worked_with", "Charles Babbage")
 
     assert result.written_facts == 2
+    assert result.relation_stats["alias_hits"] == 1
     assert probe["found"] is True
     assert probe["domain"] == "history"
+    assert probe["verb"] == "worked_with"
     assert graph.read("Ada Lovelace", "worked_with") == "Charles Babbage"
+    assert memory.get("history:Ada Lovelace:worked_with:Charles Babbage").payload["raw_relation"] == "collaborated with"
+    assert (
+        memory.get("history:Ada Lovelace:worked_with:Charles Babbage").payload["provenance"]["source"]
+        == "fixture"
+    )

@@ -112,6 +112,8 @@ The repo currently implements:
   HRR n-gram, and continuous context keys across `addr_dim` settings.
 - A D-2836-style episodic conversation benchmark with persistent sessions,
   in-conversation revision, cross-session recall, and final retention metrics.
+- A relation registry that canonicalizes extracted relation labels, deduplicates
+  aliases before memory writes, and stores provenance payloads for each triple.
 
 Verified locally:
 
@@ -156,6 +158,9 @@ embedding keys.
 
 ### 2. Relation Registry And Provenance
 
+Status: initial registry and provenance payloads implemented in
+`ingestion/relations.py` and `TextIngestionPipeline`.
+
 Goal: prevent relation-label fragmentation before scaling ingestion.
 
 Problem examples:
@@ -168,12 +173,13 @@ worked_on_with
 
 Experiment:
 
-- Add a relation registry with canonical labels and aliases.
-- Preserve source provenance for every extracted triple.
+- Grow the default alias table from benchmark misses.
+- Preserve richer source spans or chunk IDs when available.
 - Normalize direct triples and Gemini-extracted triples before writing to
-  FactGraph and AMM.
+  FactGraph and AMM. The Gemini path is implemented; direct structured-ingest
+  helpers should use the same registry.
 - Report raw relation labels, normalized relation labels, alias hit rate, and
-  unresolved relation count.
+  unresolved relation count. Initial relation stats are returned by ingestion.
 
 Why it matters: D-2836-style dialogue and large-document memory both depend on
 stable relation identity. Without this layer, successful retrieval can fragment
@@ -438,7 +444,8 @@ instrument.
 
 1. Run and report the projected-address key-family sweep now implemented in
    `experiments/exp_projected_address_sweep.py`.
-2. Add relation registry and provenance model for extracted triples.
+2. Extend the relation registry with benchmark-driven aliases and source-span
+   provenance.
 3. Extend the D-2836-style episodic conversation benchmark beyond controlled
    synthetic facts.
 4. Add large-document ingestion benchmark.

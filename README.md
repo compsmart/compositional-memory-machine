@@ -45,6 +45,7 @@ template answer or optional generator
   continuous context keys.
 - D-2836-style episodic conversation benchmark with persistent sessions,
   revision, cross-session recall, and final retention checks.
+- Relation registry and provenance payloads for extracted triples.
 
 ## Research Grounding
 
@@ -94,7 +95,9 @@ Important boundary: the repo's core AMM is currently full-vector
 nearest-neighbor memory. The lab's D-2831/D-2832 results show that projected SDM
 addressing needs a dedicated `addr_dim` sweep before making stronger CI claims.
 D-2837's positive one-hot SDM result should be tracked separately from HRR and
-continuous embedding key families.
+continuous embedding key families. Relation normalization is now registry-based,
+but the default alias set is intentionally small and should grow from benchmark
+misses.
 
 ## Quick Start
 

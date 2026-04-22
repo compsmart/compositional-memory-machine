@@ -30,6 +30,7 @@ def main() -> None:
             "deduplicated": len(result.facts),
             "written_facts": result.written_facts,
             "enrichment": result.enrichment,
+            "relation_stats": result.relation_stats,
         }
     )
     for fact in result.facts:
