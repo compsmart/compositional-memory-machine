@@ -38,9 +38,9 @@ HRR vectors. Gemini is currently used only as a raw-text-to-triples front end.
 This implementation was created from the following Compsmart AI Research Labs
 findings and design constraints.
 
-### D-2824: HRR Sentence Memory With Continual Learning
+### D-2824: Holographic Reduced Representation (HRR) Sentence Memory With Continual Learning
 
-Lab result: HRR-encoded SVO sentence vectors stored in AMM achieved 100%
+Lab result:  HRR-encoded SVO sentence vectors stored in AMM achieved 100%
 retrieval with 0% forgetting across repeated continual-learning cycles.
 
 Implementation:
