@@ -20,7 +20,7 @@ python real_text_demo.py
 
 ## Current Findings
 
-- Unit tests: 9 passed.
+- Unit tests: 14 passed.
 - CI storage at `d=2048`: 100% top-1 retrieval across 3 seeds and 10 cycles.
 - Composition holdout at `d=2048`: 100% cluster-EM across 3 seeds, 0.2 random baseline.
 - Chain3 FactGraph revision: 100% exact match across entry, middle, and terminal updates.
@@ -50,6 +50,10 @@ python real_text_demo.py
   - Learned centroids are retained while adding later words.
   - Current run at `d=2048`, 3 seeds: `dax` cluster correct 1.0, `blick` cluster correct 1.0, retention 1.0.
   - Plausible action similarity is about 0.46-0.47; implausible action similarity is near zero or negative.
+- Superseding lab nuance:
+  - D-2831 showed that `addr_dim=64` is a bottleneck for projected SDM addressing: HRR dimensions 512, 1024, and 2048 all failed under that projection setting.
+  - D-2832 showed continuous embedding n-gram keys also fail under the same `addr_dim=64` bottleneck.
+  - This repo's positive n-gram and sentence-memory results use full-vector AMM-style retrieval, so they should not be over-read as proof that the lab SDM projection recipe is solved.
 
 ## Interpretation
 
@@ -58,4 +62,5 @@ distinction is that full-vector nearest-neighbor AMM does not reproduce the
 low-dimensional SDM failure by itself. The collision/capacity problem appears
 when retrieval is routed through compressed address signatures before vector
 scoring, which is closer to the SDM/AMM address-space constraint described in
-the findings.
+the findings. D-2831 and D-2832 sharpen this further: the next critical
+research step is an explicit `addr_dim` sweep for projected SDM retrieval.
