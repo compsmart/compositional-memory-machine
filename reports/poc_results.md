@@ -16,6 +16,8 @@ python experiments/exp_revision_chain3.py
 python demo.py
 python conversation_demo.py
 python real_text_demo.py
+python experiments/exp_projected_address_sweep.py --dim 512 --addr-dims 64 128 256 512 --seeds 0 1 2 --items 300 --probes 120 --noise 0.5
+python experiments/exp_projected_address_sweep.py --dim 512 --addr-dims 64 128 256 512 --seeds 0 1 2 --items 300 --probes 120 --noise 1.0
 ```
 
 ## Current Findings
@@ -50,10 +52,19 @@ python real_text_demo.py
   - Learned centroids are retained while adding later words.
   - Current run at `d=2048`, 3 seeds: `dax` cluster correct 1.0, `blick` cluster correct 1.0, retention 1.0.
   - Plausible action similarity is about 0.46-0.47; implausible action similarity is near zero or negative.
+- Projected address key-family sweep:
+  - Bounded repo run at `dim=512`, 300 items, 3 seeds, `addr_dim={64,128,256,512}`.
+  - At `noise=0.5`, all families reached 1.0 exact and noisy top-1.
+  - At `noise=1.0`, low address dimensions showed modest top-1 degradation,
+    especially at `addr_dim=64`.
+  - Candidate-pool contamination separated key families: one-hot was cleanest,
+    HRR SVO improved strongly with `addr_dim`, HRR n-gram stayed more ambiguous,
+    and continuous keys carried the highest stale-candidate load.
 - Superseding lab nuance:
   - D-2831 showed that `addr_dim=64` is a bottleneck for projected SDM addressing: HRR dimensions 512, 1024, and 2048 all failed under that projection setting.
   - D-2832 showed continuous embedding n-gram keys also fail under the same `addr_dim=64` bottleneck.
   - This repo's positive n-gram and sentence-memory results use full-vector AMM-style retrieval, so they should not be over-read as proof that the lab SDM projection recipe is solved.
+  - D-2837's positive one-hot SDM result should be treated as a separate key-family condition, not as evidence that HRR or continuous projected-address routing is solved.
 
 ## Interpretation
 

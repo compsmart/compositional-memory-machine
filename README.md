@@ -90,6 +90,9 @@ Representative outcomes:
   rate 0.0.
 - D-2830-style word learning: cluster routing 1.0 and retention 1.0.
 - FactGraph chain3 revision: 100% exact match across tested positions.
+- Bounded projected-address sweep: top-1 stayed high in the small repo run, but
+  candidate contamination separated key families; see
+  [reports/projected_address_sweep.md](reports/projected_address_sweep.md).
 
 Important boundary: the repo's core AMM is currently full-vector
 nearest-neighbor memory. The lab's D-2831/D-2832 results show that projected SDM
