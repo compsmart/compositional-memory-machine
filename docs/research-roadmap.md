@@ -125,7 +125,7 @@ Verified locally:
 
 ```text
 python -m pytest
-18 passed
+20 passed
 ```
 
 The important caveat: this repo's AMM is full-vector nearest-neighbor memory,
@@ -406,7 +406,9 @@ Goal: attach a generator only after retrieval.
 
 Status: D-2838 now supports a narrower and more defensible intermediate claim:
 retrieved HRR value vectors can be decoded exactly by both HRR-native unbinding
-and a frozen linear head in the controlled 2-token property setting.
+and a frozen linear head in the controlled 2-token property setting. The repo's
+`generation` adapter now exposes this as a structured evidence-to-surface
+prototype for compositional value answers.
 
 Pipeline:
 
@@ -424,7 +426,8 @@ Rules:
 This keeps the architecture honest: HRR+AMM handles memory; the generator handles
 surface language. D-2838 is encouraging because it shows a linear decoder can
 read compositional information directly from HRR memory, but it still does not
-turn the system into a standalone language model.
+turn the system into a standalone language model. The current adapter path is a
+frozen prototype for controlled compositional values, not an open-ended decoder.
 
 ## Product Direction: MemoryWorkbench
 

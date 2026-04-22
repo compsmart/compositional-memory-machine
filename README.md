@@ -42,6 +42,8 @@ template answer or optional generator
 - Context-based word learning by ACTION-role unbinding.
 - Compositional value generation via HRR-native unbinding and a linear decoding head.
 - Sequence-chain prefix disambiguation for variable-length HRR rule prefixes.
+- A frozen generation adapter that can decode retrieved compositional value
+  vectors into 2-token outputs in the controlled D-2838 setting.
 - Scripted memory-grounded conversation demo.
 - Projected-address sweep harness for one-hot, HRR SVO, HRR n-gram, and
   continuous context keys.
@@ -86,7 +88,7 @@ Verified locally:
 
 ```text
 python -m pytest
-18 passed
+20 passed
 ```
 
 Representative outcomes:
@@ -102,6 +104,8 @@ Representative outcomes:
   `D={64,128,256,512,2048}`.
 - D-2839-style sequence chains: `K={1,2}` stays at 0.25 EM (chance across 4
   rules), while `K={3,5,7,10}` reaches 1.0 EM across 3 seeds.
+- The demo now includes a compositional value answer generated from a retrieved
+  HRR value vector: `entity_demo has property silver signal.`
 - FactGraph chain3 revision: 100% exact match across tested positions.
 - Bounded projected-address sweep: top-1 stayed high in the small repo run, but
   candidate contamination separated key families; see

@@ -8,76 +8,10 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from hrr.binding import bind, cosine, normalize, unbind
+from generation import ADJECTIVES, NOUNS, CompositionalValueDecoder, make_value_vector
+from hrr.binding import normalize
 from hrr.vectors import VectorStore
 from memory.amm import AMM
-
-
-ADJECTIVES = tuple(
-    [
-        "amber",
-        "ancient",
-        "brisk",
-        "calm",
-        "crisp",
-        "distant",
-        "eager",
-        "faint",
-        "gentle",
-        "golden",
-        "hidden",
-        "icy",
-        "jagged",
-        "lively",
-        "mellow",
-        "narrow",
-        "quiet",
-        "rapid",
-        "silver",
-        "warm",
-    ]
-)
-NOUNS = tuple(
-    [
-        "bridge",
-        "cedar",
-        "cloud",
-        "comet",
-        "field",
-        "forest",
-        "garden",
-        "harbor",
-        "meadow",
-        "mirror",
-        "mountain",
-        "orchard",
-        "planet",
-        "river",
-        "signal",
-        "station",
-        "stone",
-        "temple",
-        "thunder",
-        "valley",
-    ]
-)
-
-
-def _ridge_fit(train_x: np.ndarray, train_y: np.ndarray, alpha: float) -> np.ndarray:
-    gram = train_x.T @ train_x
-    identity = np.eye(gram.shape[0], dtype=train_x.dtype)
-    return np.linalg.solve(gram + alpha * identity, train_x.T @ train_y)
-
-
-def _one_hot(indices: np.ndarray, size: int) -> np.ndarray:
-    out = np.zeros((len(indices), size), dtype=float)
-    out[np.arange(len(indices)), indices] = 1.0
-    return out
-
-
-def _decode_nearest(vector: np.ndarray, candidates: list[np.ndarray]) -> int:
-    scores = [cosine(vector, candidate) for candidate in candidates]
-    return int(np.argmax(scores))
 
 
 def _entity_rows(
@@ -89,17 +23,12 @@ def _entity_rows(
 ) -> tuple[VectorStore, AMM, list[tuple[str, int, int]]]:
     store = VectorStore(dim=dim, seed=seed)
     memory = AMM()
-    role_adj = store.get_unitary("__ROLE_ADJ__")
-    role_noun = store.get_unitary("__ROLE_NOUN__")
     rows: list[tuple[str, int, int]] = []
     for idx in range(n_entities):
         entity = f"entity_{idx:03d}"
         adj_idx = idx % len(ADJECTIVES)
         noun_idx = (idx * 7 + seed) % len(NOUNS)
-        property_vector = normalize(
-            bind(role_adj, store.get(f"adj:{ADJECTIVES[adj_idx]}"))
-            + bind(role_noun, store.get(f"noun:{NOUNS[noun_idx]}"))
-        )
+        property_vector = make_value_vector(store, ADJECTIVES[adj_idx], NOUNS[noun_idx])
         entity_key = store.get(f"entity:{entity}")
         payload = {
             "entity": entity,
@@ -129,14 +58,8 @@ def run(
     for dim in dims:
         for seed in seeds:
             store, memory, entities = _entity_rows(dim=dim, seed=seed, n_entities=n_entities, cycles=cycles)
-            role_adj = store.get_unitary("__ROLE_ADJ__")
-            role_noun = store.get_unitary("__ROLE_NOUN__")
-            adj_vectors = [store.get(f"adj:{token}") for token in ADJECTIVES]
-            noun_vectors = [store.get(f"noun:{token}") for token in NOUNS]
-            entity_vectors = np.vstack([store.get(f"entity:{entity}") for entity, _adj_idx, _noun_idx in entities])
             permutation = np.random.default_rng(seed + dim + 2838).permutation(len(entities))
             train_count = int(round(len(entities) * train_fraction))
-            train_idx = permutation[:train_count]
             test_idx = permutation[train_count:]
 
             value_vectors: list[np.ndarray] = []
@@ -144,6 +67,7 @@ def run(
             noun_targets: list[int] = []
             hrr_hits = 0
             exact_retrieval_hits = 0
+            linear_examples: list[tuple[np.ndarray, str, str]] = []
 
             for row_idx in permutation:
                 entity, adj_idx, noun_idx = entities[int(row_idx)]
@@ -155,41 +79,33 @@ def run(
                 value_vectors.append(value_vector)
                 adj_targets.append(adj_idx)
                 noun_targets.append(noun_idx)
+                adjective = ADJECTIVES[adj_idx]
+                noun = NOUNS[noun_idx]
+                linear_examples.append((value_vector, adjective, noun))
 
-                decoded_adj = unbind(value_vector, role_adj)
-                decoded_noun = unbind(value_vector, role_noun)
-                pred_adj = _decode_nearest(decoded_adj, adj_vectors)
-                pred_noun = _decode_nearest(decoded_noun, noun_vectors)
-                hrr_hits += int(pred_adj == adj_idx and pred_noun == noun_idx)
-
-            value_matrix = np.vstack(value_vectors)
-            adj_targets_arr = np.asarray(adj_targets, dtype=int)
-            noun_targets_arr = np.asarray(noun_targets, dtype=int)
-
-            train_x = value_matrix[: len(train_idx)]
-            test_x = value_matrix[len(train_idx) :]
-            train_adj = _one_hot(adj_targets_arr[: len(train_idx)], len(ADJECTIVES))
-            train_noun = _one_hot(noun_targets_arr[: len(train_idx)], len(NOUNS))
-            test_adj_idx = adj_targets_arr[len(train_idx) :]
-            test_noun_idx = noun_targets_arr[len(train_idx) :]
-
-            adj_head = _ridge_fit(train_x, train_adj, ridge_alpha)
-            noun_head = _ridge_fit(train_x, train_noun, ridge_alpha)
-            adj_logits = test_x @ adj_head
-            noun_logits = test_x @ noun_head
-            linear_hits = int(
-                np.sum(
-                    (np.argmax(adj_logits, axis=1) == test_adj_idx)
-                    & (np.argmax(noun_logits, axis=1) == test_noun_idx)
+            decoder = CompositionalValueDecoder(store=store)
+            decoder.fit_linear_head(linear_examples[:train_count], ridge_alpha=ridge_alpha)
+            for idx, value_vector in enumerate(value_vectors):
+                decoded = decoder.decode_hrr(value_vector)
+                hrr_hits += int(
+                    decoded.adjective == ADJECTIVES[adj_targets[idx]]
+                    and decoded.noun == NOUNS[noun_targets[idx]]
                 )
-            )
+
+            linear_hits = 0
+            for row_idx in range(train_count, len(value_vectors)):
+                decoded = decoder.decode_linear(value_vectors[row_idx])
+                linear_hits += int(
+                    decoded.adjective == ADJECTIVES[adj_targets[row_idx]]
+                    and decoded.noun == NOUNS[noun_targets[row_idx]]
+                )
 
             rows.append(
                 {
                     "dim": float(dim),
                     "seed": float(seed),
                     "entities": float(n_entities),
-                    "train_entities": float(len(train_idx)),
+                    "train_entities": float(train_count),
                     "test_entities": float(len(test_idx)),
                     "cycles": float(cycles),
                     "hrr_native_em": hrr_hits / len(entities),

@@ -24,7 +24,7 @@ python experiments/exp_projected_address_sweep.py --dim 512 --addr-dims 64 128 2
 
 ## Current Findings
 
-- Unit tests: 18 passed.
+- Unit tests: 20 passed.
 - CI storage at `d=2048`: 100% top-1 retrieval across 3 seeds and 10 cycles.
 - Composition holdout at `d=2048`: 100% cluster-EM across 3 seeds, 0.2 random baseline.
 - Chain3 FactGraph revision: 100% exact match across entry, middle, and terminal updates.
@@ -64,6 +64,11 @@ python experiments/exp_projected_address_sweep.py --dim 512 --addr-dims 64 128 2
   - Current repo benchmark at 5 families, 4 rules per family, sequence length
     10, and 3 seeds shows a hard prefix transition.
   - `K={1,2}` stays at 0.25 EM while `K={3,5,7,10}` reaches 1.0 EM.
+- D-2838 generation adapter prototype:
+  - The shared compositional decoder now lives in `generation/` and is used by
+    both the benchmark and the frozen adapter path.
+  - `demo.py` now answers a controlled compositional query with
+    `entity_demo has property silver signal.`
 - Projected address key-family sweep:
   - Bounded repo run at `dim=512`, 300 items, 3 seeds, `addr_dim={64,128,256,512}`.
   - At `noise=0.5`, all families reached 1.0 exact and noisy top-1.

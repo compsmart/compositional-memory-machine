@@ -78,3 +78,36 @@ Next:
   `generation` adapter as a structured evidence-to-surface prototype.
 - Expand `D-2839` from rule disambiguation into a harder sequence benchmark with
   partially overlapping prefixes or noisy token corruption.
+
+### 2026-04-22 - D-2838 adapter prototype
+
+Scope:
+
+- Added a shared `generation.compositional` decoder module so the HRR-native and
+  linear `D-2838` decode paths are available outside the experiment script.
+- Extended `FrozenGeneratorAdapter` to answer from retrieved `value_vector`
+  evidence when a compositional decoder is available.
+- Updated `demo.py` to show a controlled compositional value answer produced from
+  retrieved HRR evidence.
+- Added `tests/test_generation.py` to regression-test held-out decoding and the
+  adapter surface itself.
+
+Verification:
+
+- `python -m pytest tests/test_generation.py tests/test_experiments.py`
+- `python demo.py`
+
+Observed repo-local behavior:
+
+- The adapter now produces a controlled compositional answer:
+  `entity_demo has property silver signal.`
+- The shared decoder keeps the benchmark and adapter paths aligned, so the
+  generation prototype exercises the same HRR-native and linear decode logic as
+  the `D-2838` experiment.
+
+Next:
+
+- Add a small query layer for non-SVO value memories so compositional answers can
+  be retrieved through the same interface as fact queries.
+- Stress the adapter path with noisy value vectors and partial-value prompts to
+  see where decode quality drops before any stronger generation claims.
