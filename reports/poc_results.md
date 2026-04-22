@@ -12,6 +12,8 @@ python experiments/exp_d2827_dimension_sweep.py
 python experiments/exp_collision_stress.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
+python experiments/exp_d2838_compositional_generation.py --summary
+python experiments/exp_d2839_sequence_chain.py --summary
 python experiments/exp_revision_chain3.py
 python demo.py
 python conversation_demo.py
@@ -22,7 +24,7 @@ python experiments/exp_projected_address_sweep.py --dim 512 --addr-dims 64 128 2
 
 ## Current Findings
 
-- Unit tests: 14 passed.
+- Unit tests: 18 passed.
 - CI storage at `d=2048`: 100% top-1 retrieval across 3 seeds and 10 cycles.
 - Composition holdout at `d=2048`: 100% cluster-EM across 3 seeds, 0.2 random baseline.
 - Chain3 FactGraph revision: 100% exact match across entry, middle, and terminal updates.
@@ -52,6 +54,16 @@ python experiments/exp_projected_address_sweep.py --dim 512 --addr-dims 64 128 2
   - Learned centroids are retained while adding later words.
   - Current run at `d=2048`, 3 seeds: `dax` cluster correct 1.0, `blick` cluster correct 1.0, retention 1.0.
   - Plausible action similarity is about 0.46-0.47; implausible action similarity is near zero or negative.
+- D-2838 compositional generation benchmark:
+  - Current repo benchmark at `D={64,128,256,512,2048}`, 150 entities, and 3
+    seeds reaches exact retrieval 1.0, HRR-native EM 1.0, and linear-head EM
+    1.0.
+  - This makes linear decoding over retrieved HRR value vectors a verified repo
+    capability in the controlled 2-token setting.
+- D-2839 sequence-chain benchmark:
+  - Current repo benchmark at 5 families, 4 rules per family, sequence length
+    10, and 3 seeds shows a hard prefix transition.
+  - `K={1,2}` stays at 0.25 EM while `K={3,5,7,10}` reaches 1.0 EM.
 - Projected address key-family sweep:
   - Bounded repo run at `dim=512`, 300 items, 3 seeds, `addr_dim={64,128,256,512}`.
   - At `noise=0.5`, all families reached 1.0 exact and noisy top-1.

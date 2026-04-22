@@ -61,6 +61,8 @@ language memory without gradient retraining.
 | D-2835 | HRR+AMM capacity frontier: `D=64` is viable for exact/partial retrieval at `N=2000`, `D=128` is robust under noise, and `D=256+` saturates tested full-vector conditions. | Use `D=256` as the default full-vector HRR+AMM benchmark dimension unless testing collision margins; reserve `D=2048` for parity with older Directive #95 runs. |
 | D-2836 | Multi-turn HRR+AMM conversational memory reached 100% EM across immediate, distant, cross-session, revision, and retention probes in a controlled fact setting. | Promote episodic conversation memory from a product idea to a reproducible repo benchmark. |
 | D-2837 | SDM+AMM `beta0` reached zero forgetting at 10/12/15 domains with one-hot keys and `addr_dim=64`. | Treat one-hot SDM results separately from HRR and continuous embedding projected-address results; key family must be an explicit experimental factor. |
+| D-2838 | HRR+AMM compositional generation decoded 2-token property values with HRR-native unbinding at `99.56%` EM for `D=64` and `100%` for `D>=128`; a linear ridge head trained on 80% of entities reached `100%` EM on the held-out 20% across `D={64,128,256,512,2048}`. | Treat linear decoding over retrieved HRR values as a real benchmarked capability, and use it to scope an evidence-grounded generation head without claiming open-ended LM behavior. |
+| D-2839 | Chained HRR sequence prefixes showed a hard disambiguation threshold: `K={1,2}` stayed at chance across 4 rules per family, while `K>=3` reached `100%` EM with zero seed variance in the tested setup. | Use prefix-length disambiguation as a structural sequence-memory benchmark before making stronger syntax or generation claims. |
 
 ## External Research Context
 
@@ -112,6 +114,10 @@ The repo currently implements:
   HRR n-gram, and continuous context keys across `addr_dim` settings.
 - A D-2836-style episodic conversation benchmark with persistent sessions,
   in-conversation revision, cross-session recall, and final retention metrics.
+- A D-2838-style compositional generation benchmark with both HRR-native
+  unbinding and a linear ridge-regression decoding head.
+- A D-2839-style sequence-chain benchmark that measures the prefix length needed
+  to disambiguate a rule family.
 - A relation registry that canonicalizes extracted relation labels, deduplicates
   aliases before memory writes, and stores provenance payloads for each triple.
 
@@ -119,7 +125,7 @@ Verified locally:
 
 ```text
 python -m pytest
-14 passed
+18 passed
 ```
 
 The important caveat: this repo's AMM is full-vector nearest-neighbor memory,
@@ -398,6 +404,10 @@ Success:
 
 Goal: attach a generator only after retrieval.
 
+Status: D-2838 now supports a narrower and more defensible intermediate claim:
+retrieved HRR value vectors can be decoded exactly by both HRR-native unbinding
+and a frozen linear head in the controlled 2-token property setting.
+
 Pipeline:
 
 ```text
@@ -412,7 +422,9 @@ Rules:
 - hallucination checks compare generated answer back to evidence triples.
 
 This keeps the architecture honest: HRR+AMM handles memory; the generator handles
-surface language.
+surface language. D-2838 is encouraging because it shows a linear decoder can
+read compositional information directly from HRR memory, but it still does not
+turn the system into a standalone language model.
 
 ## Product Direction: MemoryWorkbench
 

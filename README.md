@@ -40,6 +40,8 @@ template answer or optional generator
 - Gemini 2.5 Flash Lite real-text extraction into triples.
 - HRR bigram-context next-token prediction.
 - Context-based word learning by ACTION-role unbinding.
+- Compositional value generation via HRR-native unbinding and a linear decoding head.
+- Sequence-chain prefix disambiguation for variable-length HRR rule prefixes.
 - Scripted memory-grounded conversation demo.
 - Projected-address sweep harness for one-hot, HRR SVO, HRR n-gram, and
   continuous context keys.
@@ -67,6 +69,12 @@ The design is grounded in Compsmart AI Research Lab findings:
   immediate, distant, cross-session, revision, and retention probes.
 - D-2837: SDM+AMM `beta0` reaches zero forgetting at 10+ domains for one-hot
   keys, so projected-address experiments must separate key families.
+- D-2838: HRR+AMM supports exact 2-token property generation from retrieved
+  compositional values, both through HRR-native unbinding and a linear ridge
+  head trained on held-out entities.
+- D-2839: chained HRR sequence prefixes show a hard disambiguation threshold:
+  1-2 tokens are ambiguous, while 3 tokens are sufficient for perfect rule
+  identification in the tested setup.
 
 See [docs/research-roadmap.md](docs/research-roadmap.md) for the detailed lab
 mapping, external VSA/HDC literature context, risk register, and next research
@@ -78,7 +86,7 @@ Verified locally:
 
 ```text
 python -m pytest
-16 passed
+18 passed
 ```
 
 Representative outcomes:
@@ -89,6 +97,11 @@ Representative outcomes:
 - D-2829-style next-token primitive: seen EM 1.0, familiar EM 1.0, novel hit
   rate 0.0.
 - D-2830-style word learning: cluster routing 1.0 and retention 1.0.
+- D-2838-style compositional generation: repo benchmark reaches 1.0 exact
+  retrieval, 1.0 HRR-native EM, and 1.0 linear-head EM across
+  `D={64,128,256,512,2048}`.
+- D-2839-style sequence chains: `K={1,2}` stays at 0.25 EM (chance across 4
+  rules), while `K={3,5,7,10}` reaches 1.0 EM across 3 seeds.
 - FactGraph chain3 revision: 100% exact match across tested positions.
 - Bounded projected-address sweep: top-1 stayed high in the small repo run, but
   candidate contamination separated key families; see
@@ -125,6 +138,8 @@ python experiments/exp_d2827_dimension_sweep.py
 python experiments/exp_collision_stress.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
+python experiments/exp_d2838_compositional_generation.py --summary
+python experiments/exp_d2839_sequence_chain.py --summary
 python experiments/exp_revision_chain3.py
 python experiments/exp_projected_address_sweep.py
 python experiments/exp_d2836_episodic_memory.py

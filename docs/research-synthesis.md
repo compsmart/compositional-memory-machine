@@ -14,6 +14,9 @@ work stays cumulative, commit-sized, and easy to review.
 - The bounded sweep showed top-1 retrieval remains strong at small scale, but
   stale candidate contamination clearly separates one-hot, HRR SVO, HRR n-gram,
   and continuous keys.
+- Generation and sequence-memory evidence are now stronger: the repo has a
+  compositional generation benchmark and a sequence-chain prefix benchmark that
+  connect recent lab findings to concrete local experiments.
 
 ## Iteration Log
 
@@ -39,3 +42,39 @@ Next:
 - Execute the `roadmap_serious` preset and inspect where candidate contamination
   remains high even when top-1 is near saturation.
 - Use the aggregate report as the reference point for the next roadmap update.
+
+### 2026-04-22 - D-2838 and D-2839 benchmark pass
+
+Scope:
+
+- Added `experiments/exp_d2838_compositional_generation.py` to benchmark
+  compositional value decoding through two routes: HRR-native unbinding plus
+  nearest-neighbour cleanup, and a linear ridge-regression head over retrieved
+  HRR value vectors.
+- Added `experiments/exp_d2839_sequence_chain.py` to benchmark the minimum HRR
+  prefix length needed to disambiguate which rule generated a chained sequence.
+- Extended `tests/test_experiments.py` with smoke coverage for both new
+  benchmarks.
+- Updated the roadmap, README, and synthesis docs so `D-2838` and `D-2839`
+  are tracked explicitly as lab-grounded findings and local repo capabilities.
+
+Verification:
+
+- `python -m pytest tests/test_experiments.py`
+- `python experiments/exp_d2838_compositional_generation.py --summary`
+- `python experiments/exp_d2839_sequence_chain.py --summary`
+
+Observed repo-local behavior:
+
+- The current `D-2838` synthetic benchmark reaches 1.0 exact retrieval, 1.0
+  HRR-native EM, and 1.0 linear-head EM across
+  `D={64,128,256,512,2048}` for the tested 150-entity setup.
+- The current `D-2839` benchmark reproduces the sharp structural transition:
+  `K={1,2}` stays at 0.25 EM and `K={3,5,7,10}` reaches 1.0 EM across 3 seeds.
+
+Next:
+
+- Decide whether to connect the `D-2838` decoding path to the existing
+  `generation` adapter as a structured evidence-to-surface prototype.
+- Expand `D-2839` from rule disambiguation into a harder sequence benchmark with
+  partially overlapping prefixes or noisy token corruption.

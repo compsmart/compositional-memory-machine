@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from experiments.exp_d2824_ci_storage import run as run_ci
 from experiments.exp_d2825_composition import run as run_composition
+from experiments.exp_d2838_compositional_generation import run as run_compositional_generation
+from experiments.exp_d2839_sequence_chain import summarize as summarize_sequence_chain
+from experiments.exp_d2839_sequence_chain import run as run_sequence_chain
 from experiments.exp_d2836_episodic_memory import run as run_episodic_memory
 from experiments.exp_collision_stress import run as run_collision_stress
 from experiments.exp_projected_address_sweep import (
@@ -75,3 +78,23 @@ def test_episodic_memory_experiment_smoke() -> None:
     assert rows[0]["cross_session_em"] == 1.0
     assert rows[0]["revision_em"] == 1.0
     assert rows[0]["retention_em"] == 1.0
+
+
+def test_compositional_generation_experiment_smoke() -> None:
+    rows = run_compositional_generation(dims=(64, 128), seeds=(0,), n_entities=60)
+
+    assert len(rows) == 2
+    assert all(row["exact_retrieval"] == 1.0 for row in rows)
+    assert all(row["hrr_native_em"] >= 0.95 for row in rows)
+    assert all(row["linear_head_em"] == 1.0 for row in rows)
+
+
+def test_sequence_chain_experiment_smoke() -> None:
+    rows = run_sequence_chain(seeds=(42,), prefix_lengths=(1, 2, 3, 10))
+    summary = summarize_sequence_chain(rows)
+    by_prefix = {int(row["prefix_len"]): row for row in summary}
+
+    assert by_prefix[1]["mean_em"] == 0.25
+    assert by_prefix[2]["mean_em"] == 0.25
+    assert by_prefix[3]["mean_em"] == 1.0
+    assert by_prefix[10]["mean_em"] == 1.0
