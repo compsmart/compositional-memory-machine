@@ -14,6 +14,7 @@ python experiments/exp_addr_dim_sweep.py
 python experiments/exp_projected_sdm_capacity.py
 python experiments/exp_projected_sdm_stress.py
 python experiments/exp_projected_sdm_readout.py
+python experiments/exp_projected_sdm_ngram.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_revision_chain3.py
@@ -48,6 +49,11 @@ python real_text_demo.py
 - Projected SDM readout-width sweep added:
   - Wider reads recover noisy queries: `read_k=128` reaches 1.0 top-1 at noise=0.25 and about 0.94 at noise=0.5.
   - This suggests projected SDM needs asymmetric write/read coverage: sparse writes, wider reads.
+- Projected SDM n-gram prediction added:
+  - Seen contexts retrieve perfectly.
+  - Familiar-context generalization is unstable across seeds.
+  - Novel contexts over-trigger, and familiar/novel score distributions overlap.
+  - This is a boundary result: projected SDM sequence memory needs better novelty discrimination before it matches full-vector AMM D-2829 behavior.
 - Gemini 2.5 Flash Lite real-text ingestion works on the Ada Lovelace fixture:
   - Pass 1 extracted 4 facts.
   - Pass 2 added 3 facts.
