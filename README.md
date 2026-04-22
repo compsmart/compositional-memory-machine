@@ -195,6 +195,64 @@ implausible action similarity: ~0 or negative
 Why it matters: this is a concrete lexical acquisition primitive. It is still
 controlled, but it demonstrates fast-mapping without weight updates.
 
+### D-2833: Emergent Syntactic Composition
+
+Lab result: syntactically different forms of the same meaning align in HRR
+space without training cross-pattern mappings. The reported lab shape was high
+within-pattern similarity, strong cross-pattern similarity, and low random
+similarity.
+
+Implementation:
+
+- [language/syntax.py](language/syntax.py) encodes active, passive, relative,
+  prepositional, and coordinated forms with shared semantic role bindings plus
+  pattern/variant bindings.
+- [experiments/exp_d2833_emergent_syntax.py](experiments/exp_d2833_emergent_syntax.py)
+  evaluates 5 domains x 30 triples x 3 seeds.
+
+Current PoC result at `d=2048`:
+
+```text
+mean_within_cosine: ~0.888-0.890
+mean_cross_pattern_cosine: ~0.645-0.653
+mean_random_cosine: ~-0.010-0.003
+```
+
+Why it matters: the syntax gap is no longer the immediate blocker. The same
+role-filler geometry that stores facts also gives same-meaning syntactic forms
+a shared vector neighborhood.
+
+### D-2834: Closed-Loop HRR AMM QA
+
+Lab result: a full question-answering loop can retrieve an HRR fact vector,
+unbind the verb and object roles, cleanup against known vocabularies, and retain
+facts across continual-learning cycles.
+
+Implementation:
+
+- [language/qa.py](language/qa.py) stores facts as subject/verb/object
+  role-filler superpositions.
+- Queries use only subject plus verb roles.
+- Answers are recovered by unbinding the retrieved vector with the object role,
+  not by reading a prompt.
+- [experiments/exp_d2834_closed_loop_qa.py](experiments/exp_d2834_closed_loop_qa.py)
+  evaluates 5 domains x 50 facts x 3 seeds.
+
+Current PoC result at `d=2048`:
+
+```text
+answer_em: 1.0
+verb_accuracy: 1.0
+object_accuracy: 1.0
+forgetting: 0.0
+mean_fact_confidence: ~0.816-0.817
+mean_object_confidence: ~0.577-0.579
+```
+
+Why it matters: this moves the project from isolated primitives to a closed
+memory-grounded QA loop. The next research target is multi-turn conversation
+with online fact updates.
+
 ## Architecture
 
 ### 1. HRR Vector Substrate
@@ -281,12 +339,16 @@ This is the transformer-dependent part of the current project.
 Files:
 
 - [language/ngram.py](language/ngram.py)
+- [language/qa.py](language/qa.py)
+- [language/syntax.py](language/syntax.py)
 - [language/word_learning.py](language/word_learning.py)
 
 Responsibilities:
 
 - Learn simple next-token patterns from HRR context keys.
 - Learn new action words from structured context examples.
+- Compose syntactic variants around shared semantic role bindings.
+- Answer subject/relation questions by retrieving and unbinding HRR facts.
 - Retain earlier learned words while learning later ones.
 
 These primitives are deliberately small. They test whether HRR+AMM can support
@@ -315,7 +377,7 @@ This is:
 - A continual structured language-memory PoC.
 - A non-transformer memory substrate after extraction.
 - A testbed for HRR composition, AMM routing, local revision, n-gram prediction,
-  and fast lexical acquisition.
+  fast lexical acquisition, syntax composition, and closed-loop QA.
 
 This is not yet:
 
@@ -323,7 +385,6 @@ This is not yet:
 - A native raw-text parser.
 - An open-ended chatbot.
 - A general chain-of-thought reasoner.
-- A broad syntax learner.
 - A replacement for a fluent generator such as Gemma/Gemini.
 
 ## Current Context Window
@@ -368,6 +429,8 @@ python experiments/exp_projected_sdm_ngram.py
 python experiments/exp_projected_sdm_trigram.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
+python experiments/exp_d2833_emergent_syntax.py
+python experiments/exp_d2834_closed_loop_qa.py
 python experiments/exp_revision_chain3.py
 ```
 
@@ -413,7 +476,7 @@ hrr/              HRR vectors, binding, and SVO encoding
 memory/           append-oriented associative memory and metrics
 factgraph/        local revision graph for chain facts
 ingestion/        Gemini 2.5 Flash Lite text-to-triples ingestion
-language/         n-gram prediction and context word-learning primitives
+language/         n-gram, word-learning, syntax, and QA primitives
 generation/       optional frozen-generator adapter interface
 experiments/      reproducible PoC experiments
 tests/            focused unit tests
@@ -429,16 +492,16 @@ ingest_text.py    CLI for arbitrary text or files
 Current limitations:
 
 - Gemini still performs raw-text extraction.
-- There is no autonomous dialogue loop.
+- There is no autonomous multi-turn dialogue loop.
 - Responses are mostly template-based.
-- Syntax learning is not implemented.
+- Syntax composition is controlled rather than induced from raw corpora.
 - Chain-of-thought, planning, and general logic are not learned capabilities.
 - The word-learning experiment uses controlled property hints.
 - The experiments are PoC-scale rather than corpus-scale.
 
 Next work:
 
-1. Implement Exp 5: emergent syntax from exposure.
+1. Implement Exp 7: multi-turn conversational QA with online fact updates.
 2. Add a controller that routes between AMM, FactGraph, n-gram memory, word
    learning, and generation.
 3. Add larger corpora and chunked ingestion.

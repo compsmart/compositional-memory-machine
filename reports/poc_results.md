@@ -18,6 +18,8 @@ python experiments/exp_projected_sdm_ngram.py
 python experiments/exp_projected_sdm_trigram.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
+python experiments/exp_d2833_emergent_syntax.py
+python experiments/exp_d2834_closed_loop_qa.py
 python experiments/exp_revision_chain3.py
 python demo.py
 python conversation_demo.py
@@ -26,7 +28,7 @@ python real_text_demo.py
 
 ## Current Findings
 
-- Unit tests: 9 passed.
+- Unit tests: 26 passed.
 - CI storage at `d=2048`: 100% top-1 retrieval across 3 seeds and 10 cycles.
 - Composition holdout at `d=2048`: 100% cluster-EM across 3 seeds, 0.2 random baseline.
 - Chain3 FactGraph revision: 100% exact match across entry, middle, and terminal updates.
@@ -81,6 +83,16 @@ python real_text_demo.py
   - Learned centroids are retained while adding later words.
   - Current run at `d=2048`, 3 seeds: `dax` cluster correct 1.0, `blick` cluster correct 1.0, retention 1.0.
   - Plausible action similarity is about 0.46-0.47; implausible action similarity is near zero or negative.
+- D-2833 emergent syntactic composition:
+  - Active, passive, relative, prepositional, and coordinated forms share subject/verb/object role-filler structure.
+  - No direct cross-pattern mapping is trained.
+  - Current run at `d=2048`, 5 domains x 30 triples x 3 seeds: within-pattern cosine about 0.888-0.890, cross-pattern cosine about 0.645-0.653, unrelated baseline about -0.010 to 0.003.
+  - This closes the previous emergent-syntax roadmap gap in the controlled setting.
+- D-2834 closed-loop QA:
+  - Query vectors contain subject plus verb roles; AMM retrieves the full fact vector.
+  - Verb and object answers are recovered by role unbinding and vocabulary cleanup.
+  - Current run at `d=2048`, 5 domains x 50 facts x 3 seeds: answer EM 1.0, verb accuracy 1.0, object accuracy 1.0, forgetting 0.0.
+  - The next research target is Exp 7: multi-turn conversational QA with online fact updates.
 
 ## Interpretation
 
