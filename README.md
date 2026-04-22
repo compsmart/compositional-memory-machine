@@ -43,6 +43,8 @@ template answer or optional generator
 - Scripted memory-grounded conversation demo.
 - Projected-address sweep harness for one-hot, HRR SVO, HRR n-gram, and
   continuous context keys.
+- D-2836-style episodic conversation benchmark with persistent sessions,
+  revision, cross-session recall, and final retention checks.
 
 ## Research Grounding
 
@@ -75,7 +77,7 @@ Verified locally:
 
 ```text
 python -m pytest
-15 passed
+16 passed
 ```
 
 Representative outcomes:
@@ -119,6 +121,7 @@ python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_revision_chain3.py
 python experiments/exp_projected_address_sweep.py
+python experiments/exp_d2836_episodic_memory.py
 ```
 
 Run real-text ingestion:

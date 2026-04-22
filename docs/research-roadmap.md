@@ -110,6 +110,8 @@ The repo currently implements:
 - A scripted memory-grounded conversation demo.
 - A projected-address sweep harness that compares one-hot, HRR SVO,
   HRR n-gram, and continuous context keys across `addr_dim` settings.
+- A D-2836-style episodic conversation benchmark with persistent sessions,
+  in-conversation revision, cross-session recall, and final retention metrics.
 
 Verified locally:
 
@@ -152,10 +154,38 @@ current PoC to the production SDM/AMM recipe. D-2837 shows one-hot projected
 addressing can work extremely well, but it does not settle HRR or continuous
 embedding keys.
 
-### 2. Episodic Conversation Memory
+### 2. Relation Registry And Provenance
 
-Goal: reproduce D-2836 in this repo with an explicit persistent dialogue
-benchmark rather than only a scripted demo.
+Goal: prevent relation-label fragmentation before scaling ingestion.
+
+Problem examples:
+
+```text
+worked_with
+collaborated_with
+worked_on_with
+```
+
+Experiment:
+
+- Add a relation registry with canonical labels and aliases.
+- Preserve source provenance for every extracted triple.
+- Normalize direct triples and Gemini-extracted triples before writing to
+  FactGraph and AMM.
+- Report raw relation labels, normalized relation labels, alias hit rate, and
+  unresolved relation count.
+
+Why it matters: D-2836-style dialogue and large-document memory both depend on
+stable relation identity. Without this layer, successful retrieval can fragment
+across semantically equivalent edge labels.
+
+### 3. Episodic Conversation Memory
+
+Status: initial D-2836-style benchmark implemented in
+`experiments/exp_d2836_episodic_memory.py`.
+
+Goal: extend the benchmark beyond controlled synthetic facts into dialogue-turn
+metadata and correction scenarios.
 
 Facts to store:
 
@@ -183,7 +213,7 @@ Benchmark:
 Why it matters: D-2836 makes this the clearest next product-shaped benchmark
 after the address-routing critical path.
 
-### 3. Large-Document Memory
+### 4. Large-Document Memory
 
 Goal: move from toy passages to real documents.
 
@@ -203,7 +233,7 @@ Measure:
 Why it matters: this tests whether persistent memory is useful once extraction
 produces hundreds or thousands of facts.
 
-### 4. Multilingual Fact Normalization
+### 5. Multilingual Fact Normalization
 
 Goal: test language-agnostic memory.
 
@@ -225,7 +255,7 @@ Risk:
   `worked_on_with` may fragment memory. This likely requires a relation
   registry.
 
-### 5. Codebase Memory
+### 6. Codebase Memory
 
 Goal: turn code into graph facts.
 
@@ -250,7 +280,7 @@ Experiment:
 Why it matters: code has explicit structure, so it is a good domain for a
 non-transformer memory substrate.
 
-### 6. Contradiction And Temporal Revision
+### 7. Contradiction And Temporal Revision
 
 Goal: handle facts that change.
 
@@ -276,7 +306,7 @@ Questions:
 Why it matters: this directly exercises the D-2820 boundary and the D-2821/D-2826
 revision solution.
 
-### 7. Emergent Syntax
+### 8. Emergent Syntax
 
 Goal: run the missing Directive #95 syntax experiment.
 
@@ -302,7 +332,7 @@ Success:
 - novel sentence structures route correctly,
 - no catastrophic forgetting across new grammar families.
 
-### 8. Procedural And Tool-Routing Memory
+### 9. Procedural And Tool-Routing Memory
 
 Goal: store actions and route tasks.
 
@@ -331,7 +361,7 @@ Success:
 This is a plausible bridge from memory to action without pretending the memory
 itself is a full planner.
 
-### 9. Analogical Retrieval
+### 10. Analogical Retrieval
 
 Goal: exploit role/filler geometry for relational similarity.
 
@@ -353,7 +383,7 @@ Success:
 - Similar role structures retrieve above entity-overlap baselines.
 - Analogies fail gracefully when no role pattern matches.
 
-### 10. Memory-Grounded Generation
+### 11. Memory-Grounded Generation
 
 Goal: attach a generator only after retrieval.
 
@@ -408,9 +438,9 @@ instrument.
 
 1. Run and report the projected-address key-family sweep now implemented in
    `experiments/exp_projected_address_sweep.py`.
-2. Add a D-2836-style episodic conversation benchmark with persistent sessions,
-   revision, and final retention checks.
-3. Add relation registry and provenance model for extracted triples.
+2. Add relation registry and provenance model for extracted triples.
+3. Extend the D-2836-style episodic conversation benchmark beyond controlled
+   synthetic facts.
 4. Add large-document ingestion benchmark.
 5. Add codebase AST memory.
 6. Add contradiction/current-vs-history revision experiment.
