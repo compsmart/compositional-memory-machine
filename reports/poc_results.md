@@ -12,6 +12,7 @@ python experiments/exp_d2827_dimension_sweep.py
 python experiments/exp_collision_stress.py
 python experiments/exp_addr_dim_sweep.py
 python experiments/exp_projected_sdm_capacity.py
+python experiments/exp_projected_sdm_stress.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_revision_chain3.py
@@ -39,6 +40,10 @@ python real_text_demo.py
   - Overwrite mode is fragile; at `n_locations=2048, k=8`, mean forgetting improves to about 0.0417.
   - Sum/accumulation mode is stable in the current PoC; `k>=4` reaches 0.0 forgetting across tested location counts.
   - Next stress target: accumulation with larger loads, noisy queries, and constrained cleanup.
+- Projected SDM accumulation stress added:
+  - At 800 facts, clean-query retrieval remains perfect with 0.0 forgetting.
+  - Query noise is the dominant failure source: noise=0.25 gives about 0.10 forgetting; noise=0.5 gives about 0.50; noise=0.85 gives about 0.80.
+  - Address-gated cleanup matches global cleanup in this protocol, so candidate gating is not the bottleneck at this load.
 - Gemini 2.5 Flash Lite real-text ingestion works on the Ada Lovelace fixture:
   - Pass 1 extracted 4 facts.
   - Pass 2 added 3 facts.
