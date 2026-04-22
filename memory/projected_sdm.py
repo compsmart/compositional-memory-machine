@@ -82,15 +82,28 @@ class ProjectedSDM:
         cleanup: Literal["global", "address"] = "global",
         read_k: int | None = None,
     ) -> tuple[ProjectedRecord | None, float]:
+        scored = self.nearest(vector, cleanup=cleanup, read_k=read_k, top_k=1)
+        if not scored:
+            return None, 0.0
+        return scored[0]
+
+    def nearest(
+        self,
+        vector: np.ndarray,
+        *,
+        cleanup: Literal["global", "address"] = "global",
+        read_k: int | None = None,
+        top_k: int = 1,
+    ) -> list[tuple[ProjectedRecord, float]]:
         readout = self.read_vector(vector, read_k=read_k)
         if not self.records or not np.any(readout):
-            return None, 0.0
+            return []
         candidates = self._candidate_keys(vector, read_k=read_k) if cleanup == "address" else self._keys
         if not candidates:
-            return None, 0.0
+            return []
         scored = [(self.records[key], cosine(readout, self.records[key].vector)) for key in candidates]
         scored.sort(key=lambda item: item[1], reverse=True)
-        return scored[0]
+        return scored[:top_k]
 
     def query_many(
         self,

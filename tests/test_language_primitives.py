@@ -3,7 +3,14 @@ from __future__ import annotations
 from experiments.exp_d2829_next_token import run as run_next_token
 from experiments.exp_d2830_word_learning import run as run_word_learning
 from experiments.exp_projected_sdm_ngram import run as run_projected_ngram
-from language import ContextExample, NGramLanguageMemory, ProjectedNGramLanguageMemory, WordLearningMemory
+from experiments.exp_projected_sdm_trigram import run as run_projected_trigram
+from language import (
+    ContextExample,
+    NGramLanguageMemory,
+    ProjectedNGramLanguageMemory,
+    ProjectedTrigramLanguageMemory,
+    WordLearningMemory,
+)
 
 
 def test_ngram_memory_predicts_seen_context() -> None:
@@ -63,4 +70,21 @@ def test_projected_sdm_ngram_experiment_smoke() -> None:
     assert row["seen_em"] >= 0.8
     assert 0.0 <= row["familiar_em"] <= 1.0
     assert 0.0 <= row["novel_hit_rate"] <= 1.0
+    assert 0.0 <= row["calibrated_novel_hit_rate"] <= 1.0
+
+
+def test_projected_trigram_memory_predicts_seen_context() -> None:
+    memory = ProjectedTrigramLanguageMemory(dim=512, seed=0, addr_dim=128, n_locations=512, write_k=4, read_k=32)
+    memory.learn("doctor", "treats", "near", "patient")
+
+    assert memory.predict("doctor", "treats", "near").token == "patient"
+
+
+def test_projected_sdm_trigram_experiment_smoke() -> None:
+    row = run_projected_trigram(dim=512, addr_dim=128, seeds=(0,), cycles=2, n_locations=512, write_k=4, read_k=32)[0]
+
+    assert row["seen_em"] >= 0.8
+    assert 0.0 <= row["score_calibrated_familiar_em"] <= 1.0
+    assert 0.0 <= row["score_calibrated_novel_hit_rate"] <= 1.0
+    assert 0.0 <= row["calibrated_familiar_em"] <= 1.0
     assert 0.0 <= row["calibrated_novel_hit_rate"] <= 1.0

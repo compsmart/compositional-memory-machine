@@ -365,6 +365,7 @@ python experiments/exp_projected_sdm_capacity.py
 python experiments/exp_projected_sdm_stress.py
 python experiments/exp_projected_sdm_readout.py
 python experiments/exp_projected_sdm_ngram.py
+python experiments/exp_projected_sdm_trigram.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_revision_chain3.py
