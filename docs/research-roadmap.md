@@ -133,6 +133,11 @@ implement the lab's full SDM projection/gating stack.
 
 Goal: resolve the D-2831/D-2832 bottleneck before making strong SDM CI claims.
 
+Status: the projected-address harness now supports multi-condition sweeps over
+item counts and noise levels, aggregate seed summaries with 95% confidence
+intervals, and markdown report generation for a full serious run. The next step
+is to execute the `roadmap_serious` preset and review the resulting report.
+
 Experiment:
 
 - Use the repo's `ProjectedAddressIndex` as an SDM-style address-routing

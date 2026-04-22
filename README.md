@@ -130,6 +130,12 @@ python experiments/exp_projected_address_sweep.py
 python experiments/exp_d2836_episodic_memory.py
 ```
 
+Run the full projected-address roadmap sweep and write an aggregate report:
+
+```powershell
+python experiments/exp_projected_address_sweep.py --preset roadmap_serious --output summary --report-file reports/projected_address_sweep_full.md
+```
+
 Run real-text ingestion:
 
 ```powershell
