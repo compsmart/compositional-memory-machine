@@ -15,6 +15,7 @@ python experiments/exp_projected_sdm_capacity.py
 python experiments/exp_projected_sdm_stress.py
 python experiments/exp_projected_sdm_readout.py
 python experiments/exp_projected_sdm_ngram.py
+python experiments/exp_projected_sdm_trigram.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_revision_chain3.py
@@ -54,6 +55,11 @@ python real_text_demo.py
   - Familiar-context generalization is unstable across seeds.
   - Novel contexts over-trigger, and familiar/novel score distributions overlap.
   - This is a boundary result: projected SDM sequence memory needs better novelty discrimination before it matches full-vector AMM D-2829 behavior.
+- Projected SDM trigram context prediction added:
+  - Explicit filler/noise role improves the projected sequence result.
+  - Seen EM is 1.0; familiar EM is stable at 0.875 across seeds.
+  - Score-only calibration keeps 0.75-0.875 familiar EM while reducing novel hits to 0.25-0.50.
+  - Margin-based novelty is not reliable yet.
 - Gemini 2.5 Flash Lite real-text ingestion works on the Ada Lovelace fixture:
   - Pass 1 extracted 4 facts.
   - Pass 2 added 3 facts.
