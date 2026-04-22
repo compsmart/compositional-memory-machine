@@ -101,4 +101,5 @@ distinction is that full-vector nearest-neighbor AMM does not reproduce the
 low-dimensional SDM failure by itself. The collision/capacity problem appears
 when retrieval is routed through compressed address signatures before vector
 scoring, which is closer to the SDM/AMM address-space constraint described in
-the findings.
+the findings. D-2831 and D-2832 sharpen this further: the next critical
+research step is an explicit `addr_dim` sweep for projected SDM retrieval.
