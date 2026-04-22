@@ -6,6 +6,7 @@ from experiments.exp_collision_stress import run as run_collision_stress
 from experiments.exp_addr_dim_sweep import run as run_addr_dim_sweep
 from experiments.exp_projected_sdm_capacity import run as run_projected_capacity
 from experiments.exp_projected_sdm_stress import run as run_projected_stress
+from experiments.exp_projected_sdm_readout import run as run_projected_readout
 
 
 def test_ci_storage_experiment_smoke() -> None:
@@ -70,3 +71,21 @@ def test_projected_sdm_stress_smoke() -> None:
     assert len(rows) == 4
     assert {row["cleanup"] for row in rows} == {"global", "address"}
     assert all(0.0 <= float(row["forgetting"]) <= 1.0 for row in rows)
+
+
+def test_projected_sdm_readout_smoke() -> None:
+    rows = run_projected_readout(
+        hrr_dim=256,
+        addr_dim=64,
+        seeds=(0,),
+        domains=2,
+        facts_per_domain=8,
+        n_locations=64,
+        write_k=4,
+        read_k_values=(4, 8),
+        noise_values=(0.25,),
+    )
+
+    assert len(rows) == 2
+    assert {row["read_k"] for row in rows} == {4.0, 8.0}
+    assert all(0.0 <= float(row["top1"]) <= 1.0 for row in rows)

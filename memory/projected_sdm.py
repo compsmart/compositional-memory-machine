@@ -68,18 +68,24 @@ class ProjectedSDM:
         self._record_locations[key] = set(int(index) for index in indices)
         self._dirty = True
 
-    def read_vector(self, vector: np.ndarray) -> np.ndarray:
-        indices = self._location_indices(vector)
+    def read_vector(self, vector: np.ndarray, *, read_k: int | None = None) -> np.ndarray:
+        indices = self._location_indices(vector, k=read_k)
         active = self.counts[indices] > 0
         if not np.any(active):
             return np.zeros(self.vector_dim, dtype=float)
         return normalize(np.sum(self.values[indices[active]], axis=0))
 
-    def query(self, vector: np.ndarray, *, cleanup: Literal["global", "address"] = "global") -> tuple[ProjectedRecord | None, float]:
-        readout = self.read_vector(vector)
+    def query(
+        self,
+        vector: np.ndarray,
+        *,
+        cleanup: Literal["global", "address"] = "global",
+        read_k: int | None = None,
+    ) -> tuple[ProjectedRecord | None, float]:
+        readout = self.read_vector(vector, read_k=read_k)
         if not self.records or not np.any(readout):
             return None, 0.0
-        candidates = self._candidate_keys(vector) if cleanup == "address" else self._keys
+        candidates = self._candidate_keys(vector, read_k=read_k) if cleanup == "address" else self._keys
         if not candidates:
             return None, 0.0
         scored = [(self.records[key], cosine(readout, self.records[key].vector)) for key in candidates]
@@ -91,15 +97,16 @@ class ProjectedSDM:
         vectors: np.ndarray,
         *,
         cleanup: Literal["global", "address"] = "global",
+        read_k: int | None = None,
     ) -> list[tuple[ProjectedRecord | None, float]]:
         if not self.records:
             return [(None, 0.0) for _vector in vectors]
         if cleanup == "address":
-            return [self.query(vector, cleanup="address") for vector in vectors]
+            return [self.query(vector, cleanup="address", read_k=read_k) for vector in vectors]
         matrix = self._record_matrix()
         rows = []
         for vector in vectors:
-            rows.append(self.read_vector(vector))
+            rows.append(self.read_vector(vector, read_k=read_k))
         readouts = np.vstack(rows)
         norms = np.linalg.norm(readouts, axis=1)
         valid = norms > 1e-12
@@ -117,13 +124,16 @@ class ProjectedSDM:
     def _address(self, vector: np.ndarray) -> np.ndarray:
         return np.where(vector @ self.projection >= 0.0, 1.0, -1.0)
 
-    def _location_indices(self, vector: np.ndarray) -> np.ndarray:
+    def _location_indices(self, vector: np.ndarray, *, k: int | None = None) -> np.ndarray:
+        k = self.k if k is None else k
+        if k <= 0 or k > self.n_locations:
+            raise ValueError("k must be in [1, n_locations]")
         address = self._address(normalize(vector))
         # For +/-1 signatures, dot product ranking is equivalent to Hamming distance ranking.
         scores = self.locations @ address
-        if self.k == self.n_locations:
+        if k == self.n_locations:
             return np.arange(self.n_locations)
-        return np.argpartition(scores, -self.k)[-self.k:]
+        return np.argpartition(scores, -k)[-k:]
 
     def _record_matrix(self) -> np.ndarray:
         if self._matrix is None or self._dirty:
@@ -131,8 +141,8 @@ class ProjectedSDM:
             self._dirty = False
         return self._matrix
 
-    def _candidate_keys(self, vector: np.ndarray) -> list[str]:
-        query_locations = set(int(index) for index in self._location_indices(vector))
+    def _candidate_keys(self, vector: np.ndarray, *, read_k: int | None = None) -> list[str]:
+        query_locations = set(int(index) for index in self._location_indices(vector, k=read_k))
         return [
             key
             for key in self._keys
