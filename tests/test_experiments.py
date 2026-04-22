@@ -4,6 +4,7 @@ from experiments.exp_d2824_ci_storage import run as run_ci
 from experiments.exp_d2825_composition import run as run_composition
 from experiments.exp_collision_stress import run as run_collision_stress
 from experiments.exp_addr_dim_sweep import run as run_addr_dim_sweep
+from experiments.exp_projected_sdm_capacity import run as run_projected_capacity
 
 
 def test_ci_storage_experiment_smoke() -> None:
@@ -33,3 +34,20 @@ def test_addr_dim_sweep_smoke() -> None:
     assert {row["addr_dim"] for row in rows} == {64.0, 128.0}
     assert all(0.0 <= row["forgetting"] <= 1.0 for row in rows)
     assert all(row["write_mode"] == "overwrite" for row in rows)
+
+
+def test_projected_sdm_capacity_smoke() -> None:
+    rows = run_projected_capacity(
+        hrr_dim=256,
+        addr_dim=64,
+        seeds=(0,),
+        domains=2,
+        facts_per_domain=8,
+        n_locations_values=(64,),
+        k_values=(1, 4),
+        write_modes=("overwrite", "sum"),
+    )
+
+    assert len(rows) == 4
+    assert {row["write_mode"] for row in rows} == {"overwrite", "sum"}
+    assert all(0.0 <= float(row["mean_forgetting"]) <= 1.0 for row in rows)
