@@ -5,6 +5,7 @@ from experiments.exp_d2825_composition import run as run_composition
 from experiments.exp_collision_stress import run as run_collision_stress
 from experiments.exp_addr_dim_sweep import run as run_addr_dim_sweep
 from experiments.exp_projected_sdm_capacity import run as run_projected_capacity
+from experiments.exp_projected_sdm_stress import run as run_projected_stress
 
 
 def test_ci_storage_experiment_smoke() -> None:
@@ -51,3 +52,21 @@ def test_projected_sdm_capacity_smoke() -> None:
     assert len(rows) == 4
     assert {row["write_mode"] for row in rows} == {"overwrite", "sum"}
     assert all(0.0 <= float(row["mean_forgetting"]) <= 1.0 for row in rows)
+
+
+def test_projected_sdm_stress_smoke() -> None:
+    rows = run_projected_stress(
+        hrr_dim=256,
+        addr_dim=64,
+        seeds=(0,),
+        domains=2,
+        facts_per_domain=8,
+        n_locations=64,
+        k=4,
+        cleanup_modes=("global", "address"),
+        noise_values=(0.0, 0.5),
+    )
+
+    assert len(rows) == 4
+    assert {row["cleanup"] for row in rows} == {"global", "address"}
+    assert all(0.0 <= float(row["forgetting"]) <= 1.0 for row in rows)

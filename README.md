@@ -362,6 +362,7 @@ python experiments/exp_d2827_dimension_sweep.py
 python experiments/exp_collision_stress.py
 python experiments/exp_addr_dim_sweep.py
 python experiments/exp_projected_sdm_capacity.py
+python experiments/exp_projected_sdm_stress.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_revision_chain3.py

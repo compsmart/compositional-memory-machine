@@ -47,6 +47,7 @@ class ProjectedSDM:
         self.counts = np.zeros(n_locations, dtype=float)
         self.records: dict[str, ProjectedRecord] = {}
         self._keys: list[str] = []
+        self._record_locations: dict[str, set[int]] = {}
         self._matrix: np.ndarray | None = None
         self._dirty = False
 
@@ -64,6 +65,7 @@ class ProjectedSDM:
         self.records[key] = ProjectedRecord(key=key, vector=vector, payload=payload.copy())
         if is_new:
             self._keys.append(key)
+        self._record_locations[key] = set(int(index) for index in indices)
         self._dirty = True
 
     def read_vector(self, vector: np.ndarray) -> np.ndarray:
@@ -73,17 +75,27 @@ class ProjectedSDM:
             return np.zeros(self.vector_dim, dtype=float)
         return normalize(np.sum(self.values[indices[active]], axis=0))
 
-    def query(self, vector: np.ndarray) -> tuple[ProjectedRecord | None, float]:
+    def query(self, vector: np.ndarray, *, cleanup: Literal["global", "address"] = "global") -> tuple[ProjectedRecord | None, float]:
         readout = self.read_vector(vector)
         if not self.records or not np.any(readout):
             return None, 0.0
-        scored = [(record, cosine(readout, record.vector)) for record in self.records.values()]
+        candidates = self._candidate_keys(vector) if cleanup == "address" else self._keys
+        if not candidates:
+            return None, 0.0
+        scored = [(self.records[key], cosine(readout, self.records[key].vector)) for key in candidates]
         scored.sort(key=lambda item: item[1], reverse=True)
         return scored[0]
 
-    def query_many(self, vectors: np.ndarray) -> list[tuple[ProjectedRecord | None, float]]:
+    def query_many(
+        self,
+        vectors: np.ndarray,
+        *,
+        cleanup: Literal["global", "address"] = "global",
+    ) -> list[tuple[ProjectedRecord | None, float]]:
         if not self.records:
             return [(None, 0.0) for _vector in vectors]
+        if cleanup == "address":
+            return [self.query(vector, cleanup="address") for vector in vectors]
         matrix = self._record_matrix()
         rows = []
         for vector in vectors:
@@ -118,6 +130,14 @@ class ProjectedSDM:
             self._matrix = np.vstack([self.records[key].vector for key in self._keys])
             self._dirty = False
         return self._matrix
+
+    def _candidate_keys(self, vector: np.ndarray) -> list[str]:
+        query_locations = set(int(index) for index in self._location_indices(vector))
+        return [
+            key
+            for key in self._keys
+            if self._record_locations.get(key, set()) & query_locations
+        ]
 
     def __len__(self) -> int:
         return len(self.records)
