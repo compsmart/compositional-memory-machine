@@ -58,6 +58,9 @@ language memory without gradient retraining.
 | D-2827 | HRR at `d=512` produced severe CI forgetting through address collision. | Default serious HRR experiments to high dimension and stress-test collisions. |
 | D-2831 | With SDM projection `addr_dim=64`, all tested HRR dimensions failed CI; address projection was the bottleneck. | Do not claim `d_hrr=2048` alone solves SDM CI; address dimensionality must be swept. |
 | D-2832 | Continuous embedding n-gram keys failed under `addr_dim=64` with near-total forgetting. | Keep repo n-gram results scoped to full-vector AMM; SDM-projected n-gram CI remains open. |
+| D-2835 | HRR+AMM capacity frontier: `D=64` is viable for exact/partial retrieval at `N=2000`, `D=128` is robust under noise, and `D=256+` saturates tested full-vector conditions. | Use `D=256` as the default full-vector HRR+AMM benchmark dimension unless testing collision margins; reserve `D=2048` for parity with older Directive #95 runs. |
+| D-2836 | Multi-turn HRR+AMM conversational memory reached 100% EM across immediate, distant, cross-session, revision, and retention probes in a controlled fact setting. | Promote episodic conversation memory from a product idea to a reproducible repo benchmark. |
+| D-2837 | SDM+AMM `beta0` reached zero forgetting at 10/12/15 domains with one-hot keys and `addr_dim=64`. | Treat one-hot SDM results separately from HRR and continuous embedding projected-address results; key family must be an explicit experimental factor. |
 
 ## External Research Context
 
@@ -105,6 +108,8 @@ The repo currently implements:
 - HRR bigram-context next-token memory.
 - Context word learning with ACTION-role unbinding and semantic cluster lookup.
 - A scripted memory-grounded conversation demo.
+- A projected-address sweep harness that compares one-hot, HRR SVO,
+  HRR n-gram, and continuous context keys across `addr_dim` settings.
 
 Verified locally:
 
@@ -126,11 +131,16 @@ Goal: resolve the D-2831/D-2832 bottleneck before making strong SDM CI claims.
 
 Experiment:
 
-- Implement an SDM-style projected address layer alongside the current
-  full-vector AMM.
+- Use the repo's `ProjectedAddressIndex` as an SDM-style address-routing
+  harness alongside the current full-vector AMM.
 - Sweep `addr_dim = {64, 128, 256, 512, 1024, 2048}` with `d_hrr=2048`.
-- Re-run SVO CI and n-gram CI under projected address routing.
-- Report forgetting, top-1 retrieval, stale contamination, and candidate counts.
+- Run separate key-family conditions:
+  - one-hot keys, to compare against D-2837-style favorable addressing,
+  - HRR SVO keys, to test sentence/fact memory,
+  - HRR n-gram keys, to test D-2829-style sequence memory,
+  - continuous context keys, to test the D-2832 failure mode.
+- Report exact top-1, noisy top-1, expected-candidate rate, empty-query rate,
+  stale contamination, and candidate counts.
 
 Success:
 
@@ -138,9 +148,42 @@ Success:
 - Clearly separate "full-vector AMM works" from "SDM-projected AMM works."
 
 Why this is first: without it, the docs risk overstating the portability of the
-current PoC to the production SDM/AMM recipe.
+current PoC to the production SDM/AMM recipe. D-2837 shows one-hot projected
+addressing can work extremely well, but it does not settle HRR or continuous
+embedding keys.
 
-### 2. Large-Document Memory
+### 2. Episodic Conversation Memory
+
+Goal: reproduce D-2836 in this repo with an explicit persistent dialogue
+benchmark rather than only a scripted demo.
+
+Facts to store:
+
+```text
+turn_7 speaker user
+turn_7 intent teach_word
+turn_7 introduced_word dax
+turn_8 assistant_answer dax means ingest
+```
+
+Questions:
+
+- What did I teach you earlier?
+- What did you say about dax?
+- Did I correct you?
+
+Benchmark:
+
+- immediate recall,
+- delayed same-session recall,
+- cross-session recall,
+- in-conversation revision,
+- final retention.
+
+Why it matters: D-2836 makes this the clearest next product-shaped benchmark
+after the address-routing critical path.
+
+### 3. Large-Document Memory
 
 Goal: move from toy passages to real documents.
 
@@ -160,7 +203,7 @@ Measure:
 Why it matters: this tests whether persistent memory is useful once extraction
 produces hundreds or thousands of facts.
 
-### 3. Multilingual Fact Normalization
+### 4. Multilingual Fact Normalization
 
 Goal: test language-agnostic memory.
 
@@ -182,7 +225,7 @@ Risk:
   `worked_on_with` may fragment memory. This likely requires a relation
   registry.
 
-### 4. Codebase Memory
+### 5. Codebase Memory
 
 Goal: turn code into graph facts.
 
@@ -207,7 +250,7 @@ Experiment:
 Why it matters: code has explicit structure, so it is a good domain for a
 non-transformer memory substrate.
 
-### 5. Contradiction And Temporal Revision
+### 6. Contradiction And Temporal Revision
 
 Goal: handle facts that change.
 
@@ -233,7 +276,7 @@ Questions:
 Why it matters: this directly exercises the D-2820 boundary and the D-2821/D-2826
 revision solution.
 
-### 6. Emergent Syntax
+### 7. Emergent Syntax
 
 Goal: run the missing Directive #95 syntax experiment.
 
@@ -258,28 +301,6 @@ Success:
 - syntactic-role clusters emerge above random baseline,
 - novel sentence structures route correctly,
 - no catastrophic forgetting across new grammar families.
-
-### 7. Episodic Conversation Memory
-
-Goal: give the system memory across dialogue turns without a prompt window.
-
-Facts to store:
-
-```text
-turn_7 speaker user
-turn_7 intent teach_word
-turn_7 introduced_word dax
-turn_8 assistant_answer dax means ingest
-```
-
-Questions:
-
-- What did I teach you earlier?
-- What did you say about dax?
-- Did I correct you?
-
-Why it matters: this turns the current scripted demo into a persistent dialogue
-memory experiment.
 
 ### 8. Procedural And Tool-Routing Memory
 
@@ -385,14 +406,17 @@ instrument.
 
 ## Recommended Next Build Order
 
-1. Add SDM projected address memory and run the `addr_dim` sweep.
-2. Add relation registry and provenance model for extracted triples.
-3. Add large-document ingestion benchmark.
-4. Add codebase AST memory.
-5. Add contradiction/current-vs-history revision experiment.
-6. Add emergent syntax experiment.
-7. Add MemoryWorkbench CLI.
-8. Add evidence-grounded generation adapter.
+1. Run and report the projected-address key-family sweep now implemented in
+   `experiments/exp_projected_address_sweep.py`.
+2. Add a D-2836-style episodic conversation benchmark with persistent sessions,
+   revision, and final retention checks.
+3. Add relation registry and provenance model for extracted triples.
+4. Add large-document ingestion benchmark.
+5. Add codebase AST memory.
+6. Add contradiction/current-vs-history revision experiment.
+7. Add emergent syntax experiment.
+8. Add MemoryWorkbench CLI.
+9. Add evidence-grounded generation adapter.
 
 ## Claim Boundary
 

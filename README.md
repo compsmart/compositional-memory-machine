@@ -41,6 +41,8 @@ template answer or optional generator
 - HRR bigram-context next-token prediction.
 - Context-based word learning by ACTION-role unbinding.
 - Scripted memory-grounded conversation demo.
+- Projected-address sweep harness for one-hot, HRR SVO, HRR n-gram, and
+  continuous context keys.
 
 ## Research Grounding
 
@@ -56,6 +58,12 @@ The design is grounded in Compsmart AI Research Lab findings:
 - D-2827: low-dimensional HRR causes address collisions.
 - D-2831/D-2832: SDM `addr_dim=64` is a critical projection bottleneck for
   HRR/embedding keys; `d_hrr=2048` alone is not enough for projected SDM CI.
+- D-2835: full-vector HRR+AMM capacity saturates by `D=256` in the tested
+  conditions; `D=128` is the robust minimum and `D=64` is exact/partial viable.
+- D-2836: controlled multi-turn conversational memory achieved 100% EM across
+  immediate, distant, cross-session, revision, and retention probes.
+- D-2837: SDM+AMM `beta0` reaches zero forgetting at 10+ domains for one-hot
+  keys, so projected-address experiments must separate key families.
 
 See [docs/research-roadmap.md](docs/research-roadmap.md) for the detailed lab
 mapping, external VSA/HDC literature context, risk register, and next research
@@ -67,7 +75,7 @@ Verified locally:
 
 ```text
 python -m pytest
-14 passed
+15 passed
 ```
 
 Representative outcomes:
@@ -83,6 +91,8 @@ Representative outcomes:
 Important boundary: the repo's core AMM is currently full-vector
 nearest-neighbor memory. The lab's D-2831/D-2832 results show that projected SDM
 addressing needs a dedicated `addr_dim` sweep before making stronger CI claims.
+D-2837's positive one-hot SDM result should be tracked separately from HRR and
+continuous embedding key families.
 
 ## Quick Start
 
@@ -108,6 +118,7 @@ python experiments/exp_collision_stress.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_revision_chain3.py
+python experiments/exp_projected_address_sweep.py
 ```
 
 Run real-text ingestion:
@@ -161,4 +172,5 @@ docs/             research roadmap and design notes
 - The conversation demo is scripted, not an autonomous chat loop.
 - Syntax learning and general reasoning are not implemented.
 - Word learning currently uses controlled context hints.
-- Full SDM projected-address CI remains an open engineering target.
+- Full SDM projected-address CI remains an open engineering target for HRR and
+  continuous embedding keys; one-hot key results should be tracked separately.
