@@ -3,6 +3,10 @@ from __future__ import annotations
 from experiments.exp_d2824_ci_storage import run as run_ci
 from experiments.exp_d2825_composition import run as run_composition
 from experiments.exp_collision_stress import run as run_collision_stress
+from experiments.exp_addr_dim_sweep import run as run_addr_dim_sweep
+from experiments.exp_projected_sdm_capacity import run as run_projected_capacity
+from experiments.exp_projected_sdm_stress import run as run_projected_stress
+from experiments.exp_projected_sdm_readout import run as run_projected_readout
 
 
 def test_ci_storage_experiment_smoke() -> None:
@@ -23,3 +27,65 @@ def test_collision_stress_smoke() -> None:
     assert rows[0]["facts"] == 100.0
     assert 0.0 <= rows[0]["full_vector_noisy_top1"] <= 1.0
     assert 0.0 <= rows[0]["address_noisy_top1"] <= 1.0
+
+
+def test_addr_dim_sweep_smoke() -> None:
+    rows = run_addr_dim_sweep(addr_dims=(64, 128), seeds=(0,), hrr_dim=256, domains=2, facts_per_domain=8)
+
+    assert len(rows) == 2
+    assert {row["addr_dim"] for row in rows} == {64.0, 128.0}
+    assert all(0.0 <= row["forgetting"] <= 1.0 for row in rows)
+    assert all(row["write_mode"] == "overwrite" for row in rows)
+
+
+def test_projected_sdm_capacity_smoke() -> None:
+    rows = run_projected_capacity(
+        hrr_dim=256,
+        addr_dim=64,
+        seeds=(0,),
+        domains=2,
+        facts_per_domain=8,
+        n_locations_values=(64,),
+        k_values=(1, 4),
+        write_modes=("overwrite", "sum"),
+    )
+
+    assert len(rows) == 4
+    assert {row["write_mode"] for row in rows} == {"overwrite", "sum"}
+    assert all(0.0 <= float(row["mean_forgetting"]) <= 1.0 for row in rows)
+
+
+def test_projected_sdm_stress_smoke() -> None:
+    rows = run_projected_stress(
+        hrr_dim=256,
+        addr_dim=64,
+        seeds=(0,),
+        domains=2,
+        facts_per_domain=8,
+        n_locations=64,
+        k=4,
+        cleanup_modes=("global", "address"),
+        noise_values=(0.0, 0.5),
+    )
+
+    assert len(rows) == 4
+    assert {row["cleanup"] for row in rows} == {"global", "address"}
+    assert all(0.0 <= float(row["forgetting"]) <= 1.0 for row in rows)
+
+
+def test_projected_sdm_readout_smoke() -> None:
+    rows = run_projected_readout(
+        hrr_dim=256,
+        addr_dim=64,
+        seeds=(0,),
+        domains=2,
+        facts_per_domain=8,
+        n_locations=64,
+        write_k=4,
+        read_k_values=(4, 8),
+        noise_values=(0.25,),
+    )
+
+    assert len(rows) == 2
+    assert {row["read_k"] for row in rows} == {4.0, 8.0}
+    assert all(0.0 <= float(row["top1"]) <= 1.0 for row in rows)
