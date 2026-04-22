@@ -10,6 +10,7 @@ python experiments/exp_d2824_ci_storage.py
 python experiments/exp_d2825_composition.py
 python experiments/exp_d2827_dimension_sweep.py
 python experiments/exp_collision_stress.py
+python experiments/exp_addr_dim_sweep.py
 python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_revision_chain3.py
@@ -29,6 +30,10 @@ python real_text_demo.py
   - `d=512`: about 0.87-0.92 top-1
   - `d=1024`: about 0.945-0.975 top-1
   - `d=2048`: about 0.98-0.99 top-1
+- Projected SDM address sweep added:
+  - With overwrite-style writes, `n_locations=512`, `k=8`, and 5 domains x 40 facts, all tested `addr_dim` values show high forgetting.
+  - Mean forgetting ranges from about 0.83 to 0.91.
+  - This is a negative result and reinforces that full-vector AMM success does not imply projected SDM CI success.
 - Gemini 2.5 Flash Lite real-text ingestion works on the Ada Lovelace fixture:
   - Pass 1 extracted 4 facts.
   - Pass 2 added 3 facts.
