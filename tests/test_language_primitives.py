@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from experiments.exp_d2829_next_token import run as run_next_token
 from experiments.exp_d2830_word_learning import run as run_word_learning
-from language import ContextExample, NGramLanguageMemory, WordLearningMemory
+from experiments.exp_projected_sdm_ngram import run as run_projected_ngram
+from language import ContextExample, NGramLanguageMemory, ProjectedNGramLanguageMemory, WordLearningMemory
 
 
 def test_ngram_memory_predicts_seen_context() -> None:
@@ -47,3 +48,19 @@ def test_d2830_experiment_smoke() -> None:
     assert row["dax_cluster_correct"] == 1.0
     assert row["blick_cluster_correct"] == 1.0
     assert row["retention"] == 1.0
+
+
+def test_projected_ngram_memory_predicts_seen_context() -> None:
+    memory = ProjectedNGramLanguageMemory(dim=512, seed=0, addr_dim=128, n_locations=256, write_k=4, read_k=16)
+    memory.learn_sequence(["the", "doctor", "treats", "the", "patient"], cycles=2)
+
+    assert memory.predict("the", "doctor").token == "treats"
+
+
+def test_projected_sdm_ngram_experiment_smoke() -> None:
+    row = run_projected_ngram(dim=512, addr_dim=128, seeds=(0,), cycles=2, n_locations=512, write_k=4, read_k=32)[0]
+
+    assert row["seen_em"] >= 0.8
+    assert 0.0 <= row["familiar_em"] <= 1.0
+    assert 0.0 <= row["novel_hit_rate"] <= 1.0
+    assert 0.0 <= row["calibrated_novel_hit_rate"] <= 1.0
