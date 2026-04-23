@@ -228,6 +228,7 @@ class TextIngestionPipeline:
                 "learned_alias_labels": len(learned_aliases),
                 "learned_alias_examples": learned_aliases,
                 "alias_candidates": self.relation_registry.candidate_aliases(),
+                "alias_proposals": self.relation_registry.proposal_log(),
                 "typed_fallback_hits": typed_fallback_hits,
                 "chunk_count": len(self.chunk_memory.chunks) if self.chunk_memory is not None else 0,
             },
@@ -296,7 +297,7 @@ class TextIngestionPipeline:
             chunk_record = self.chunk_memory.write_fact(key, domain, svo, vector, payload)
             payload["chunk_id"] = chunk_record.chunk_id
         self.memory.write(key, vector, payload)
-        self.factgraph.write(svo.subject, svo.verb, svo.object)
+        self.factgraph.write(svo.subject, svo.verb, svo.object, provenance=payload["provenance"])
         return True
 
     def _build_payload(

@@ -1,11 +1,11 @@
 # Longitudinal Conversation Benchmark
 
-Generated on 2026-04-23 20:58 UTC.
+Generated on 2026-04-23 21:18 UTC.
 
 ## Configuration
 
 - `preset=roadmap_serious`
-- `cases=19`
+- `cases=23`
 - `chat_dim=2048`
 - `episodic_dim=2048`
 - `episodic_seeds={42,123,7}`
@@ -14,23 +14,23 @@ Generated on 2026-04-23 20:58 UTC.
 
 ## Overall Score
 
-- Mean score: `0.737`
-- Pass rate: `0.684`
-- Delta vs previous: `+0.000`
+- Mean score: `0.768`
+- Pass rate: `0.696`
+- Delta vs previous: `+0.031`
 
 ## Track Rollup
 
 | track | mean score | pass rate | delta |
 | --- | ---: | ---: | ---: |
 | frontier | 0.167 | 0.000 | +0.000 |
-| implemented | 1.000 | 1.000 | +0.000 |
+| implemented | 0.980 | 0.941 | -0.020 |
 
 ## Surface Rollup
 
 | surface | mean score | pass rate | delta |
 | --- | ---: | ---: | ---: |
 | episodic_substrate | 1.000 | 1.000 | +0.000 |
-| structured_ingest | 1.000 | 1.000 | +0.000 |
+| structured_ingest | 0.889 | 0.667 | -0.111 |
 | web_chat | 0.667 | 0.600 | +0.000 |
 
 ## Category Scorecard
@@ -38,7 +38,7 @@ Generated on 2026-04-23 20:58 UTC.
 | category | mean score | pass rate | delta |
 | --- | ---: | ---: | ---: |
 | canonical_meanings | 1.000 | 1.000 | +0.000 |
-| coding | 0.000 | 0.000 | +0.000 |
+| coding | 0.333 | 0.000 | +0.333 |
 | explanation_understanding | 0.500 | 0.000 | +0.000 |
 | general_context | 1.000 | 1.000 | +0.000 |
 | language_patterning | 1.000 | 1.000 | +0.000 |

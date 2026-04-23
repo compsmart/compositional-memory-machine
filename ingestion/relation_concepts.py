@@ -77,6 +77,7 @@ class RelationConceptMatch:
     canonical: str
     score: float
     margin: float
+    support_count: int = 0
 
 
 class RelationConceptMemory:
@@ -94,6 +95,8 @@ class RelationConceptMemory:
         self.role_subject_hint = self.store.get_unitary("__REL_SUBJECT_HINT__")
         self.role_object_hint = self.store.get_unitary("__REL_OBJECT_HINT__")
         self.role_cue = self.store.get_unitary("__REL_CUE__")
+        self.role_relation_surface = self.store.get_unitary("__REL_SURFACE__")
+        self.role_relation_bigram = self.store.get_unitary("__REL_BIGRAM__")
 
     def observe_fact(
         self,
@@ -105,10 +108,12 @@ class RelationConceptMemory:
     ) -> None:
         canonical_slug = self._slug(canonical)
         vector = self._encode_fact(fact, domain=domain, slot_cleaner=slot_cleaner)
+        existing = self.memory.get(f"relation:{canonical_slug}")
+        support_count = 1 if existing is None else existing.writes + 1
         self.memory.write(
             f"relation:{canonical_slug}",
             vector,
-            {"canonical": canonical_slug},
+            {"canonical": canonical_slug, "support_count": support_count},
         )
 
     def classify_fact(
@@ -128,6 +133,7 @@ class RelationConceptMemory:
             canonical=str(best_record.payload["canonical"]),
             score=float(best_score),
             margin=float(best_score - second_score),
+            support_count=int(best_record.payload.get("support_count", best_record.writes)),
         )
 
     def _encode_fact(
@@ -150,8 +156,12 @@ class RelationConceptMemory:
             bind(self.role_subject_hint, self.store.get(f"subject_hint:{self._entity_hint(subject)}")),
             bind(self.role_object_hint, self.store.get(f"object_hint:{self._entity_hint(object_)}")),
         ]
+        for token in self._relation_surface_tokens(relation):
+            parts.append(bind(self.role_relation_surface, self.store.get(f"relation_surface:{token}")))
         for cue in self._cue_tokens(excerpt, relation=relation, subject=subject, object_=object_):
             parts.append(bind(self.role_cue, self.store.get(f"cue:{cue}")))
+        for bigram in self._bigrams(excerpt):
+            parts.append(bind(self.role_relation_bigram, self.store.get(f"cue_bigram:{bigram}")))
         return normalize(np.sum(parts, axis=0))
 
     def _cue_tokens(self, excerpt: str, *, relation: str, subject: str, object_: str) -> list[str]:
@@ -170,6 +180,19 @@ class RelationConceptMemory:
         if not cues:
             cues.append("no_excerpt_cue")
         return cues
+
+    def _relation_surface_tokens(self, relation: str) -> list[str]:
+        tokens = [token for token in self._tokens(relation) if token not in _STOPWORDS]
+        return tokens[: self.cue_limit]
+
+    def _bigrams(self, excerpt: str) -> list[str]:
+        tokens = [token for token in self._tokens(excerpt) if token not in _STOPWORDS]
+        bigrams: list[str] = []
+        for index in range(max(0, len(tokens) - 1)):
+            bigrams.append(f"{tokens[index]}_{tokens[index + 1]}")
+            if len(bigrams) >= self.cue_limit:
+                break
+        return bigrams
 
     def _entity_kind(self, value: str) -> str:
         tokens = self._tokens(value)

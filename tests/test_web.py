@@ -133,6 +133,7 @@ def test_web_status_and_facts_routes() -> None:
         status = _get(f"{base_url}/api/status")
         facts = _get(f"{base_url}/api/facts")
         chat = _get(f"{base_url}/api/chat/history")
+        snapshot = _get(f"{base_url}/api/snapshot")
         home = _get_text(f"{base_url}/")
         script = _get_text(f"{base_url}/static/app.js")
 
@@ -147,6 +148,8 @@ def test_web_status_and_facts_routes() -> None:
     assert chat["history"][0]["route"] == "ready"
     assert len(facts["graph"]["nodes"]) >= 10
     assert len(facts["graph"]["edges"]) == 20
+    assert snapshot["status"]["stored_facts"] == status["stored_facts"]
+    assert snapshot["facts"]["total"] == facts["total"]
     assert "HRR + AMM Language Memory" in home
     assert 'id="chatForm"' in home
     assert "MemoryGraph3D" in script
@@ -394,3 +397,33 @@ def test_web_chat_route_handles_inverse_and_natural_relational_questions() -> No
     assert "Jon maintains Graphite Engine" in reverse_chain_reply["reply"]["text"]
     assert "Iris supports Jon" in reverse_chain_reply["reply"]["text"]
     assert "So the answer is Iris" in reverse_chain_reply["reply"]["text"]
+
+
+def test_web_can_load_headless_scenario_and_export_snapshot() -> None:
+    state = HHRWebState()
+    with running_server(state) as base_url:
+        snapshot = _post(
+            f"{base_url}/api/scenario/load",
+            {
+                "reset": True,
+                "facts": [
+                    {
+                        "subject": "Ada",
+                        "relation": "founded",
+                        "object": "Meridian Labs",
+                        "domain": "scenario",
+                        "source": "fixture",
+                        "source_id": "scenario-1",
+                        "excerpt": "Ada founded Meridian Labs.",
+                    }
+                ],
+                "messages": [{"message": "Who founded Meridian Labs?"}],
+            },
+        )
+
+    assert snapshot["facts"]["total"] >= 21
+    ada_fact = next(
+        fact for fact in snapshot["facts"]["facts"] if fact["subject"] == "Ada" and fact["relation"] == "founded"
+    )
+    assert ada_fact["provenance"]["source_id"] == "scenario-1"
+    assert snapshot["chat"]["history"][-1]["route"] == "fact_query"

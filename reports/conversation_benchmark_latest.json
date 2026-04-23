@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-23 20:58 UTC",
+  "generated_at": "2026-04-23 21:18 UTC",
   "config": {
     "preset": "roadmap_serious",
     "chat_dim": 2048,
@@ -31,6 +31,10 @@
       "temporal_state_tracking_substrate",
       "episodic_dialogue_memory_substrate",
       "episodic_dialogue_metadata_substrate",
+      "truth_provenance_substrate",
+      "large_document_memory_substrate",
+      "codebase_dependency_memory_substrate",
+      "structural_generalization_substrate",
       "trick_unknown_fact_refusal",
       "explanation_from_memory",
       "logic_transitive_order",
@@ -123,6 +127,31 @@
             "matched_alias": true
           }
         }
+      },
+      "final_reply": {}
+    },
+    {
+      "summary_type": "case",
+      "case_id": "codebase_dependency_memory_substrate",
+      "category": "coding",
+      "track": "implemented",
+      "surface": "structured_ingest",
+      "description": "Parse Python code into dependency-style graph facts.",
+      "expected_behavior": "Answer imports, calls, and symbol ownership queries from codebase ingestion.",
+      "scorer_type": "programmatic_validator",
+      "turn_count": 0,
+      "prompt_sequence": [],
+      "weight": 1.0,
+      "weighted_score": 0.6666666666666666,
+      "score": 0.6666666666666666,
+      "pass_threshold": 1.0,
+      "passed": false,
+      "notes": "Python codebase structure can be ingested and queried as dependency-style facts.",
+      "observed": {
+        "imports_em": 1.0,
+        "calls_em": 1.0,
+        "defined_in_em": 0.0,
+        "fact_count": 11.0
       },
       "final_reply": {}
     },
@@ -604,6 +633,31 @@
     },
     {
       "summary_type": "case",
+      "case_id": "structural_generalization_substrate",
+      "category": "language_patterning",
+      "track": "implemented",
+      "surface": "episodic_substrate",
+      "description": "Measure structural generalization beyond a single prefix benchmark.",
+      "expected_behavior": "Score well on prefix, hierarchical, and chat-surface pattern tasks together.",
+      "scorer_type": "programmatic_validator",
+      "turn_count": 0,
+      "prompt_sequence": [],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Structural suite combines prefix thresholds, hierarchical clauses, and surface pattern completion.",
+      "observed": {
+        "prefix_threshold_em": 1.0,
+        "hierarchical_depth3_acc": 1.0,
+        "pattern_surface_em": 1.0,
+        "breadth_score": 1.0
+      },
+      "final_reply": {}
+    },
+    {
+      "summary_type": "case",
       "case_id": "logic_transitive_order",
       "category": "logic",
       "track": "frontier",
@@ -958,6 +1012,34 @@
     },
     {
       "summary_type": "case",
+      "case_id": "large_document_memory_substrate",
+      "category": "memory",
+      "track": "implemented",
+      "surface": "structured_ingest",
+      "description": "Use a larger extracted corpus with contradiction and refusal checks.",
+      "expected_behavior": "Preserve recall, multihop access, revision history, and safe refusal on incomplete claims.",
+      "scorer_type": "programmatic_validator",
+      "turn_count": 0,
+      "prompt_sequence": [],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Large-document extracted corpus benchmark with contradiction and refusal checks.",
+      "observed": {
+        "recall_em": 1.0,
+        "chain_em": 1.0,
+        "current_truth_em": 1.0,
+        "history_em": 1.0,
+        "competing_evidence_em": 1.0,
+        "refusal_em": 1.0,
+        "chunk_count": 1.0
+      },
+      "final_reply": {}
+    },
+    {
+      "summary_type": "case",
       "case_id": "inverse_relation_lookup",
       "category": "multi_hop",
       "track": "implemented",
@@ -1236,6 +1318,32 @@
     },
     {
       "summary_type": "case",
+      "case_id": "truth_provenance_substrate",
+      "category": "temporal",
+      "track": "implemented",
+      "surface": "episodic_substrate",
+      "description": "Track current truth, conflicting evidence, and provenance together.",
+      "expected_behavior": "Return the latest truth while preserving superseded claims and competing evidence.",
+      "scorer_type": "programmatic_validator",
+      "turn_count": 0,
+      "prompt_sequence": [],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Current truth, conflict evidence, and provenance are preserved across revisions.",
+      "observed": {
+        "current_truth_em": 1.0,
+        "history_em": 1.0,
+        "competing_evidence_em": 1.0,
+        "provenance_em": 1.0,
+        "unresolved_refusal_em": 1.0
+      },
+      "final_reply": {}
+    },
+    {
+      "summary_type": "case",
       "case_id": "trick_unknown_fact_refusal",
       "category": "trick_questions",
       "track": "implemented",
@@ -1282,8 +1390,8 @@
     {
       "summary_type": "category",
       "label": "coding",
-      "case_count": 1.0,
-      "mean_score": 0.0,
+      "case_count": 2.0,
+      "mean_score": 0.3333333333333333,
       "pass_rate": 0.0,
       "summary_key": "category:coding",
       "category": "coding"
@@ -1309,7 +1417,7 @@
     {
       "summary_type": "category",
       "label": "language_patterning",
-      "case_count": 2.0,
+      "case_count": 3.0,
       "mean_score": 1.0,
       "pass_rate": 1.0,
       "summary_key": "category:language_patterning",
@@ -1327,7 +1435,7 @@
     {
       "summary_type": "category",
       "label": "memory",
-      "case_count": 3.0,
+      "case_count": 4.0,
       "mean_score": 1.0,
       "pass_rate": 1.0,
       "summary_key": "category:memory",
@@ -1372,7 +1480,7 @@
     {
       "summary_type": "category",
       "label": "temporal",
-      "case_count": 1.0,
+      "case_count": 2.0,
       "mean_score": 1.0,
       "pass_rate": 1.0,
       "summary_key": "category:temporal",
@@ -1390,15 +1498,15 @@
     {
       "summary_type": "overall",
       "label": "overall",
-      "case_count": 19.0,
-      "mean_score": 0.7368421052631579,
-      "pass_rate": 0.6842105263157895,
+      "case_count": 23.0,
+      "mean_score": 0.7681159420289854,
+      "pass_rate": 0.6956521739130435,
       "summary_key": "overall:overall"
     },
     {
       "summary_type": "surface",
       "label": "episodic_substrate",
-      "case_count": 3.0,
+      "case_count": 5.0,
       "mean_score": 1.0,
       "pass_rate": 1.0,
       "summary_key": "surface:episodic_substrate",
@@ -1407,9 +1515,9 @@
     {
       "summary_type": "surface",
       "label": "structured_ingest",
-      "case_count": 1.0,
-      "mean_score": 1.0,
-      "pass_rate": 1.0,
+      "case_count": 3.0,
+      "mean_score": 0.8888888888888888,
+      "pass_rate": 0.6666666666666666,
       "summary_key": "surface:structured_ingest",
       "surface": "structured_ingest"
     },
@@ -1434,9 +1542,9 @@
     {
       "summary_type": "track",
       "label": "implemented",
-      "case_count": 13.0,
-      "mean_score": 1.0,
-      "pass_rate": 1.0,
+      "case_count": 17.0,
+      "mean_score": 0.980392156862745,
+      "pass_rate": 0.9411764705882353,
       "summary_key": "track:implemented",
       "track": "implemented"
     }

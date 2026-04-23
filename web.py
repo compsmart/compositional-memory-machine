@@ -108,6 +108,19 @@ class HHRWebState:
             "chunks": self.chunk_memory.chunk_summaries(),
         }
 
+    def snapshot(self) -> dict[str, Any]:
+        return {
+            "status": self.status(),
+            "facts": self.facts(),
+            "chat": self.chat_history_payload(),
+            "compositional": self.demo_compositional(),
+            "relation_registry": {
+                "learned_aliases": self.pipeline.relation_registry.learned_aliases(),
+                "alias_candidates": self.pipeline.relation_registry.candidate_aliases(),
+                "alias_proposals": self.pipeline.relation_registry.proposal_log(),
+            },
+        }
+
     def chat_history_payload(self) -> dict[str, Any]:
         return {"history": self.chat_history}
 
@@ -181,6 +194,40 @@ class HHRWebState:
             "status": self.status(),
             "facts": self.facts(),
         }
+
+    def load_scenario(self, payload: dict[str, Any]) -> dict[str, Any]:
+        reset = bool(payload.get("reset", True))
+        if reset:
+            self.reset_demo()
+
+        for item in payload.get("texts", []):
+            if not isinstance(item, dict):
+                raise ValueError("scenario texts must be objects")
+            self.ingest_text(item)
+
+        for item in payload.get("facts", []):
+            if not isinstance(item, dict):
+                raise ValueError("scenario facts must be objects")
+            fact = ExtractedFact(
+                subject=str(item.get("subject", "")),
+                relation=str(item.get("relation", "")),
+                object=str(item.get("object", "")),
+                confidence=float(item.get("confidence", 1.0)),
+                kind=str(item.get("kind", "explicit")),
+                source=str(item.get("source", "scenario")),
+                source_id=str(item.get("source_id", "")),
+                source_chunk_id=str(item.get("source_chunk_id", "")),
+                excerpt=str(item.get("excerpt", "")),
+            )
+            domain = str(item.get("domain", "scenario")).strip() or "scenario"
+            self.pipeline.write_structured_fact(fact, source=fact.source or "scenario", domain=domain)
+
+        for item in payload.get("messages", []):
+            if not isinstance(item, dict):
+                raise ValueError("scenario messages must be objects")
+            self.chat(item)
+
+        return self.snapshot()
 
     def chat(self, payload: dict[str, Any]) -> dict[str, Any]:
         message = str(payload.get("message", "")).strip()
@@ -962,6 +1009,8 @@ class HHRWebHandler(BaseHTTPRequestHandler):
                 self._send_json(self.state.facts())
             elif parsed.path == "/api/chat/history":
                 self._send_json(self.state.chat_history_payload())
+            elif parsed.path == "/api/snapshot":
+                self._send_json(self.state.snapshot())
             elif parsed.path == "/api/demo/compositional":
                 self._send_json(self.state.demo_compositional())
             else:
@@ -980,6 +1029,7 @@ class HHRWebHandler(BaseHTTPRequestHandler):
                 "/api/query/svo": self.state.query_svo,
                 "/api/query/chain": self.state.query_chain,
                 "/api/ingest/text": self.state.ingest_text,
+                "/api/scenario/load": self.state.load_scenario,
                 "/api/demo/reset": self.state.demo_reset,
             }
             handler = routes.get(parsed.path)

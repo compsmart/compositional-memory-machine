@@ -64,6 +64,17 @@ template answer or optional generator
 - An experimental typed relation fallback, gated behind
   `HHR_ENABLE_TYPED_RELATION_FALLBACK=1`, that can map disjoint unseen relation
   surfaces onto known canonical relations in the focused repo-local prototype.
+- Alias proposal logs that track pending vs accepted relation candidates from
+  pair overlap and typed fallback evidence.
+- Current-truth vs historical-evidence queries with explicit provenance and
+  competing-claim tracking.
+- A larger extracted-corpus benchmark with contradiction and refusal checks.
+- Controller-driven episodic episode ingestion in addition to the scripted
+  D-2836-style dialogue benchmark path.
+- Python codebase ingestion into graph facts for dependency-style questions.
+- A structural generalization suite that now combines prefix, hierarchical, and
+  chat-surface pattern tasks.
+- MemoryWorkbench snapshot export, scenario loading, and a headless CLI runner.
 
 ## Research Grounding
 
@@ -129,7 +140,7 @@ Verified locally:
 
 ```text
 python -m pytest
-53 passed
+59 passed
 ```
 
 Representative outcomes:
@@ -177,8 +188,8 @@ Representative outcomes:
   `correction_em=1.0` across 3 seeds while preserving the original D-2836
   recall / revision / retention metrics at 1.0.
 - Longitudinal conversation benchmark (`roadmap_serious` preset): implemented
-  track currently scores `1.0`, frontier challenge track scores `0.167`, and
-  the combined scorecard lands at `0.737` mean score / `0.684` pass rate; see
+  track currently scores `0.980`, frontier challenge track scores `0.167`, and
+  the combined scorecard lands at `0.768` mean score / `0.696` pass rate; see
   [reports/conversation_benchmark_latest.md](reports/conversation_benchmark_latest.md).
 - Relation concept memory research: in the synthetic disjoint-entity setting,
   exact pair overlap fell to `0.0` accuracy / `1.0` unresolved rate, while the
@@ -186,9 +197,18 @@ Representative outcomes:
   `1,2,4,8`; see
   [research/results/relation_concept_memory.md](research/results/relation_concept_memory.md).
 - Curated real-corpus validation is more mixed: the current typed fallback
-  improved unseen canonical recovery from `0.0` to `0.25` across four positive
-  corpus-style cases while keeping two negative safety cases clean; see
+  improved unseen canonical recovery from `0.0` to `0.25` across eight positive
+  corpus-style cases while keeping four negative safety cases clean; see
   [research/results/relation_fallback_real_corpus.md](research/results/relation_fallback_real_corpus.md).
+- Truth-history benchmark: current truth, historical evidence, competing claims,
+  and unresolved-refusal checks all reach `1.0` in the repo smoke test.
+- Large-document benchmark: recall, chain retrieval, contradiction tracking, and
+  refusal all reach `1.0` in the repo smoke test while preserving chunked
+  provenance.
+- Codebase memory benchmark: Python imports, calls, and symbol ownership queries
+  all reach `1.0` in the repo smoke test.
+- Structural generalization suite: prefix threshold, hierarchical syntax, and
+  chat-surface pattern completion now report together as a single breadth score.
 - The demo now includes a compositional value answer generated from a retrieved
   HRR value vector: `entity_demo has property silver signal.`
 - The web UI now mirrors the `nexus-16` dashboard style while exposing HHR
@@ -270,6 +290,10 @@ python experiments/exp_d2854_generation_boundary.py
 python experiments/exp_d2855_hierarchical_syntax.py
 python experiments/exp_d2856_failure_boundary.py
 python experiments/exp_d2857_language_revision.py
+python experiments/exp_truth_provenance_conflicts.py
+python experiments/exp_large_document_memory.py
+python experiments/exp_codebase_memory.py
+python experiments/exp_structural_generalization.py
 ```
 
 Run the full projected-address roadmap sweep and write an aggregate report:
@@ -292,6 +316,17 @@ python ingest_text.py --text "Ada Lovelace worked with Charles Babbage." --domai
 
 Gemini ingestion requires `GOOGLE_API_KEY` or `GEMINI_API_KEY`.
 
+Run the headless MemoryWorkbench scenario CLI:
+
+```powershell
+python cli/workbench_cli.py --scenario path\\to\\scenario.json --output snapshot.json
+```
+
+Use the browser workbench snapshot and scenario APIs:
+
+- `GET /api/snapshot`
+- `POST /api/scenario/load`
+
 Enable the experimental typed relation fallback:
 
 ```powershell
@@ -305,13 +340,13 @@ unresolved surfaces.
 Run the relation concept memory feasibility study:
 
 ```powershell
-python research/exp_relation_concept_memory.py --output summary --json-file research/results/relation_concept_memory.json --report-file research/results/relation_concept_memory.md
+python experiments/exp_relation_concept_memory.py --output summary --json-file research/results/relation_concept_memory.json --report-file research/results/relation_concept_memory.md
 ```
 
 Run the curated real-corpus fallback validation:
 
 ```powershell
-python research/exp_relation_fallback_real_corpus.py --output summary --json-file research/results/relation_fallback_real_corpus.json --report-file research/results/relation_fallback_real_corpus.md
+python experiments/exp_relation_fallback_real_corpus.py --output summary --json-file research/results/relation_fallback_real_corpus.json --report-file research/results/relation_fallback_real_corpus.md
 ```
 
 ## Example Output

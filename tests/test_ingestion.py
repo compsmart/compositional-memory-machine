@@ -64,6 +64,7 @@ def test_text_ingestion_writes_extracted_facts_to_memory_and_graph() -> None:
     assert result.relation_stats["alias_hits"] == 1
     assert result.relation_stats["unresolved_relation_labels"] == 0
     assert result.relation_stats["unresolved_relation_examples"] == []
+    assert "alias_proposals" in result.relation_stats
     assert probe["found"] is True
     assert probe["domain"] == "history"
     assert probe["verb"] == "worked_with"
@@ -127,6 +128,7 @@ def test_write_structured_fact_tracks_unresolved_relations_separately() -> None:
 
     assert result.relation_stats["unresolved_relation_labels"] == 1
     assert result.relation_stats["unresolved_relation_examples"] == ["invented"]
+    assert result.relation_stats["alias_proposals"] == []
 
 
 def test_relation_registry_learns_unknown_alias_from_repeated_pair_overlap() -> None:
@@ -176,6 +178,7 @@ def test_relation_registry_learns_unknown_alias_from_repeated_pair_overlap() -> 
     assert result.relation_stats["learned_alias_examples"] == ["teamed_up_with"]
     assert result.relation_stats["unresolved_relation_labels"] == 0
     assert result.relation_stats["unresolved_relation_examples"] == []
+    assert result.relation_stats["alias_proposals"][0]["status"] == "accepted"
     assert pipeline.relation_registry.normalize("teamed up with").canonical == "worked_with"
 
     probe = query.ask_svo("Grace Hopper", "teamed up with", "Howard Aiken")
@@ -221,8 +224,18 @@ def test_relation_registry_keeps_single_overlap_as_candidate_before_promotion() 
     assert result.relation_stats["unresolved_relation_labels"] == 1
     assert result.relation_stats["unresolved_relation_examples"] == ["teamed_up_with"]
     assert result.relation_stats["alias_candidates"] == [
-        {"alias": "teamed_up_with", "canonical": "worked_with", "support_pairs": 1}
+        {
+            "alias": "teamed_up_with",
+            "canonical": "worked_with",
+            "status": "pending",
+            "support_pairs": 1,
+            "typed_support": 0,
+            "mean_score": 0.0,
+            "mean_margin": 0.0,
+            "source": "pair_overlap",
+        }
     ]
+    assert result.relation_stats["alias_proposals"][0]["status"] == "pending"
     assert pipeline.relation_registry.normalize("teamed up with").canonical == "teamed_up_with"
 
 
@@ -331,6 +344,11 @@ def test_typed_relation_fallback_maps_disjoint_unknown_relation_when_enabled() -
 
     assert result.relation_stats["typed_fallback_hits"] == 1
     assert result.relation_stats["unresolved_relation_examples"] == []
+    typed_rows = [
+        row for row in result.relation_stats["alias_proposals"] if row["alias"] == "teamed_up_with"
+    ]
+    assert typed_rows
+    assert typed_rows[0]["source"] == "typed_fallback"
     normalized = pipeline.relation_registry.normalize("teamed up with")
     assert normalized.canonical == "worked_with"
     assert normalized.resolution_source == "typed_fallback"

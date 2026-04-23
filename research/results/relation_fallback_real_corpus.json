@@ -12,6 +12,7 @@
       "unresolved_relation_examples": [
         "teamed_up_with"
       ],
+      "alias_proposals": [],
       "canonical_query_found": true,
       "canonical_query_confidence": 0.6684324782767936,
       "exact_canonical_recovery": false,
@@ -27,7 +28,18 @@
         "domain": "research",
         "chunk_id": null,
         "source": "amm",
-        "novel_composition": true
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "teamed up with",
+          "normalized_relation": "teamed_up_with",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "Barbara Liskov teamed up with John McCarthy on a research lab prototype project."
+        }
       }
     },
     {
@@ -42,6 +54,7 @@
       "unresolved_relation_examples": [
         "circulated_a_memo_on"
       ],
+      "alias_proposals": [],
       "canonical_query_found": true,
       "canonical_query_confidence": 0.6684324782767936,
       "exact_canonical_recovery": false,
@@ -57,7 +70,18 @@
         "domain": "archives",
         "chunk_id": null,
         "source": "amm",
-        "novel_composition": true
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "circulated a memo on",
+          "normalized_relation": "circulated_a_memo_on",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "Elena Torres circulated a memo on the decoder design after the archival review meeting."
+        }
       }
     },
     {
@@ -72,6 +96,7 @@
       "unresolved_relation_examples": [
         "pitched_as"
       ],
+      "alias_proposals": [],
       "canonical_query_found": true,
       "canonical_query_confidence": 0.6684324782767936,
       "exact_canonical_recovery": false,
@@ -87,7 +112,18 @@
         "domain": "history",
         "chunk_id": null,
         "source": "amm",
-        "novel_composition": true
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "pitched as",
+          "normalized_relation": "pitched_as",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "The Analytical Loom was pitched as a general-purpose research engine during the symposium."
+        }
       }
     },
     {
@@ -102,6 +138,7 @@
       "unresolved_relation_examples": [
         "outlined"
       ],
+      "alias_proposals": [],
       "canonical_query_found": true,
       "canonical_query_confidence": 0.6684324782767936,
       "exact_canonical_recovery": false,
@@ -117,7 +154,186 @@
         "domain": "technical",
         "chunk_id": null,
         "source": "amm",
-        "novel_composition": true
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "outlined",
+          "normalized_relation": "outlined",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "Marin Chen outlined a layered protocol in the workshop brief for the systems team."
+        }
+      }
+    },
+    {
+      "case_id": "worked_with_partnered_with",
+      "category": "positive",
+      "description": "Map partnered-with language onto worked_with.",
+      "fallback_enabled": false,
+      "expected_canonical": "worked_with",
+      "normalized_relation": "partnered_with",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "partnered_with"
+      ],
+      "alias_proposals": [],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Paul Mockapetris",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "research:Radia Perlman:partnered_with:Paul Mockapetris",
+        "confidence": 0.6684324782767936,
+        "subject": "Radia Perlman",
+        "verb": "partnered_with",
+        "object": "Paul Mockapetris",
+        "domain": "research",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "partnered with",
+          "normalized_relation": "partnered_with",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "Radia Perlman partnered with Paul Mockapetris on a network lab prototype effort."
+        }
+      }
+    },
+    {
+      "case_id": "published_notes_about_filed_notes_on",
+      "category": "positive",
+      "description": "Map filed-notes phrasing onto published_notes_about.",
+      "fallback_enabled": false,
+      "expected_canonical": "published_notes_about",
+      "normalized_relation": "filed_notes_on",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "filed_notes_on"
+      ],
+      "alias_proposals": [],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "frequency hopping",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "archives:Hedy Lamarr:filed_notes_on:frequency hopping",
+        "confidence": 0.6684324782767936,
+        "subject": "Hedy Lamarr",
+        "verb": "filed_notes_on",
+        "object": "frequency hopping",
+        "domain": "archives",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "filed notes on",
+          "normalized_relation": "filed_notes_on",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "Hedy Lamarr filed notes on frequency hopping in a wartime memorandum."
+        }
+      }
+    },
+    {
+      "case_id": "proposed_as_presented_as",
+      "category": "positive",
+      "description": "Map presented-as language onto proposed_as.",
+      "fallback_enabled": false,
+      "expected_canonical": "proposed_as",
+      "normalized_relation": "presented_as",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "presented_as"
+      ],
+      "alias_proposals": [],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "a symbolic planning engine",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "history:Symbolic Mill:presented_as:a symbolic planning engine",
+        "confidence": 0.6684324782767936,
+        "subject": "Symbolic Mill",
+        "verb": "presented_as",
+        "object": "a symbolic planning engine",
+        "domain": "history",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "presented as",
+          "normalized_relation": "presented_as",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "The Symbolic Mill was presented as a symbolic planning engine during the symposium."
+        }
+      }
+    },
+    {
+      "case_id": "described_documented",
+      "category": "positive",
+      "description": "Map documented onto described for a technical artifact.",
+      "fallback_enabled": false,
+      "expected_canonical": "described",
+      "normalized_relation": "documented",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "documented"
+      ],
+      "alias_proposals": [],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6709658630314747,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "a recovery workflow",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "technical:Ops Memo:documented:a recovery workflow",
+        "confidence": 0.6709658630314747,
+        "subject": "Ops Memo",
+        "verb": "documented",
+        "object": "a recovery workflow",
+        "domain": "technical",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "documented",
+          "normalized_relation": "documented",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "The ops memo documented a recovery workflow for the cluster during the review."
+        }
       }
     },
     {
@@ -132,6 +348,7 @@
       "unresolved_relation_examples": [
         "mentored"
       ],
+      "alias_proposals": [],
       "canonical_query_found": false,
       "canonical_query_confidence": 0.0,
       "exact_canonical_recovery": false,
@@ -151,6 +368,47 @@
       "unresolved_relation_examples": [
         "relocated_to"
       ],
+      "alias_proposals": [],
+      "canonical_query_found": false,
+      "canonical_query_confidence": 0.0,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Bristol",
+      "passed": true,
+      "canonical_query": null
+    },
+    {
+      "case_id": "negative_funded",
+      "category": "negative",
+      "description": "Leave funding relations unresolved instead of forcing them into collaboration or notes families.",
+      "fallback_enabled": false,
+      "expected_canonical": null,
+      "normalized_relation": "funded",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "funded"
+      ],
+      "alias_proposals": [],
+      "canonical_query_found": false,
+      "canonical_query_confidence": 0.0,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Project Atlas",
+      "passed": true,
+      "canonical_query": null
+    },
+    {
+      "case_id": "negative_located_in",
+      "category": "negative",
+      "description": "Leave location relations unresolved instead of forcing them into descriptive families.",
+      "fallback_enabled": false,
+      "expected_canonical": null,
+      "normalized_relation": "located_in",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "located_in"
+      ],
+      "alias_proposals": [],
       "canonical_query_found": false,
       "canonical_query_confidence": 0.0,
       "exact_canonical_recovery": false,
@@ -168,6 +426,18 @@
       "resolution_source": "typed_fallback",
       "typed_fallback_hits": 1,
       "unresolved_relation_examples": [],
+      "alias_proposals": [
+        {
+          "alias": "teamed_up_with",
+          "canonical": "worked_with",
+          "status": "accepted",
+          "support_pairs": 0,
+          "typed_support": 1,
+          "mean_score": 0.486,
+          "mean_margin": 0.486,
+          "source": "typed_fallback"
+        }
+      ],
       "canonical_query_found": true,
       "canonical_query_confidence": 1.0000000000000002,
       "exact_canonical_recovery": true,
@@ -183,7 +453,18 @@
         "domain": "research",
         "chunk_id": null,
         "source": "amm",
-        "novel_composition": false
+        "novel_composition": false,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "teamed up with",
+          "normalized_relation": "worked_with",
+          "matched_alias": true,
+          "resolution_source": "typed_fallback",
+          "relation_evidence_count": 0,
+          "excerpt": "Barbara Liskov teamed up with John McCarthy on a research lab prototype project."
+        }
       }
     },
     {
@@ -197,6 +478,18 @@
       "typed_fallback_hits": 0,
       "unresolved_relation_examples": [
         "circulated_a_memo_on"
+      ],
+      "alias_proposals": [
+        {
+          "alias": "circulated_a_memo_on",
+          "canonical": "published_notes_about",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
       ],
       "canonical_query_found": true,
       "canonical_query_confidence": 0.6684324782767936,
@@ -213,7 +506,18 @@
         "domain": "archives",
         "chunk_id": null,
         "source": "amm",
-        "novel_composition": true
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "circulated a memo on",
+          "normalized_relation": "circulated_a_memo_on",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "Elena Torres circulated a memo on the decoder design after the archival review meeting."
+        }
       }
     },
     {
@@ -227,6 +531,18 @@
       "typed_fallback_hits": 0,
       "unresolved_relation_examples": [
         "pitched_as"
+      ],
+      "alias_proposals": [
+        {
+          "alias": "pitched_as",
+          "canonical": "proposed_as",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
       ],
       "canonical_query_found": true,
       "canonical_query_confidence": 0.6684324782767936,
@@ -243,7 +559,18 @@
         "domain": "history",
         "chunk_id": null,
         "source": "amm",
-        "novel_composition": true
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "pitched as",
+          "normalized_relation": "pitched_as",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "The Analytical Loom was pitched as a general-purpose research engine during the symposium."
+        }
       }
     },
     {
@@ -257,6 +584,18 @@
       "typed_fallback_hits": 0,
       "unresolved_relation_examples": [
         "outlined"
+      ],
+      "alias_proposals": [
+        {
+          "alias": "outlined",
+          "canonical": "described",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
       ],
       "canonical_query_found": true,
       "canonical_query_confidence": 0.6684324782767936,
@@ -273,7 +612,228 @@
         "domain": "technical",
         "chunk_id": null,
         "source": "amm",
-        "novel_composition": true
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "outlined",
+          "normalized_relation": "outlined",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "Marin Chen outlined a layered protocol in the workshop brief for the systems team."
+        }
+      }
+    },
+    {
+      "case_id": "worked_with_partnered_with",
+      "category": "positive",
+      "description": "Map partnered-with language onto worked_with.",
+      "fallback_enabled": true,
+      "expected_canonical": "worked_with",
+      "normalized_relation": "partnered_with",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "partnered_with"
+      ],
+      "alias_proposals": [
+        {
+          "alias": "partnered_with",
+          "canonical": "worked_with",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Paul Mockapetris",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "research:Radia Perlman:partnered_with:Paul Mockapetris",
+        "confidence": 0.6684324782767936,
+        "subject": "Radia Perlman",
+        "verb": "partnered_with",
+        "object": "Paul Mockapetris",
+        "domain": "research",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "partnered with",
+          "normalized_relation": "partnered_with",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "Radia Perlman partnered with Paul Mockapetris on a network lab prototype effort."
+        }
+      }
+    },
+    {
+      "case_id": "published_notes_about_filed_notes_on",
+      "category": "positive",
+      "description": "Map filed-notes phrasing onto published_notes_about.",
+      "fallback_enabled": true,
+      "expected_canonical": "published_notes_about",
+      "normalized_relation": "filed_notes_on",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "filed_notes_on"
+      ],
+      "alias_proposals": [
+        {
+          "alias": "filed_notes_on",
+          "canonical": "published_notes_about",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "frequency hopping",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "archives:Hedy Lamarr:filed_notes_on:frequency hopping",
+        "confidence": 0.6684324782767936,
+        "subject": "Hedy Lamarr",
+        "verb": "filed_notes_on",
+        "object": "frequency hopping",
+        "domain": "archives",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "filed notes on",
+          "normalized_relation": "filed_notes_on",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "Hedy Lamarr filed notes on frequency hopping in a wartime memorandum."
+        }
+      }
+    },
+    {
+      "case_id": "proposed_as_presented_as",
+      "category": "positive",
+      "description": "Map presented-as language onto proposed_as.",
+      "fallback_enabled": true,
+      "expected_canonical": "proposed_as",
+      "normalized_relation": "presented_as",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "presented_as"
+      ],
+      "alias_proposals": [
+        {
+          "alias": "presented_as",
+          "canonical": "proposed_as",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "a symbolic planning engine",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "history:Symbolic Mill:presented_as:a symbolic planning engine",
+        "confidence": 0.6684324782767936,
+        "subject": "Symbolic Mill",
+        "verb": "presented_as",
+        "object": "a symbolic planning engine",
+        "domain": "history",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "presented as",
+          "normalized_relation": "presented_as",
+          "matched_alias": false,
+          "resolution_source": "self",
+          "relation_evidence_count": 0,
+          "excerpt": "The Symbolic Mill was presented as a symbolic planning engine during the symposium."
+        }
+      }
+    },
+    {
+      "case_id": "described_documented",
+      "category": "positive",
+      "description": "Map documented onto described for a technical artifact.",
+      "fallback_enabled": true,
+      "expected_canonical": "described",
+      "normalized_relation": "described",
+      "resolution_source": "typed_fallback",
+      "typed_fallback_hits": 1,
+      "unresolved_relation_examples": [],
+      "alias_proposals": [
+        {
+          "alias": "documented",
+          "canonical": "described",
+          "status": "accepted",
+          "support_pairs": 0,
+          "typed_support": 1,
+          "mean_score": 0.47,
+          "mean_margin": 0.47,
+          "source": "typed_fallback"
+        }
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 1.0000000000000002,
+      "exact_canonical_recovery": true,
+      "raw_graph_target": "a recovery workflow",
+      "passed": true,
+      "canonical_query": {
+        "found": true,
+        "key": "technical:Ops Memo:described:a recovery workflow",
+        "confidence": 1.0000000000000002,
+        "subject": "Ops Memo",
+        "verb": "described",
+        "object": "a recovery workflow",
+        "domain": "technical",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": false,
+        "provenance": {
+          "source": "research_real_corpus",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "documented",
+          "normalized_relation": "described",
+          "matched_alias": true,
+          "resolution_source": "typed_fallback",
+          "relation_evidence_count": 0,
+          "excerpt": "The ops memo documented a recovery workflow for the cluster during the review."
+        }
       }
     },
     {
@@ -287,6 +847,18 @@
       "typed_fallback_hits": 0,
       "unresolved_relation_examples": [
         "mentored"
+      ],
+      "alias_proposals": [
+        {
+          "alias": "mentored",
+          "canonical": "worked_with",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
       ],
       "canonical_query_found": false,
       "canonical_query_confidence": 0.0,
@@ -307,6 +879,80 @@
       "unresolved_relation_examples": [
         "relocated_to"
       ],
+      "alias_proposals": [
+        {
+          "alias": "relocated_to",
+          "canonical": "published_notes_about",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
+      ],
+      "canonical_query_found": false,
+      "canonical_query_confidence": 0.0,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Bristol",
+      "passed": true,
+      "canonical_query": null
+    },
+    {
+      "case_id": "negative_funded",
+      "category": "negative",
+      "description": "Leave funding relations unresolved instead of forcing them into collaboration or notes families.",
+      "fallback_enabled": true,
+      "expected_canonical": null,
+      "normalized_relation": "funded",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "funded"
+      ],
+      "alias_proposals": [
+        {
+          "alias": "funded",
+          "canonical": "worked_with",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
+      ],
+      "canonical_query_found": false,
+      "canonical_query_confidence": 0.0,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Project Atlas",
+      "passed": true,
+      "canonical_query": null
+    },
+    {
+      "case_id": "negative_located_in",
+      "category": "negative",
+      "description": "Leave location relations unresolved instead of forcing them into descriptive families.",
+      "fallback_enabled": true,
+      "expected_canonical": null,
+      "normalized_relation": "located_in",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "located_in"
+      ],
+      "alias_proposals": [
+        {
+          "alias": "located_in",
+          "canonical": "described",
+          "status": "rejected_low_confidence",
+          "support_pairs": 0,
+          "typed_support": 0,
+          "mean_score": 0.0,
+          "mean_margin": 0.0,
+          "source": "typed_fallback"
+        }
+      ],
       "canonical_query_found": false,
       "canonical_query_confidence": 0.0,
       "exact_canonical_recovery": false,
@@ -322,7 +968,7 @@
       "pass_rate": 0.0,
       "exact_canonical_recovery_rate": 0.0,
       "typed_fallback_rate": 0.0,
-      "cases": 4
+      "cases": 8
     },
     {
       "fallback_enabled": false,
@@ -330,7 +976,7 @@
       "pass_rate": 1.0,
       "exact_canonical_recovery_rate": 0.0,
       "typed_fallback_rate": 0.0,
-      "cases": 2
+      "cases": 4
     },
     {
       "fallback_enabled": false,
@@ -338,7 +984,7 @@
       "pass_rate": 0.3333333333333333,
       "exact_canonical_recovery_rate": 0.0,
       "typed_fallback_rate": 0.0,
-      "cases": 6
+      "cases": 12
     },
     {
       "fallback_enabled": true,
@@ -346,7 +992,7 @@
       "pass_rate": 0.25,
       "exact_canonical_recovery_rate": 0.25,
       "typed_fallback_rate": 0.25,
-      "cases": 4
+      "cases": 8
     },
     {
       "fallback_enabled": true,
@@ -354,7 +1000,7 @@
       "pass_rate": 1.0,
       "exact_canonical_recovery_rate": 0.0,
       "typed_fallback_rate": 0.0,
-      "cases": 2
+      "cases": 4
     },
     {
       "fallback_enabled": true,
@@ -362,7 +1008,7 @@
       "pass_rate": 0.5,
       "exact_canonical_recovery_rate": 0.16666666666666666,
       "typed_fallback_rate": 0.16666666666666666,
-      "cases": 6
+      "cases": 12
     }
   ]
 }

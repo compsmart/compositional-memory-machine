@@ -4,8 +4,12 @@ from dataclasses import dataclass, field
 from statistics import mean
 from typing import Any, Callable
 
+from experiments.exp_codebase_memory import run as run_codebase_memory
 from experiments.exp_d2836_episodic_memory import run as run_episodic_memory
+from experiments.exp_large_document_memory import run as run_large_document_memory
+from experiments.exp_structural_generalization import run as run_structural_generalization
 from experiments.exp_temporal_state_tracking import run as run_temporal_state_tracking
+from experiments.exp_truth_provenance_conflicts import run as run_truth_provenance_conflicts
 from ingestion import ExtractedFact, ExtractionResponse, GeminiExtractor
 from web import HHRWebState, to_jsonable
 
@@ -53,6 +57,10 @@ ROADMAP_SERIOUS_CASE_IDS = (
     "temporal_state_tracking_substrate",
     "episodic_dialogue_memory_substrate",
     "episodic_dialogue_metadata_substrate",
+    "truth_provenance_substrate",
+    "large_document_memory_substrate",
+    "codebase_dependency_memory_substrate",
+    "structural_generalization_substrate",
     "trick_unknown_fact_refusal",
     "explanation_from_memory",
     "logic_transitive_order",
@@ -465,6 +473,63 @@ def _temporal_state_executor(config: BenchmarkConfig) -> CaseVerdict:
     )
 
 
+def _truth_provenance_executor(config: BenchmarkConfig) -> CaseVerdict:
+    rows = run_truth_provenance_conflicts(dim=config.temporal_dim, seeds=config.temporal_seeds)
+    metrics = (
+        "current_truth_em",
+        "history_em",
+        "competing_evidence_em",
+        "provenance_em",
+        "unresolved_refusal_em",
+    )
+    observed = {metric: mean(float(row[metric]) for row in rows) for metric in metrics}
+    return CaseVerdict(
+        score=mean(observed.values()),
+        notes="Current truth, conflict evidence, and provenance are preserved across revisions.",
+        observed=observed,
+    )
+
+
+def _large_document_executor(config: BenchmarkConfig) -> CaseVerdict:
+    rows = run_large_document_memory(dim=config.chat_dim, seeds=config.temporal_seeds)
+    metrics = (
+        "recall_em",
+        "chain_em",
+        "current_truth_em",
+        "history_em",
+        "competing_evidence_em",
+        "refusal_em",
+    )
+    observed = {metric: mean(float(row[metric]) for row in rows) for metric in metrics}
+    observed["chunk_count"] = mean(float(row["chunk_count"]) for row in rows)
+    return CaseVerdict(
+        score=mean(observed[metric] for metric in metrics),
+        notes="Large-document extracted corpus benchmark with contradiction and refusal checks.",
+        observed=observed,
+    )
+
+
+def _codebase_executor(config: BenchmarkConfig) -> CaseVerdict:
+    row = run_codebase_memory(dim=config.chat_dim, seed=config.chat_seed)
+    metrics = ("imports_em", "calls_em", "defined_in_em")
+    observed = {metric: float(row[metric]) for metric in metrics}
+    observed["fact_count"] = float(row["fact_count"])
+    return CaseVerdict(
+        score=mean(observed[metric] for metric in metrics),
+        notes="Python codebase structure can be ingested and queried as dependency-style facts.",
+        observed=observed,
+    )
+
+
+def _structural_generalization_executor(_config: BenchmarkConfig) -> CaseVerdict:
+    observed = run_structural_generalization()
+    return CaseVerdict(
+        score=float(observed["breadth_score"]),
+        notes="Structural suite combines prefix thresholds, hierarchical clauses, and surface pattern completion.",
+        observed=observed,
+    )
+
+
 ALL_CASES = (
     BenchmarkCase(
         case_id="memory_fact_recall",
@@ -603,6 +668,46 @@ ALL_CASES = (
         expected_behavior="Retain speaker, intent, assistant-answer, and correction facts across turns.",
         scorer_type="programmatic_validator",
         metric_executor=_episodic_metadata_executor,
+    ),
+    BenchmarkCase(
+        case_id="truth_provenance_substrate",
+        category="temporal",
+        track="implemented",
+        surface="episodic_substrate",
+        description="Track current truth, conflicting evidence, and provenance together.",
+        expected_behavior="Return the latest truth while preserving superseded claims and competing evidence.",
+        scorer_type="programmatic_validator",
+        metric_executor=_truth_provenance_executor,
+    ),
+    BenchmarkCase(
+        case_id="large_document_memory_substrate",
+        category="memory",
+        track="implemented",
+        surface="structured_ingest",
+        description="Use a larger extracted corpus with contradiction and refusal checks.",
+        expected_behavior="Preserve recall, multihop access, revision history, and safe refusal on incomplete claims.",
+        scorer_type="programmatic_validator",
+        metric_executor=_large_document_executor,
+    ),
+    BenchmarkCase(
+        case_id="codebase_dependency_memory_substrate",
+        category="coding",
+        track="implemented",
+        surface="structured_ingest",
+        description="Parse Python code into dependency-style graph facts.",
+        expected_behavior="Answer imports, calls, and symbol ownership queries from codebase ingestion.",
+        scorer_type="programmatic_validator",
+        metric_executor=_codebase_executor,
+    ),
+    BenchmarkCase(
+        case_id="structural_generalization_substrate",
+        category="language_patterning",
+        track="implemented",
+        surface="episodic_substrate",
+        description="Measure structural generalization beyond a single prefix benchmark.",
+        expected_behavior="Score well on prefix, hierarchical, and chat-surface pattern tasks together.",
+        scorer_type="programmatic_validator",
+        metric_executor=_structural_generalization_executor,
     ),
     BenchmarkCase(
         case_id="trick_unknown_fact_refusal",

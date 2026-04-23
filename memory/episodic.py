@@ -30,6 +30,16 @@ class ConversationFact:
         return f"s{self.session}:t{self.turn}:{self.subject}:{self.relation}:{self.object}"
 
 
+@dataclass(frozen=True)
+class ConversationTurn:
+    session: int
+    turn: int
+    speaker: str
+    utterance: str
+    intent: str = ""
+    facts: tuple[ConversationFact, ...] = ()
+
+
 class EpisodicMemory:
     """Persistent conversation memory with current graph state and AMM evidence."""
 
@@ -65,7 +75,12 @@ class EpisodicMemory:
         )
         payload["chunk_id"] = chunk_record.chunk_id
         self.memory.write(key, vector, payload)
-        self.graph.write(canonical_fact.subject, canonical_fact.relation, canonical_fact.object)
+        self.graph.write(
+            canonical_fact.subject,
+            canonical_fact.relation,
+            canonical_fact.object,
+            provenance=payload["provenance"],
+        )
         self.history.append(canonical_fact)
 
     def revise_fact(self, fact: ConversationFact) -> None:
@@ -92,8 +107,52 @@ class EpisodicMemory:
         )
         payload["chunk_id"] = chunk_record.chunk_id
         self.memory.write(key, vector, payload)
-        self.graph.revise(canonical_fact.subject, canonical_fact.relation, canonical_fact.object)
+        self.graph.revise(
+            canonical_fact.subject,
+            canonical_fact.relation,
+            canonical_fact.object,
+            provenance=payload["provenance"],
+        )
         self.history.append(canonical_fact)
+
+    def ingest_turn(self, turn: ConversationTurn) -> list[ConversationFact]:
+        emitted: list[ConversationFact] = []
+        if turn.speaker:
+            emitted.append(
+                ConversationFact(
+                    session=turn.session,
+                    turn=turn.turn,
+                    subject=self._turn_subject(turn.session, turn.turn),
+                    relation="speaker",
+                    object=turn.speaker,
+                    source="episodic_turn",
+                    source_id=f"s{turn.session}:t{turn.turn}",
+                    excerpt=turn.utterance,
+                )
+            )
+        if turn.intent:
+            emitted.append(
+                ConversationFact(
+                    session=turn.session,
+                    turn=turn.turn,
+                    subject=self._turn_subject(turn.session, turn.turn),
+                    relation="intent",
+                    object=turn.intent,
+                    source="episodic_turn",
+                    source_id=f"s{turn.session}:t{turn.turn}",
+                    excerpt=turn.utterance,
+                )
+            )
+        emitted.extend(turn.facts)
+        for fact in emitted:
+            self.state_fact(fact)
+        return emitted
+
+    def ingest_episode(self, turns: list[ConversationTurn]) -> list[ConversationFact]:
+        emitted: list[ConversationFact] = []
+        for turn in turns:
+            emitted.extend(self.ingest_turn(turn))
+        return emitted
 
     def recall_current(self, subject: str, relation: str) -> str | None:
         return self.graph.read(self._clean_slot(subject), self._canonical_relation(relation))
@@ -103,6 +162,20 @@ class EpisodicMemory:
 
     def recall_at_turn(self, subject: str, relation: str, *, revision: int) -> str | None:
         return self.graph.read_at_revision(self._clean_slot(subject), self._canonical_relation(relation), revision)
+
+    def current_truth(self, subject: str, relation: str) -> dict[str, object]:
+        return self.graph.evidence_summary(self._clean_slot(subject), self._canonical_relation(relation))
+
+    def claim_history(self, subject: str, relation: str) -> list[dict[str, object]]:
+        return [
+            {
+                "target": event.target,
+                "revision": event.revision,
+                "status": event.status,
+                "provenance": event.provenance,
+            }
+            for event in self.graph.history(self._clean_slot(subject), self._canonical_relation(relation))
+        ]
 
     def recall_evidence(self, fact: ConversationFact, *, min_confidence: float = 0.9) -> bool:
         canonical_fact = self._canonicalize_fact(fact)
@@ -153,6 +226,10 @@ class EpisodicMemory:
     @staticmethod
     def _domain_for_fact(fact: ConversationFact) -> str:
         return f"session{fact.session}"
+
+    @staticmethod
+    def _turn_subject(session: int, turn: int) -> str:
+        return f"s{session}:t{turn}"
 
     @staticmethod
     def _fact_key(fact: ConversationFact) -> str:

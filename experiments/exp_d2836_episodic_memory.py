@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from memory.episodic import ConversationFact, EpisodicMemory
+from memory.episodic import ConversationFact, ConversationTurn, EpisodicMemory
 
 
 PSEUDOWORDS = (
@@ -106,6 +106,126 @@ def _meaning_fact(session: int, turn: int, word: str, meaning: str, *, intent: s
 
 def _rate(numerator: int, denominator: int) -> float:
     return numerator / denominator if denominator else 1.0
+
+
+def _controller_episode_metrics(memory: EpisodicMemory) -> dict[str, float]:
+    turns = [
+        ConversationTurn(
+            session=9,
+            turn=0,
+            speaker="user",
+            utterance="My project is Atlas.",
+            intent="declare_project",
+            facts=(
+                ConversationFact(
+                    session=9,
+                    turn=0,
+                    subject="user",
+                    relation="project",
+                    object="Atlas",
+                    source="controller_episode",
+                    source_id="s9:t0",
+                    excerpt="My project is Atlas.",
+                ),
+            ),
+        ),
+        ConversationTurn(
+            session=9,
+            turn=1,
+            speaker="assistant",
+            utterance="I track Atlas for you.",
+            intent="confirm_project",
+            facts=(
+                ConversationFact(
+                    session=9,
+                    turn=1,
+                    subject="assistant",
+                    relation="tracks_project",
+                    object="Atlas",
+                    source="controller_episode",
+                    source_id="s9:t1",
+                    excerpt="I track Atlas for you.",
+                ),
+            ),
+        ),
+        ConversationTurn(
+            session=9,
+            turn=2,
+            speaker="user",
+            utterance="It launches tomorrow.",
+            intent="project_update",
+            facts=(
+                ConversationFact(
+                    session=9,
+                    turn=2,
+                    subject="Atlas",
+                    relation="launches_on",
+                    object="tomorrow",
+                    source="controller_episode",
+                    source_id="s9:t2",
+                    excerpt="It launches tomorrow.",
+                ),
+            ),
+        ),
+        ConversationTurn(
+            session=9,
+            turn=3,
+            speaker="assistant",
+            utterance="I am the memory workbench.",
+            intent="self_reference",
+            facts=(
+                ConversationFact(
+                    session=9,
+                    turn=3,
+                    subject="assistant",
+                    relation="identity",
+                    object="memory_workbench",
+                    source="controller_episode",
+                    source_id="s9:t3",
+                    excerpt="I am the memory workbench.",
+                ),
+            ),
+        ),
+        ConversationTurn(
+            session=9,
+            turn=4,
+            speaker="user",
+            utterance="Teach me dax while Atlas stays green.",
+            intent="mixed_word_and_fact",
+            facts=(
+                ConversationFact(
+                    session=9,
+                    turn=4,
+                    subject="s9:t4",
+                    relation="introduced_word",
+                    object="dax",
+                    source="controller_episode",
+                    source_id="s9:t4",
+                    excerpt="Teach me dax while Atlas stays green.",
+                ),
+                ConversationFact(
+                    session=9,
+                    turn=4,
+                    subject="Atlas",
+                    relation="status",
+                    object="green",
+                    source="controller_episode",
+                    source_id="s9:t4",
+                    excerpt="Teach me dax while Atlas stays green.",
+                ),
+            ),
+        ),
+    ]
+    emitted = memory.ingest_episode(turns)
+    return {
+        "controller_episode_em": float(len(emitted) >= 10),
+        "pronoun_carryover_em": float(memory.recall_current("Atlas", "launches_on") == "tomorrow"),
+        "self_reference_em": float(memory.recall_current("assistant", "identity") == "memory_workbench"),
+        "mixed_turn_em": float(
+            memory.recall_current("s9:t4", "introduced_word") == "dax"
+            and memory.recall_current("Atlas", "status") == "green"
+        ),
+    }
 
 
 def run(
@@ -238,6 +358,7 @@ def run(
                 "assistant_answer_em": _rate(answer_hits, answer_total),
                 "correction_em": _rate(correction_hits, correction_total),
                 "stored_facts": float(retention_total),
+                **_controller_episode_metrics(memory),
             }
         )
 

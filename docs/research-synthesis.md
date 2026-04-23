@@ -60,11 +60,55 @@ Why the projected-address caveat still matters:
 
 ## Iteration Log
 
+### 2026-04-23 - Remaining active roadmap implementation pass
+
+Scope:
+
+- Strengthened relation normalization review flow with typed-support proposal
+  tracking, richer alias candidate logs, and expanded curated real-corpus
+  validation coverage.
+- Added explicit current-truth vs historical-evidence support in the graph/query
+  stack, plus contradiction-aware truth/provenance experiments.
+- Added a larger extracted-corpus benchmark, controller-driven episodic episode
+  ingestion, Python codebase ingestion, a broader structural generalization
+  suite, and MemoryWorkbench snapshot/scenario surfaces with a headless CLI.
+- Re-ran the full test suite, refreshed the curated relation fallback report,
+  and re-ran the roadmap serious longitudinal benchmark.
+
+Verification:
+
+- `python -m pytest`
+- `python experiments/exp_relation_fallback_real_corpus.py --output summary --json-file research/results/relation_fallback_real_corpus.json --report-file research/results/relation_fallback_real_corpus.md`
+- `python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md`
+
+Observed repo-local behavior:
+
+- The repo test suite now passes at `59 passed`.
+- The serious conversation benchmark improved to `mean_score=0.768` /
+  `pass_rate=0.696`, with the implemented track at `mean_score=0.980` /
+  `pass_rate=0.941`.
+- The relation fallback validation now covers `8` positive and `4` negative
+  corpus-style cases. Positive exact canonical recovery is still only `0.25`,
+  but the broader overall pass rate improved to `0.500` with fallback on while
+  keeping the negative safety slice clean at `1.0`.
+- Current truth, superseded history, competing evidence, large-document
+  contradiction/refusal behavior, controller-driven episodic turns, codebase
+  dependency queries, structural breadth, and workbench snapshot/scenario flows
+  are now all repo-local tested surfaces rather than only roadmap notes.
+
+Implication:
+
+- The active roadmap themes from the previous todo list are now implemented as
+  concrete repo capabilities and benchmark surfaces.
+- The limiting factor has shifted from missing infrastructure to quality lift on
+  the remaining hard slices, especially typed relation recovery on realistic
+  corpora and frontier chat behaviors.
+
 ### 2026-04-23 - Curated real-corpus validation for typed relation fallback
 
 Scope:
 
-- Added `research/exp_relation_fallback_real_corpus.py` plus
+- Added `experiments/exp_relation_fallback_real_corpus.py` plus
   `research/results/relation_fallback_real_corpus.md` to validate the
   experimental typed relation fallback on more realistic corpus-style facts.
 - Tested both positive alias-style cases and negative safety cases with the
@@ -74,7 +118,7 @@ Scope:
 
 Verification:
 
-- `python research/exp_relation_fallback_real_corpus.py --output summary --json-file research/results/relation_fallback_real_corpus.json --report-file research/results/relation_fallback_real_corpus.md`
+- `python experiments/exp_relation_fallback_real_corpus.py --output summary --json-file research/results/relation_fallback_real_corpus.json --report-file research/results/relation_fallback_real_corpus.md`
 - `python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md`
 
 Observed repo-local behavior:
@@ -109,7 +153,7 @@ Next:
 
 Scope:
 
-- Added `research/exp_relation_concept_memory.py` plus
+- Added `experiments/exp_relation_concept_memory.py` plus
   `research/results/relation_concept_memory.md` to test whether a `dax`-style
   relation concept memory is worth implementing.
 - Compared exact pair-overlap aliasing against identity-only, typed-context, and
@@ -124,7 +168,7 @@ Scope:
 
 Verification:
 
-- `python research/exp_relation_concept_memory.py --output summary --json-file research/results/relation_concept_memory.json --report-file research/results/relation_concept_memory.md`
+- `python experiments/exp_relation_concept_memory.py --output summary --json-file research/results/relation_concept_memory.json --report-file research/results/relation_concept_memory.md`
 - `python -m pytest tests/test_ingestion.py tests/test_query.py tests/test_experiments.py`
 
 Observed repo-local behavior:
@@ -420,35 +464,17 @@ Observed repo-local behavior:
 
 ## Active Todo List
 
-1. Relation registry and provenance
-   - Improve typed relation features / support accumulation, then rerun the
-     curated real-corpus validation to push recovery above the current `0.25`
-     positive-case pass rate.
-   - Validate typed relation fallback on larger extracted corpora and benchmark
-     misses before treating it as anything more than an experimental flag.
-   - Grow aliases from benchmark misses without collapsing distinct relation
-     families prematurely.
-   - Use unresolved-relation examples plus typed-fallback proposals to drive
-     alias expansion from real benchmark misses rather than guessed synonym
-     lists.
-2. Episodic conversation memory
-   - Move beyond scripted dialogue-turn facts toward controller-driven or
-     extracted conversational episodes with the same verified metric structure.
-   - Add a benchmark slice for pronoun carryover, conversational self-reference,
-     or mixed fact-plus-word-teaching turns without losing the D-2836-style
-     exact-match discipline.
-3. Large-document memory
-   - Run a benchmark over larger extracted corpora with contradiction and refusal
-     checks.
-4. Codebase memory
-   - Parse Python code into explicit graph facts and support dependency-style
-     questions.
-5. Contradiction and temporal revision
-   - Distinguish current truth from historical evidence with explicit source
-     provenance.
-6. Emergent syntax
-   - Push beyond the existing prefix benchmark into broader structural
-     generalization.
-7. MemoryWorkbench
-   - Keep evolving the browser and CLI surfaces into a reusable research
-     instrument rather than a fixed demo.
+1. Relation quality lift
+   - Push the typed fallback positive-case recovery materially above the current
+     `0.25` on realistic corpora before widening rollout beyond the feature
+     flag.
+   - Turn alias proposal logs into a benchmark-miss review loop so accepted
+     aliases come from observed misses rather than manual guesswork.
+2. Workbench and corpus ergonomics
+   - Add canned scenario fixtures and richer export/report views so the
+     MemoryWorkbench can reproduce larger benchmark investigations with less
+     manual setup.
+3. Frontier benchmark lift
+   - Use the stronger structured-memory substrate to improve explanation,
+     coding, multilingual, logic, puzzle, and sentiment behaviors without
+     blurring the retrieval-vs-generation claim boundary.

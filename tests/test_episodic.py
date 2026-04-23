@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from memory import ConversationFact, EpisodicMemory
+from memory import ConversationFact, ConversationTurn, EpisodicMemory
 
 
 def test_episodic_memory_normalizes_relation_aliases_and_keeps_provenance() -> None:
@@ -72,3 +72,38 @@ def test_episodic_memory_revision_collapses_relation_aliases() -> None:
     assert revised_record is not None
     assert revised_record.payload["provenance"]["revision"] is True
     assert revised_record.payload["provenance"]["source_id"] == "turn-1"
+
+
+def test_episodic_memory_ingests_controller_driven_turns() -> None:
+    memory = EpisodicMemory(dim=1024, seed=0)
+    emitted = memory.ingest_episode(
+        [
+            ConversationTurn(
+                session=1,
+                turn=0,
+                speaker="user",
+                utterance="My project is Atlas.",
+                intent="declare_project",
+                facts=(
+                    ConversationFact(1, 0, "user", "project", "Atlas", source="fixture", source_id="s1:t0"),
+                ),
+            ),
+            ConversationTurn(
+                session=1,
+                turn=1,
+                speaker="assistant",
+                utterance="I am the memory workbench.",
+                intent="self_reference",
+                facts=(
+                    ConversationFact(1, 1, "assistant", "identity", "memory_workbench", source="fixture", source_id="s1:t1"),
+                ),
+            ),
+        ]
+    )
+
+    assert len(emitted) == 6
+    assert memory.recall_current("user", "project") == "Atlas"
+    assert memory.recall_current("assistant", "identity") == "memory_workbench"
+    truth = memory.current_truth("assistant", "identity")
+    assert truth["current_target"] == "memory_workbench"
+    assert truth["current_provenance"]["source_id"] == "s1:t1"

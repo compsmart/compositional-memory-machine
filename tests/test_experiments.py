@@ -10,12 +10,16 @@ from experiments.exp_d2854_generation_boundary import run as run_generation_boun
 from experiments.exp_d2855_hierarchical_syntax import run as run_hierarchical_syntax
 from experiments.exp_d2856_failure_boundary import run as run_failure_boundary
 from experiments.exp_d2857_language_revision import run as run_language_revision
+from experiments.exp_codebase_memory import run as run_codebase_memory
 from experiments.exp_chunked_multihop import run as run_chunked_multihop
 from experiments.exp_d2838_compositional_generation import run as run_compositional_generation
 from experiments.exp_d2839_sequence_chain import summarize as summarize_sequence_chain
 from experiments.exp_d2839_sequence_chain import run as run_sequence_chain
 from experiments.exp_d2836_episodic_memory import run as run_episodic_memory
+from experiments.exp_large_document_memory import run as run_large_document_memory
+from experiments.exp_structural_generalization import run as run_structural_generalization
 from experiments.exp_temporal_state_tracking import run as run_temporal_state_tracking
+from experiments.exp_truth_provenance_conflicts import run as run_truth_provenance_conflicts
 from experiments.exp_conversation_benchmark import (
     build_results_payload as build_conversation_benchmark_payload,
     compare_summary_rows as compare_conversation_benchmark_summary,
@@ -197,6 +201,29 @@ def test_temporal_state_tracking_experiment_smoke() -> None:
     assert rows[0]["historical_em"] == 1.0
 
 
+def test_truth_provenance_conflicts_experiment_smoke() -> None:
+    rows = run_truth_provenance_conflicts(dim=2048, seeds=(0,))
+
+    assert rows[0]["current_truth_em"] == 1.0
+    assert rows[0]["history_em"] == 1.0
+    assert rows[0]["competing_evidence_em"] == 1.0
+    assert rows[0]["provenance_em"] == 1.0
+    assert rows[0]["unresolved_refusal_em"] == 1.0
+
+
+def test_large_document_memory_experiment_smoke() -> None:
+    rows = run_large_document_memory(dim=2048, seeds=(0,))
+
+    assert rows[0]["written_facts"] >= 10.0
+    assert rows[0]["chunk_count"] >= 1.0
+    assert rows[0]["recall_em"] == 1.0
+    assert rows[0]["chain_em"] == 1.0
+    assert rows[0]["current_truth_em"] == 1.0
+    assert rows[0]["history_em"] == 1.0
+    assert rows[0]["competing_evidence_em"] == 1.0
+    assert rows[0]["refusal_em"] == 1.0
+
+
 def test_probabilistic_next_token_experiment_smoke() -> None:
     rows = run_probabilistic_next_token(dim=2048, seeds=(0,))
 
@@ -263,3 +290,21 @@ def test_language_revision_experiment_smoke() -> None:
     assert by_condition["no_reset"]["revised_em"] < 0.7
     assert by_condition["perkey_reset"]["revised_em"] == 1.0
     assert by_condition["perkey_reset"]["retained_em"] == 1.0
+
+
+def test_codebase_memory_experiment_smoke() -> None:
+    row = run_codebase_memory(dim=1024, seed=0)
+
+    assert row["file_count"] == 3.0
+    assert row["written_facts"] >= 5.0
+    assert row["imports_em"] == 1.0
+    assert row["calls_em"] == 1.0
+    assert row["defined_in_em"] == 1.0
+
+
+def test_structural_generalization_experiment_smoke() -> None:
+    row = run_structural_generalization(seeds=(42,))
+
+    assert row["prefix_threshold_em"] == 1.0
+    assert row["hierarchical_depth3_acc"] >= 0.8
+    assert row["pattern_surface_em"] == 1.0

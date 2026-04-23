@@ -7,7 +7,7 @@ from .chunked_kg import (
     capacity_ratio_for_roles,
     perfect_chain_budget,
 )
-from .episodic import ConversationFact, EpisodicMemory
+from .episodic import ConversationFact, ConversationTurn, EpisodicMemory
 from .metrics import exact_match_rate, forgetting_rate, top1_accuracy
 from .projected import ProjectedAddressIndex, ProjectedQueryResult
 
@@ -16,6 +16,7 @@ __all__ = [
     "ChunkedFactRecord",
     "ChunkedKGMemory",
     "ConversationFact",
+    "ConversationTurn",
     "capacity_budget",
     "capacity_ratio_for_roles",
     "EpisodicMemory",

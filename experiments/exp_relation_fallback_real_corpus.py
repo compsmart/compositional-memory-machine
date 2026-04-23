@@ -153,6 +153,114 @@ CASES: tuple[CorpusCase, ...] = (
         expected_canonical="described",
     ),
     CorpusCase(
+        case_id="worked_with_partnered_with",
+        category="positive",
+        description="Map partnered-with language onto worked_with.",
+        domain="research",
+        seed_facts=(
+            _fact(
+                "Katherine Johnson",
+                "collaborated with",
+                "Dorothy Vaughan",
+                "Katherine Johnson collaborated with Dorothy Vaughan on the mission analysis team.",
+            ),
+            _fact(
+                "Margaret Hamilton",
+                "worked on with",
+                "Hal Laning",
+                "Margaret Hamilton worked on with Hal Laning on the flight software effort.",
+            ),
+        ),
+        probe_fact=_fact(
+            "Radia Perlman",
+            "partnered with",
+            "Paul Mockapetris",
+            "Radia Perlman partnered with Paul Mockapetris on a network lab prototype effort.",
+        ),
+        expected_canonical="worked_with",
+    ),
+    CorpusCase(
+        case_id="published_notes_about_filed_notes_on",
+        category="positive",
+        description="Map filed-notes phrasing onto published_notes_about.",
+        domain="archives",
+        seed_facts=(
+            _fact(
+                "Nora Stanton",
+                "published notes about",
+                "bridge calculations",
+                "Nora Stanton published notes about bridge calculations in an engineering memo.",
+            ),
+            _fact(
+                "Claude Shannon",
+                "authored notes about",
+                "switching circuits",
+                "Claude Shannon authored notes about switching circuits in a design memo.",
+            ),
+        ),
+        probe_fact=_fact(
+            "Hedy Lamarr",
+            "filed notes on",
+            "frequency hopping",
+            "Hedy Lamarr filed notes on frequency hopping in a wartime memorandum.",
+        ),
+        expected_canonical="published_notes_about",
+    ),
+    CorpusCase(
+        case_id="proposed_as_presented_as",
+        category="positive",
+        description="Map presented-as language onto proposed_as.",
+        domain="history",
+        seed_facts=(
+            _fact(
+                "Difference Engine",
+                "was proposed as",
+                "a precision calculator",
+                "The Difference Engine was proposed as a precision calculator in the design notes.",
+            ),
+            _fact(
+                "Analytical Loom",
+                "proposed mechanical",
+                "a symbolic research machine",
+                "The Analytical Loom was proposed mechanical as a symbolic research machine in the brief.",
+            ),
+        ),
+        probe_fact=_fact(
+            "Symbolic Mill",
+            "presented as",
+            "a symbolic planning engine",
+            "The Symbolic Mill was presented as a symbolic planning engine during the symposium.",
+        ),
+        expected_canonical="proposed_as",
+    ),
+    CorpusCase(
+        case_id="described_documented",
+        category="positive",
+        description="Map documented onto described for a technical artifact.",
+        domain="technical",
+        seed_facts=(
+            _fact(
+                "Protocol Guide",
+                "described",
+                "a handshake procedure",
+                "The protocol guide described a handshake procedure for the service mesh.",
+            ),
+            _fact(
+                "Workshop Notes",
+                "described in",
+                "a recovery workflow",
+                "The workshop notes described in detail a recovery workflow for the cluster.",
+            ),
+        ),
+        probe_fact=_fact(
+            "Ops Memo",
+            "documented",
+            "a recovery workflow",
+            "The ops memo documented a recovery workflow for the cluster during the review.",
+        ),
+        expected_canonical="described",
+    ),
+    CorpusCase(
         case_id="negative_mentored",
         category="negative",
         description="Leave a mentorship-style relation unresolved when no canonical family exists.",
@@ -206,6 +314,60 @@ CASES: tuple[CorpusCase, ...] = (
         ),
         expected_canonical=None,
     ),
+    CorpusCase(
+        case_id="negative_funded",
+        category="negative",
+        description="Leave funding relations unresolved instead of forcing them into collaboration or notes families.",
+        domain="finance",
+        seed_facts=(
+            _fact(
+                "Ada Lovelace",
+                "collaborated with",
+                "Charles Babbage",
+                "Ada Lovelace collaborated with Charles Babbage on a prototype.",
+            ),
+            _fact(
+                "Hopper Memo",
+                "published notes about",
+                "compiler diagrams",
+                "The Hopper Memo published notes about compiler diagrams in an archive note.",
+            ),
+        ),
+        probe_fact=_fact(
+            "Meridian Labs",
+            "funded",
+            "Project Atlas",
+            "Meridian Labs funded Project Atlas during the budget cycle.",
+        ),
+        expected_canonical=None,
+    ),
+    CorpusCase(
+        case_id="negative_located_in",
+        category="negative",
+        description="Leave location relations unresolved instead of forcing them into descriptive families.",
+        domain="operations",
+        seed_facts=(
+            _fact(
+                "Protocol Memo",
+                "described",
+                "a layered handshake",
+                "The protocol memo described a layered handshake in the system brief.",
+            ),
+            _fact(
+                "Analytical Engine",
+                "was proposed as",
+                "a general-purpose computer",
+                "The Analytical Engine was proposed as a general-purpose computer in the design notes.",
+            ),
+        ),
+        probe_fact=_fact(
+            "Meridian Labs",
+            "located in",
+            "Bristol",
+            "Meridian Labs is located in Bristol near the harbor campus.",
+        ),
+        expected_canonical=None,
+    ),
 )
 
 
@@ -252,6 +414,7 @@ def evaluate_case(case: CorpusCase, *, enable_typed_relation_fallback: bool) -> 
         "resolution_source": probe_normalized.resolution_source,
         "typed_fallback_hits": int(result.relation_stats.get("typed_fallback_hits", 0)),
         "unresolved_relation_examples": list(result.relation_stats.get("unresolved_relation_examples", [])),
+        "alias_proposals": list(result.relation_stats.get("alias_proposals", [])),
         "canonical_query_found": canonical_query_found,
         "canonical_query_confidence": canonical_query_confidence,
         "exact_canonical_recovery": exact_canonical_recovery,

@@ -72,6 +72,47 @@ class QueryEngine:
             "chunk_id": payload.get("chunk_id"),
             "source": "amm",
             "novel_composition": record.key != _canonical_key(domain, subject, canonical_verb, object_),
+            "provenance": payload.get("provenance", {}),
+        }
+
+    def ask_current_truth(self, subject: str, relation: str) -> dict[str, object]:
+        if self.graph is None:
+            raise ValueError("graph is required for truth queries")
+        canonical_relation = self._canonical_relation(relation)
+        summary = self.graph.evidence_summary(subject, canonical_relation)
+        current_target = summary["current_target"]
+        unresolved = current_target is None
+        return {
+            "found": not unresolved,
+            "subject": subject,
+            "relation": canonical_relation,
+            "target": current_target,
+            "unresolved": unresolved,
+            "claim_count": summary["claim_count"],
+            "historical_targets": summary["historical_targets"],
+            "competing_targets": summary["competing_targets"],
+            "provenance": summary["current_provenance"],
+            "source": "factgraph",
+        }
+
+    def ask_history(self, subject: str, relation: str) -> dict[str, object]:
+        if self.graph is None:
+            raise ValueError("graph is required for truth queries")
+        canonical_relation = self._canonical_relation(relation)
+        events = self.graph.history(subject, canonical_relation)
+        return {
+            "subject": subject,
+            "relation": canonical_relation,
+            "events": [
+                {
+                    "target": event.target,
+                    "revision": event.revision,
+                    "status": event.status,
+                    "provenance": event.provenance,
+                }
+                for event in events
+            ],
+            "source": "factgraph",
         }
 
     def ask_chain(self, subject: str, relations: list[str]) -> dict[str, object]:

@@ -43,6 +43,18 @@ class NormalizedRelation:
     evidence_count: int = 0
 
 
+@dataclass(frozen=True)
+class RelationProposal:
+    alias: str
+    canonical: str
+    status: str
+    support_pairs: int
+    typed_support: int
+    mean_score: float
+    mean_margin: float
+    source: str
+
+
 class RelationRegistry:
     """Canonical relation labels plus seed and learned aliases for extracted triples."""
 
@@ -52,8 +64,9 @@ class RelationRegistry:
         *,
         min_support_pairs: int = 2,
         enable_typed_fallback: bool | None = None,
-        typed_fallback_score_threshold: float = 0.6,
+        typed_fallback_score_threshold: float = 0.45,
         typed_fallback_margin_threshold: float = 0.08,
+        typed_fallback_min_support: int = 1,
         concept_memory: RelationConceptMemory | None = None,
     ) -> None:
         self.aliases = aliases or DEFAULT_ALIASES
@@ -61,6 +74,7 @@ class RelationRegistry:
         self.enable_typed_fallback = self._env_flag("HHR_ENABLE_TYPED_RELATION_FALLBACK") if enable_typed_fallback is None else enable_typed_fallback
         self.typed_fallback_score_threshold = typed_fallback_score_threshold
         self.typed_fallback_margin_threshold = typed_fallback_margin_threshold
+        self.typed_fallback_min_support = max(1, typed_fallback_min_support)
         self.concept_memory = concept_memory or (RelationConceptMemory() if self.enable_typed_fallback else None)
         self._seed_lookup: dict[str, str] = {}
         self._learned_lookup: dict[str, str] = {}
@@ -69,6 +83,9 @@ class RelationRegistry:
         self._learned_targets: set[str] = set()
         self._pair_relations: dict[tuple[str, str], set[str]] = defaultdict(set)
         self._support: dict[tuple[str, str], set[tuple[str, str]]] = defaultdict(set)
+        self._typed_support: dict[tuple[str, str], list[tuple[float, float]]] = defaultdict(list)
+        self._proposal_status: dict[tuple[str, str], str] = {}
+        self._proposal_sources: dict[tuple[str, str], str] = {}
         for canonical, values in self.aliases.items():
             normalized = self._slug(canonical)
             self._seed_lookup[normalized] = normalized
@@ -109,8 +126,24 @@ class RelationRegistry:
         if match is None:
             return normalized
         if match.score < self.typed_fallback_score_threshold or match.margin < self.typed_fallback_margin_threshold:
+            self._record_proposal(
+                normalized.slug,
+                match.canonical,
+                status="rejected_low_confidence",
+                source="typed_fallback",
+            )
             return normalized
         if match.canonical == normalized.slug:
+            return normalized
+        self._typed_support[(normalized.slug, match.canonical)].append((match.score, match.margin))
+        support = len(self._typed_support[(normalized.slug, match.canonical)])
+        if support < self.typed_fallback_min_support:
+            self._record_proposal(
+                normalized.slug,
+                match.canonical,
+                status="pending",
+                source="typed_fallback",
+            )
             return normalized
         self.register_alias(normalized.slug, match.canonical, source="typed_fallback")
         return self.normalize(str(getattr(fact, "relation", "")))
@@ -172,6 +205,7 @@ class RelationRegistry:
         self._learned_sources[alias_slug] = source
         self._canonical_labels.add(canonical_slug)
         self._learned_targets.add(canonical_slug)
+        self._record_proposal(alias_slug, canonical_slug, status="accepted", source=source)
         self._relabel_pairs(alias_slug, canonical_slug)
 
     def observe_resolved_fact(
@@ -191,18 +225,29 @@ class RelationRegistry:
             )
 
     def candidate_aliases(self, *, limit: int = 10) -> list[dict[str, object]]:
-        rows: list[dict[str, object]] = []
-        for (alias, canonical), pairs in self._support.items():
-            if alias in self._learned_lookup:
-                continue
-            rows.append(
-                {
-                    "alias": alias,
-                    "canonical": self.normalize(canonical).canonical,
-                    "support_pairs": len(pairs),
-                }
+        rows = [self._proposal_row(alias, canonical) for alias, canonical in self._proposal_keys(include_accepted=False)]
+        rows.sort(
+            key=lambda row: (
+                -int(row["support_pairs"]),
+                -int(row["typed_support"]),
+                -float(row["mean_score"]),
+                str(row["alias"]),
+                str(row["canonical"]),
             )
-        rows.sort(key=lambda row: (-int(row["support_pairs"]), str(row["alias"]), str(row["canonical"])))
+        )
+        return rows[:limit]
+
+    def proposal_log(self, *, limit: int = 20) -> list[dict[str, object]]:
+        rows = [self._proposal_row(alias, canonical) for alias, canonical in self._proposal_keys(include_accepted=True)]
+        rows.sort(
+            key=lambda row: (
+                0 if row["status"] == "accepted" else 1,
+                -int(row["support_pairs"]),
+                -int(row["typed_support"]),
+                -float(row["mean_score"]),
+                str(row["alias"]),
+            )
+        )
         return rows[:limit]
 
     @staticmethod
@@ -250,6 +295,7 @@ class RelationRegistry:
             best_canonical, best_support = candidates[0]
             next_support = candidates[1][1] if len(candidates) > 1 else -1
             if best_support < self.min_support_pairs or best_support == next_support:
+                self._record_proposal(alias, best_canonical, status="pending", source="pair_overlap")
                 continue
             self.register_alias(alias, best_canonical, source="pair_overlap")
             promotions.append(alias)
@@ -266,6 +312,44 @@ class RelationRegistry:
 
     def _is_canonical_target(self, label: str) -> bool:
         return label in self._canonical_labels or label in self._learned_targets
+
+    def _record_proposal(self, alias: str, canonical: str, *, status: str, source: str) -> None:
+        key = (self._slug(alias), self.normalize(canonical).canonical)
+        previous = self._proposal_status.get(key)
+        if previous == "accepted" and status != "accepted":
+            return
+        self._proposal_status[key] = status
+        self._proposal_sources[key] = source
+
+    def _proposal_keys(self, *, include_accepted: bool) -> list[tuple[str, str]]:
+        keys = set(self._proposal_status)
+        keys.update(self._support)
+        keys.update(self._typed_support)
+        rows = []
+        for alias, canonical in keys:
+            canonical_slug = self.normalize(canonical).canonical
+            if alias == canonical_slug:
+                continue
+            if not include_accepted and alias in self._learned_lookup:
+                continue
+            rows.append((alias, canonical_slug))
+        return rows
+
+    def _proposal_row(self, alias: str, canonical: str) -> dict[str, object]:
+        typed_rows = self._typed_support.get((alias, canonical), [])
+        mean_score = sum(score for score, _ in typed_rows) / len(typed_rows) if typed_rows else 0.0
+        mean_margin = sum(margin for _, margin in typed_rows) / len(typed_rows) if typed_rows else 0.0
+        status = self._proposal_status.get((alias, canonical), "pending")
+        return {
+            "alias": alias,
+            "canonical": self.normalize(canonical).canonical,
+            "status": status,
+            "support_pairs": len(self._support.get((alias, canonical), set())),
+            "typed_support": len(typed_rows),
+            "mean_score": round(mean_score, 3),
+            "mean_margin": round(mean_margin, 3),
+            "source": self._proposal_sources.get((alias, canonical), "pair_overlap"),
+        }
 
     @staticmethod
     def _env_flag(name: str) -> bool:
