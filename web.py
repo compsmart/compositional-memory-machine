@@ -61,7 +61,7 @@ class HHRWebState:
     def reset_demo(self) -> None:
         self.encoder = SVOEncoder(dim=self.dim, seed=self.seed)
         self.memory = AMM()
-        self.chunk_memory = ChunkedKGMemory(chunk_size=4)
+        self.chunk_memory = ChunkedKGMemory(dim=self.dim, role_count=4)
         self.graph = FactGraph()
         self.pipeline = TextIngestionPipeline(
             self.encoder,
@@ -90,6 +90,8 @@ class HHRWebState:
             "graph_facts": len(self.graph.edges()),
             "memory_records": len(self.memory.records),
             "chunk_count": len(self.chunk_memory.chunks),
+            "chunk_budget": self.chunk_memory.capacity_budget,
+            "perfect_chain_budget": self.chunk_memory.perfect_chain_budget,
             "google_api_key": bool(self.pipeline.extractor._api_key()),
             "dim": self.dim,
             "demo_entity": self.compositional_demo["entity"],
@@ -136,6 +138,7 @@ class HHRWebState:
                 "novel_composition": bool(probe.get("novel_composition", False)),
                 "evidence": evidence,
                 "chunk_id": probe.get("chunk_id"),
+                "dimension_budget": self.query._dimension_hop_budget(1),
             }
         }
 
@@ -277,6 +280,7 @@ class HHRWebState:
         self.ngram = NGramLanguageMemory(dim=self.dim, seed=self.seed + 1)
         self.ngram.learn_sequence(["the", "doctor", "treats", "the", "patient"], cycles=5)
         self.ngram.learn_sequence(["the", "chef", "prepares", "the", "meal"], cycles=5)
+        self.ngram.learn_distribution("the", "artist", {"paints": 4.0, "sketches": 2.0, "draws": 1.0})
         self.word_learning = WordLearningMemory(dim=self.dim, seed=self.seed + 2)
         for action in ["eat", "drink", "consume"]:
             self.word_learning.add_known_action(action, "ingest", "ingest")
@@ -470,13 +474,22 @@ class HHRWebState:
                 "route": "pattern_miss",
                 "confidence": float(prediction.confidence),
             }
+        alternatives = [candidate for candidate in prediction.alternatives if candidate.token != prediction.token]
+        alternative_text = ""
+        if alternatives:
+            rendered = ", ".join(
+                f"{candidate.token} ({candidate.probability:.2f})" for candidate in alternatives[:3]
+            )
+            alternative_text = f" Alternatives: {rendered}."
         return {
             "text": (
                 f"The next token is '{prediction.token}' from context "
                 f"'{prediction.context_key}' (confidence {prediction.confidence:.3f})."
+                f"{alternative_text}"
             ),
             "route": "pattern_prediction",
             "confidence": float(prediction.confidence),
+            "alternatives": alternatives,
         }
 
     def _reply_to_fact_prompt(self, message: str) -> dict[str, Any] | None:
@@ -568,10 +581,16 @@ class HHRWebState:
         lowered = message.lower()
         if re.search(r"\b(she|her|he|him|they|them)\b", lowered) and self.chat_subject:
             return self.chat_subject
-        subjects = sorted({fact["subject"] for fact in self._list_facts()}, key=len, reverse=True)
+        subjects = list({fact["subject"] for fact in self._list_facts()})
+        exact_hits = []
         for subject in subjects:
-            if subject.lower() in lowered:
-                return subject
+            position = lowered.find(subject.lower())
+            if position != -1:
+                exact_hits.append((position, -len(subject), subject))
+        if exact_hits:
+            exact_hits.sort()
+            return exact_hits[0][2]
+        subjects = sorted(subjects, key=len, reverse=True)
         for subject in subjects:
             parts = subject.lower().split()
             if len(parts) > 1 and lowered.find(parts[-1]) != -1:

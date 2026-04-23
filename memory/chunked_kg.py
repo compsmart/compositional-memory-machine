@@ -9,7 +9,25 @@ import numpy as np
 from hrr.binding import cosine, normalize
 from hrr.encoder import SVOFact
 
-from .amm import AMM, MemoryRecord
+from .amm import AMM
+
+
+def capacity_ratio_for_roles(role_count: int) -> float:
+    """Finding-backed HRR capacity ratio from D-2858."""
+    if role_count <= 1:
+        return 0.049
+    if role_count <= 4:
+        return 0.012
+    return 0.006
+
+
+def capacity_budget(dim: int, role_count: int = 4) -> int:
+    return max(1, int(round(capacity_ratio_for_roles(role_count) * dim)))
+
+
+def perfect_chain_budget(dim: int, role_count: int = 4) -> int:
+    """Conservative perfect-retrieval regime from D-2869."""
+    return max(1, capacity_budget(dim, role_count) // 2)
 
 
 @dataclass
@@ -49,8 +67,22 @@ class KGChunk:
 class ChunkedKGMemory:
     """Chunk-oriented fact store that layers local retrieval over flat AMM writes."""
 
-    def __init__(self, *, chunk_size: int = 25) -> None:
-        self.chunk_size = chunk_size
+    def __init__(
+        self,
+        *,
+        chunk_size: int | None = None,
+        dim: int = 2048,
+        role_count: int = 4,
+        safety_margin: float = 1.0,
+    ) -> None:
+        self.dim = dim
+        self.role_count = role_count
+        self.safety_margin = safety_margin
+        self.capacity_budget = capacity_budget(dim, role_count)
+        self.perfect_chain_budget = perfect_chain_budget(dim, role_count)
+        recommended = max(1, int(self.capacity_budget * safety_margin))
+        self.requested_chunk_size = chunk_size
+        self.chunk_size = min(chunk_size, recommended) if chunk_size is not None else recommended
         self.chunks: dict[str, KGChunk] = {}
         self.facts: dict[str, ChunkedFactRecord] = {}
         self._tuple_index: dict[tuple[str, str, str], list[str]] = defaultdict(list)
@@ -176,7 +208,40 @@ class ChunkedKGMemory:
         return cosine(vector, record.vector)
 
     def chunk_summaries(self) -> list[dict[str, Any]]:
-        return [self.chunks[chunk_id].summary() for chunk_id in sorted(self.chunks)]
+        output = []
+        for chunk_id in sorted(self.chunks):
+            chunk = self.chunks[chunk_id]
+            summary = chunk.summary()
+            summary.update(self.chunk_budget(chunk_id))
+            output.append(summary)
+        return output
+
+    def chunk_budget(self, chunk_id: str) -> dict[str, Any]:
+        chunk = self.chunks.get(chunk_id)
+        size = chunk.size if chunk is not None else 0
+        return {
+            "effective_chunk_size": self.chunk_size,
+            "capacity_budget": self.capacity_budget,
+            "perfect_chain_budget": self.perfect_chain_budget,
+            "role_count": self.role_count,
+            "dim": self.dim,
+            "load_ratio": size / self.capacity_budget if self.capacity_budget else 0.0,
+            "estimated_hop1": self.estimate_hop1_accuracy(size),
+        }
+
+    def estimate_hop1_accuracy(self, load: int) -> float:
+        """D-2858 + D-2869: exact until half-budget, then degrade toward the hop1 floor."""
+        if load <= self.perfect_chain_budget:
+            return 1.0
+        if load <= self.capacity_budget:
+            span = max(1, self.capacity_budget - self.perfect_chain_budget)
+            progress = (load - self.perfect_chain_budget) / span
+            return 1.0 - (1.0 - 0.887) * progress
+        overload_ratio = self.capacity_budget / max(load, 1)
+        return max(0.35, 0.887 * overload_ratio)
+
+    def estimate_hop_accuracy(self, load: int, hops: int) -> float:
+        return self.estimate_hop1_accuracy(load) ** max(hops, 1)
 
     def _assign_chunk(self, domain: str, fact: SVOFact) -> str:
         best_chunk_id: str | None = None

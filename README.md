@@ -36,11 +36,13 @@ template answer or optional generator
 - HRR SVO sentence encoding and retrieval.
 - Append-oriented AMM fact storage.
 - Chunked HRR knowledge-graph storage with per-chunk provenance and bridge-entity tracking.
+- Dimension-aware chunk sizing derived from finding-backed HRR capacity budgets.
 - Compositional routing for controlled SVO facts.
 - FactGraph local revision via PerKey Reset.
 - Multi-hop chain querying that combines symbolic graph traversal with chunk-local HRR evidence.
 - Gemini 2.5 Flash Lite real-text extraction into triples.
 - HRR bigram-context next-token prediction.
+- Ranked probabilistic continuations for multi-modal next-token contexts.
 - Context-based word learning by ACTION-role unbinding.
 - Compositional value generation via HRR-native unbinding and a linear decoding head.
 - Sequence-chain prefix disambiguation for variable-length HRR rule prefixes.
@@ -81,12 +83,21 @@ The design is grounded in Compsmart AI Research Lab findings:
 - D-2839: chained HRR sequence prefixes show a hard disambiguation threshold:
   1-2 tokens are ambiguous, while 3 tokens are sufficient for perfect rule
   identification in the tested setup.
+- D-2849: HRR weighted superposition can represent probabilistic multi-modal
+  continuations, not just a single retrieved next token.
+- D-2858: HRR chunk capacity scales linearly with dimension, giving a concrete
+  `n*` budget for bounded chunk design.
+- D-2869: multi-hop accuracy follows a k-hop factorization law, which supports
+  path confidence budgeting in the query engine.
 - D-2862/D-2863: temporal role binding and hierarchical syntax are viable in the
   CI setting, motivating explicit temporal and nested-role extensions.
 - D-2866/D-2870/D-2871/D-2874: chunked HRR memory enables reliable multi-hop
   retrieval across bounded local fact sets and many domains.
 - D-2872/D-2873: dynamic state tracking and 2-hop relational chaining benefit
   from higher dimensions (`D>=1024`, with `D=2048` as the robust target).
+- L-932/L-933: benchmark design must avoid misleading full-tuple metrics and
+  must use shared entity pools plus explicit chain construction for multi-hop
+  evaluation.
 
 See [docs/research-roadmap.md](docs/research-roadmap.md) for the detailed lab
 mapping, external VSA/HDC literature context, risk register, and next research
@@ -98,7 +109,7 @@ Verified locally:
 
 ```text
 python -m pytest
-32 passed
+36 passed
 ```
 
 Representative outcomes:
@@ -108,7 +119,11 @@ Representative outcomes:
 - Address-routed stress: about 0.87-0.92 at `d=512` vs 0.98-0.99 at `d=2048`.
 - D-2829-style next-token primitive: seen EM 1.0, familiar EM 1.0, novel hit
   rate 0.0.
+- D-2849-style probabilistic continuation: ranked next-token alternatives now
+  preserve weighted ordering for multi-modal contexts such as `the artist ...`.
 - D-2830-style word learning: cluster routing 1.0 and retention 1.0.
+- D-2858-informed chunk budgets: chunk sizing now derives from dimension and
+  role complexity instead of a fixed heuristic.
 - D-2838-style compositional generation: repo benchmark reaches 1.0 exact
   retrieval, 1.0 HRR-native EM, and 1.0 linear-head EM across
   `D={64,128,256,512,2048}`.
@@ -117,6 +132,8 @@ Representative outcomes:
 - Chunked multi-hop benchmark: 2-hop, 3-hop, and cross-domain 4-step chain
   retrieval all reach 1.0 EM in the repo smoke test while preserving chunk
   provenance.
+- Query budgeting now uses D-2869/D-2873-style dimension and hop budgets so
+  weak multi-hop paths refuse instead of over-claiming a result.
 - Temporal state tracking benchmark: current state, state history, and
   historical lookup all reach 1.0 EM in the repo smoke test.
 - The demo now includes a compositional value answer generated from a retrieved
@@ -167,6 +184,7 @@ python experiments/exp_d2825_composition.py
 python experiments/exp_d2827_dimension_sweep.py
 python experiments/exp_collision_stress.py
 python experiments/exp_d2829_next_token.py
+python experiments/exp_d2849_probabilistic_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_d2838_compositional_generation.py --summary
 python experiments/exp_d2839_sequence_chain.py --summary
@@ -238,5 +256,7 @@ docs/             research roadmap and design notes
 - Word learning currently uses controlled context hints.
 - The current `FactGraph` still stores one active target per `(source, relation)`,
   so branching graph queries remain intentionally conservative.
+- The D-2858 chunk law is applied conservatively to this repo's full-vector
+  chunk design; it should not be read as a solved projected-address or SDM law.
 - Full SDM projected-address CI remains an open engineering target for HRR and
   continuous embedding keys; one-hot key results should be tracked separately.

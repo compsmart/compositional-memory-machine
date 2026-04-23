@@ -125,6 +125,8 @@ def test_web_status_and_facts_routes() -> None:
     assert status["graph_facts"] == 20
     assert status["memory_records"] == 20
     assert status["chunk_count"] == 5
+    assert status["chunk_budget"] == 25
+    assert status["perfect_chain_budget"] == 12
     assert facts["total"] == 20
     assert len(facts["chunks"]) == 5
     assert chat["history"][0]["route"] == "ready"
@@ -211,6 +213,9 @@ def test_web_chat_route_supports_multi_turn_memory() -> None:
         fact_reply = _post(f"{base_url}/api/chat", {"message": "Who did Ada Lovelace work with?"})
         pronoun_reply = _post(f"{base_url}/api/chat", {"message": "Who did she work with?"})
         pattern_reply = _post(f"{base_url}/api/chat", {"message": "Complete this learned pattern: 'the doctor ...'"})
+        probabilistic_pattern_reply = _post(
+            f"{base_url}/api/chat", {"message": "Complete this learned pattern: 'the artist ...'"}
+        )
         learn_reply = _post(
             f"{base_url}/api/chat",
             {"message": "Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed."},
@@ -223,6 +228,9 @@ def test_web_chat_route_supports_multi_turn_memory() -> None:
     assert "Charles Babbage" in pronoun_reply["reply"]["text"]
     assert pattern_reply["reply"]["route"] == "pattern_prediction"
     assert "treats" in pattern_reply["reply"]["text"]
+    assert probabilistic_pattern_reply["reply"]["route"] == "pattern_prediction"
+    assert probabilistic_pattern_reply["reply"]["alternatives"][0]["token"] == "sketches"
+    assert "Alternatives:" in probabilistic_pattern_reply["reply"]["text"]
     assert learn_reply["reply"]["route"] == "word_learning"
     assert "ingest action" in learn_reply["reply"]["text"]
     assert recall_reply["reply"]["route"] == "word_recall"

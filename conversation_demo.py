@@ -33,7 +33,7 @@ def find_object(graph: FactGraph, subject: str, relation: str) -> str | None:
 def main() -> None:
     encoder = SVOEncoder(dim=2048, seed=12)
     memory = AMM()
-    chunk_memory = ChunkedKGMemory(chunk_size=3)
+    chunk_memory = ChunkedKGMemory(dim=2048, role_count=4)
     graph = FactGraph()
     ingestion = TextIngestionPipeline(encoder, memory, graph, chunk_memory=chunk_memory)
     query = QueryEngine(encoder=encoder, memory=memory, graph=graph, chunk_memory=chunk_memory)
@@ -41,6 +41,7 @@ def main() -> None:
     ngram = NGramLanguageMemory(dim=2048, seed=13)
     ngram.learn_sequence(["the", "doctor", "treats", "the", "patient"], cycles=5)
     ngram.learn_sequence(["the", "chef", "prepares", "the", "meal"], cycles=5)
+    ngram.learn_distribution("the", "artist", {"paints": 4.0, "sketches": 2.0, "draws": 1.0})
 
     learner = WordLearningMemory(dim=2048, seed=14)
     for action in ["eat", "drink", "consume"]:
@@ -106,6 +107,19 @@ def main() -> None:
         )
     else:
         say("Assistant", "I do not know a reliable continuation.")
+
+    say("User", "What are the likely continuations for 'the artist ...'?")
+    artist_prediction = ngram.predict("the", "artist", min_confidence=0.25)
+    if artist_prediction.token:
+        alternatives = ", ".join(
+            f"{candidate.token} ({candidate.probability:.2f})"
+            for candidate in artist_prediction.alternatives[:3]
+        )
+        say(
+            "Assistant",
+            f"The most likely continuation is '{artist_prediction.token}' (confidence {artist_prediction.confidence:.3f}). "
+            f"Alternatives: {alternatives}.",
+        )
 
     say("User", "Now learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.")
     learned = learner.learn_word(

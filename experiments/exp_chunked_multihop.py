@@ -57,7 +57,7 @@ def run(
             encoder = SVOEncoder(dim=dim, seed=seed)
             memory = AMM()
             graph = FactGraph()
-            chunk_memory = ChunkedKGMemory(chunk_size=chunk_size)
+            chunk_memory = ChunkedKGMemory(chunk_size=chunk_size, dim=dim, role_count=4)
             query = QueryEngine(
                 encoder=encoder,
                 memory=memory,
@@ -82,6 +82,9 @@ def run(
                     "hop3_em": float(hop3["found"] and hop3.get("target") == "delta"),
                     "cross_domain_em": float(hop4["found"] and hop4.get("target") == "engine"),
                     "hop4_confidence": float(hop4["confidence"]),
+                    "shared_entity_pool": 1.0,
+                    "explicit_chain_construction": 1.0,
+                    "capacity_budget": float(chunk_memory.capacity_budget),
                 }
             )
 

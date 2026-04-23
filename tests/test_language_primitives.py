@@ -15,6 +15,17 @@ def test_ngram_memory_predicts_seen_context() -> None:
     assert prediction.confidence > 0.99
 
 
+def test_ngram_memory_returns_ranked_probabilistic_continuations() -> None:
+    memory = NGramLanguageMemory(dim=1024, seed=0)
+    memory.learn_distribution("the", "artist", {"paints": 4.0, "sketches": 2.0, "draws": 1.0})
+
+    prediction = memory.predict("the", "artist", min_confidence=0.25, top_k=3)
+
+    assert prediction.token == "paints"
+    assert [candidate.token for candidate in prediction.alternatives] == ["paints", "sketches", "draws"]
+    assert prediction.alternatives[0].probability > prediction.alternatives[1].probability > prediction.alternatives[2].probability
+
+
 def test_word_learning_routes_unknown_action_to_known_cluster() -> None:
     memory = WordLearningMemory(dim=1024, seed=0)
     memory.add_known_action("eat", "ingest", "ingest")

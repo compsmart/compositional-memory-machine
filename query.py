@@ -24,6 +24,17 @@ class QueryEngine:
     min_confidence: float = 0.35
     hop_decay: float = 0.9
 
+    def _dimension_hop_base(self) -> float:
+        """D-2873: D>=2048 is exact for 2-hop, D>=1024 is near-exact, D<1024 is unreliable."""
+        if self.encoder.dim >= 2048:
+            return 1.0
+        if self.encoder.dim >= 1024:
+            return 0.983  # sqrt(0.967)
+        return 0.577  # sqrt(0.333)
+
+    def _dimension_hop_budget(self, hops: int) -> float:
+        return self._dimension_hop_base() ** max(hops, 1)
+
     def ask_svo(self, subject: str, verb: str, object_: str) -> dict[str, object]:
         vector = self.encoder.encode(subject, verb, object_)
         record, confidence = self.memory.query(vector)
@@ -58,7 +69,8 @@ class QueryEngine:
         current = subject
         path = [subject]
         steps: list[dict[str, object]] = []
-        path_confidence = 1.0
+        path_confidence = self._dimension_hop_budget(len(relations))
+        budget_trace: list[dict[str, object]] = []
 
         for hop, relation in enumerate(relations, start=1):
             target = self.graph.read(current, relation)
@@ -71,6 +83,7 @@ class QueryEngine:
                     "steps": steps,
                     "confidence": 0.0 if not steps else path_confidence,
                     "failed_hop": hop,
+                    "budget_trace": budget_trace,
                     "source": "graph+chunk",
                 }
 
@@ -78,7 +91,17 @@ class QueryEngine:
             vector = self.encoder.encode_fact(fact)
             evidence = self._step_evidence(fact, vector)
             step_confidence = float(evidence["confidence"])
-            path_confidence *= max(step_confidence * self.hop_decay, 1e-6)
+            budget_trace.append(
+                {
+                    "hop": hop,
+                    "chunk_id": evidence.get("chunk_id"),
+                    "estimated_hop1": evidence.get("estimated_hop1"),
+                    "chunk_size": evidence.get("chunk_size"),
+                    "capacity_budget": evidence.get("capacity_budget"),
+                    "perfect_chain_budget": evidence.get("perfect_chain_budget"),
+                }
+            )
+            path_confidence *= max(min(step_confidence, float(evidence.get("estimated_hop1", 1.0))) * self.hop_decay, 1e-6)
             steps.append(
                 {
                     "hop": hop,
@@ -91,6 +114,21 @@ class QueryEngine:
             current = target
             path.append(target)
 
+        if path_confidence < self.min_confidence:
+            return {
+                "found": False,
+                "subject": subject,
+                "relations": relations,
+                "path": path,
+                "steps": steps,
+                "confidence": path_confidence,
+                "target": current,
+                "budget_trace": budget_trace,
+                "budget_exceeded": True,
+                "dimension_budget": self._dimension_hop_budget(len(relations)),
+                "source": "graph+chunk",
+            }
+
         return {
             "found": True,
             "subject": subject,
@@ -99,7 +137,9 @@ class QueryEngine:
             "steps": steps,
             "confidence": path_confidence,
             "target": current,
+            "budget_trace": budget_trace,
             "source": "graph+chunk",
+            "dimension_budget": self._dimension_hop_budget(len(relations)),
         }
 
     def ask_relational(
@@ -118,23 +158,45 @@ class QueryEngine:
 
     def _step_evidence(self, fact: SVOFact, vector) -> dict[str, object]:
         if self.chunk_memory is None:
-            return {"confidence": 1.0, "chunk_id": None, "candidate_chunks": []}
+            return {
+                "confidence": 1.0,
+                "chunk_id": None,
+                "candidate_chunks": [],
+                "chunk_size": 0,
+                "capacity_budget": None,
+                "perfect_chain_budget": None,
+                "estimated_hop1": 1.0,
+            }
 
         exact = self.chunk_memory.lookup(fact.subject, fact.verb, fact.object)
         if exact is not None:
+            budget = self.chunk_memory.chunk_budget(exact.chunk_id)
             return {
                 "confidence": cosine(vector, exact.vector),
                 "chunk_id": exact.chunk_id,
                 "candidate_chunks": [chunk.chunk_id for chunk in self.chunk_memory.chunks_for_entity(fact.subject)],
+                "chunk_size": exact.payload.get("chunk_size", self.chunk_memory.chunks[exact.chunk_id].size),
+                **budget,
             }
 
         candidate_chunks = [chunk.chunk_id for chunk in self.chunk_memory.chunks_for_entity(fact.subject)]
         nearest = self.chunk_memory.nearest(vector, top_k=1, candidate_chunks=candidate_chunks or None)
         if not nearest:
-            return {"confidence": 0.0, "chunk_id": None, "candidate_chunks": candidate_chunks}
+            return {
+                "confidence": 0.0,
+                "chunk_id": None,
+                "candidate_chunks": candidate_chunks,
+                "chunk_size": 0,
+                "capacity_budget": self.chunk_memory.capacity_budget,
+                "perfect_chain_budget": self.chunk_memory.perfect_chain_budget,
+                "estimated_hop1": 0.0,
+            }
         best_record, score = nearest[0]
+        budget = self.chunk_memory.chunk_budget(best_record.chunk_id)
         return {
             "confidence": score,
             "chunk_id": best_record.chunk_id,
             "candidate_chunks": candidate_chunks,
+            "chunk_size": self.chunk_memory.chunks[best_record.chunk_id].size,
+            **budget,
         }

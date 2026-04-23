@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from experiments.exp_d2824_ci_storage import run as run_ci
 from experiments.exp_d2825_composition import run as run_composition
+from experiments.exp_d2849_probabilistic_next_token import run as run_probabilistic_next_token
 from experiments.exp_chunked_multihop import run as run_chunked_multihop
 from experiments.exp_d2838_compositional_generation import run as run_compositional_generation
 from experiments.exp_d2839_sequence_chain import summarize as summarize_sequence_chain
@@ -103,17 +104,27 @@ def test_sequence_chain_experiment_smoke() -> None:
 
 
 def test_chunked_multihop_experiment_smoke() -> None:
-    rows = run_chunked_multihop(dim=1024, seeds=(0,), chunk_sizes=(2,))
+    rows = run_chunked_multihop(dim=2048, seeds=(0,), chunk_sizes=(2,))
 
     assert rows[0]["hop2_em"] == 1.0
     assert rows[0]["hop3_em"] == 1.0
     assert rows[0]["cross_domain_em"] == 1.0
     assert rows[0]["chunk_count"] >= 2.0
+    assert rows[0]["shared_entity_pool"] == 1.0
+    assert rows[0]["explicit_chain_construction"] == 1.0
 
 
 def test_temporal_state_tracking_experiment_smoke() -> None:
-    rows = run_temporal_state_tracking(dim=512, seeds=(0,))
+    rows = run_temporal_state_tracking(dim=2048, seeds=(0,))
 
     assert rows[0]["latest_state_em"] == 1.0
     assert rows[0]["history_em"] == 1.0
     assert rows[0]["historical_em"] == 1.0
+
+
+def test_probabilistic_next_token_experiment_smoke() -> None:
+    rows = run_probabilistic_next_token(dim=2048, seeds=(0,))
+
+    assert rows[0]["top1_correct"] == 1.0
+    assert rows[0]["top3_hit"] == 1.0
+    assert abs(rows[0]["probability_sum"] - 1.0) < 1e-6

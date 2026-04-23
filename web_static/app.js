@@ -53,6 +53,7 @@ function renderStatus(status) {
     ["Facts", status.stored_facts],
     ["Graph", status.graph_facts],
     ["Records", status.memory_records],
+    ["Chunk budget", status.chunk_budget],
     ["Dimension", status.dim],
     ["Demo", status.demo_value],
     ["Key", keyState],
@@ -64,6 +65,7 @@ function renderStatus(status) {
     ["Facts", status.stored_facts],
     ["Graph", status.graph_facts],
     ["Records", status.memory_records],
+    ["Chunk budget", status.chunk_budget],
     ["D", status.dim],
   ]
     .map(([label, value]) => `<div class="metric"><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label)}</span></div>`)
@@ -172,6 +174,7 @@ function renderChatMessage(message) {
   if (Number.isFinite(message.confidence)) meta.push(`confidence ${Number(message.confidence).toFixed(3)}`);
   const evidence = Array.isArray(message.evidence) ? message.evidence.slice(0, 3) : [];
   const chainPath = Array.isArray(message.chain_path) ? message.chain_path : [];
+  const alternatives = Array.isArray(message.alternatives) ? message.alternatives.slice(0, 3) : [];
   return `
     <article class="chat-message ${escapeHtml(message.role || "assistant")}">
       <div class="chat-message-head">
@@ -197,6 +200,13 @@ function renderChatMessage(message) {
                   `<li>${escapeHtml(fact.subject)} ${escapeHtml(fact.relation)} ${escapeHtml(fact.object)} <span class="meta-line">(score ${Number(fact.score).toFixed(3)}${fact.chunk_id ? `, chunk ${escapeHtml(String(fact.chunk_id))}` : ""})</span></li>`
               )
               .join("")}</ul>`
+          : ""
+      }
+      ${
+        alternatives.length
+          ? `<div class="meta-line">alternatives: ${alternatives
+              .map((item) => `${escapeHtml(item.token)} (${Number(item.probability).toFixed(2)})`)
+              .join(", ")}</div>`
           : ""
       }
     </article>

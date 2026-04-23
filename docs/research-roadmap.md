@@ -63,6 +63,13 @@ language memory without gradient retraining.
 | D-2837 | SDM+AMM `beta0` reached zero forgetting at 10/12/15 domains with one-hot keys and `addr_dim=64`. | Treat one-hot SDM results separately from HRR and continuous embedding projected-address results; key family must be an explicit experimental factor. |
 | D-2838 | HRR+AMM compositional generation decoded 2-token property values with HRR-native unbinding at `99.56%` EM for `D=64` and `100%` for `D>=128`; a linear ridge head trained on 80% of entities reached `100%` EM on the held-out 20% across `D={64,128,256,512,2048}`. | Treat linear decoding over retrieved HRR values as a real benchmarked capability, and use it to scope an evidence-grounded generation head without claiming open-ended LM behavior. |
 | D-2839 | Chained HRR sequence prefixes showed a hard disambiguation threshold: `K={1,2}` stayed at chance across 4 rules per family, while `K>=3` reached `100%` EM with zero seed variance in the tested setup. | Use prefix-length disambiguation as a structural sequence-memory benchmark before making stronger syntax or generation claims. |
+| D-2849 | Weighted HRR superposition preserved probabilistic multi-modal continuations with high top-1 and correct frequency ordering. | Upgrade next-token memory from single-token recall to ranked continuation distributions where contexts genuinely support multiple next tokens. |
+| D-2858 | HRR phase-transition boundaries yielded a linear capacity law `n* ~= alpha(r) * d` with the practical `r=2`/`r=4` ratio `alpha ~= 0.012`. | Use dimension-aware chunk budgets instead of a fixed heuristic chunk size; at `d=2048`, the conservative 4-role chunk ceiling is about 25 items. |
+| D-2869 | k-hop relational chaining followed the factorization law `hop_k ~= hop1^k` and stayed perfect when per-chain load stayed within the safe regime. | Use hop-budgeting in the query engine so path confidence decays according to chain depth and estimated chunk load. |
+| D-2872 | Dynamic state tracking with repeated overwrites needed `D>=2048` for reliable 50-entity / 20-update behavior. | Keep temporal/state defaults conservative and document that overwrite-heavy tracking needs higher dimensions than static retrieval. |
+| D-2873 | 2-hop relational chaining hit a strong dimension threshold: `D>=1024` works well, `D=2048` is exact, `D=256` fails badly. | Refuse weak multi-hop paths in low dimensions and set serious chain experiments to `D>=1024` by default. |
+| L-932 | Full-tuple exact-match metrics can dramatically understate retrieval capability under interference-heavy multi-role settings. | Prefer per-role, ranked, or path-based metrics for compositional and multi-hop evaluation in this repo. |
+| L-933 | Multi-hop evaluation must use a shared entity pool and explicitly constructed chains; sparse random BFS chain discovery can silently fail. | Keep chain benchmarks explicit and add sanity-check flags instead of relying on accidental graph connectivity. |
 
 ## External Research Context
 
@@ -106,12 +113,13 @@ The repo currently implements:
 - HRR SVO encoding with circular convolution and unitary role vectors.
 - Full-vector AMM storage and cosine nearest-neighbor retrieval.
 - Chunked HRR knowledge-graph storage with bounded chunk size, chunk provenance,
-  and bridge-entity tracking.
+  bridge-entity tracking, and D-2858-informed capacity budgets.
 - FactGraph local revision through `per_key_reset`.
 - Multi-hop chain queries that combine symbolic `FactGraph` traversal with
-  chunk-local HRR evidence and hop-aware confidence.
+  chunk-local HRR evidence plus D-2869 / D-2873-inspired hop-aware confidence.
 - Gemini 2.5 Flash Lite two-pass extraction into triples.
-- HRR bigram-context next-token memory.
+- HRR bigram-context next-token memory with ranked probabilistic continuations
+  for weighted multi-modal contexts.
 - Context word learning with ACTION-role unbinding and semantic cluster lookup.
 - A scripted memory-grounded conversation demo.
 - A projected-address sweep harness that compares one-hot, HRR SVO,
@@ -136,7 +144,7 @@ Verified locally:
 
 ```text
 python -m pytest
-32 passed
+36 passed
 ```
 
 The important caveat: this repo's AMM is full-vector nearest-neighbor memory,
@@ -144,7 +152,9 @@ not the full SDM hard-location architecture from the negative `addr_dim=64`
 findings. The repo includes an address-routed stress test, but it does not yet
 implement the lab's full SDM projection/gating stack. The new chunked KG and
 multi-hop features should therefore be read as improvements to the full-vector
-PoC, not as evidence that projected-address CI has been solved.
+PoC, not as evidence that projected-address CI has been solved. The same caveat
+applies to the D-2858 capacity-law adaptation here: it is being used as a
+conservative full-vector chunk budget, not as a proven SDM portability claim.
 
 ## Priority Research Tracks
 
@@ -164,6 +174,9 @@ Next:
 - Expand from deterministic chain queries to constrained relational queries and
   mixed graph/vector reranking.
 - Measure chunk-size sensitivity on larger synthetic and real extracted corpora.
+- Compare the conservative D-2858 chunk budget against empirical chain accuracy
+  at `D={1024,2048,4096}` so the repo can report where its full-vector behavior
+  matches or diverges from the lab law.
 
 ### 1. Address-Dimension Critical Path
 

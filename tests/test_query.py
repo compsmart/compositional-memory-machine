@@ -50,3 +50,19 @@ def test_query_engine_chain_refuses_missing_path() -> None:
 
     assert result["found"] is False
     assert result["failed_hop"] == 2
+
+
+def test_query_engine_chain_refuses_when_dimension_budget_is_too_low() -> None:
+    encoder = SVOEncoder(dim=256, seed=0)
+    memory = AMM()
+    graph = FactGraph()
+    chunk_memory = ChunkedKGMemory(dim=256, role_count=4)
+    query = QueryEngine(encoder=encoder, memory=memory, graph=graph, chunk_memory=chunk_memory)
+
+    _write(encoder, memory, chunk_memory, graph, "alpha", SVOFact("alice", "knows", "bob"))
+    _write(encoder, memory, chunk_memory, graph, "alpha", SVOFact("bob", "works_with", "carol"))
+
+    result = query.ask_chain("alice", ["knows", "works_with"])
+
+    assert result["found"] is False
+    assert result["budget_exceeded"] is True
