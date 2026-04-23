@@ -242,6 +242,98 @@ def test_web_chat_route_supports_multi_turn_memory() -> None:
     assert "nearest action is" in recall_reply["reply"]["text"]
 
 
+def test_web_chat_route_end_to_end_multiturn_capabilities() -> None:
+    state = HHRWebState(extractor=FakeExtractor())
+    with running_server(state) as base_url:
+        help_reply = _post(f"{base_url}/api/chat", {"message": "What can you do?"})
+        ingest_ada_reply = _post(f"{base_url}/api/chat", {"message": "Remember Ada text"})
+        ada_fact_reply = _post(f"{base_url}/api/chat", {"message": "Who did Ada Lovelace work with?"})
+        ada_pronoun_reply = _post(f"{base_url}/api/chat", {"message": "Who did she work with?"})
+        ada_reverse_reply = _post(f"{base_url}/api/chat", {"message": "Who worked with Charles Babbage?"})
+        pattern_reply = _post(f"{base_url}/api/chat", {"message": "Complete this learned pattern: 'the doctor ...'"})
+        probabilistic_pattern_reply = _post(
+            f"{base_url}/api/chat", {"message": "Complete this learned pattern: 'the artist ...'"}
+        )
+        learn_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed."},
+        )
+        recall_reply = _post(f"{base_url}/api/chat", {"message": "What does it mean?"})
+        ingest_alice_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Remember Alice knows Bob. Bob works with Carol. Carol guides Delta."},
+        )
+        reverse_lookup_reply = _post(f"{base_url}/api/chat", {"message": "Who knows Bob?"})
+        multihop_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Who does Alice know who works with Carol?"},
+        )
+        history = _get(f"{base_url}/api/chat/history")
+
+    assert help_reply["reply"]["route"] == "fallback"
+    assert "memory-backed fact questions" in help_reply["reply"]["text"]
+
+    assert ingest_ada_reply["reply"]["route"] == "text_ingest"
+    assert "2 distinct facts" in ingest_ada_reply["reply"]["text"]
+    assert "chunk(s)" in ingest_ada_reply["reply"]["text"]
+
+    assert ada_fact_reply["reply"]["route"] == "fact_query"
+    assert "Ada Lovelace worked with Charles Babbage." in ada_fact_reply["reply"]["text"]
+    assert ada_fact_reply["reply"]["graph_target"] == "Charles Babbage"
+
+    assert ada_pronoun_reply["reply"]["route"] == "fact_query"
+    assert "Charles Babbage" in ada_pronoun_reply["reply"]["text"]
+
+    assert ada_reverse_reply["reply"]["route"] == "fact_query"
+    assert "Ada Lovelace worked with Charles Babbage." in ada_reverse_reply["reply"]["text"]
+    assert ada_reverse_reply["reply"]["graph_target"] == "Ada Lovelace"
+    assert ada_reverse_reply["reply"]["chain_path"] == ["Charles Babbage", "Ada Lovelace"]
+
+    assert pattern_reply["reply"]["route"] == "pattern_prediction"
+    assert "The next token is 'treats'" in pattern_reply["reply"]["text"]
+
+    assert probabilistic_pattern_reply["reply"]["route"] == "pattern_prediction"
+    assert probabilistic_pattern_reply["reply"]["alternatives"][0]["token"] == "sketches"
+    assert "Alternatives: sketches (0.29), draws (0.14)." in probabilistic_pattern_reply["reply"]["text"]
+
+    assert learn_reply["reply"]["route"] == "word_learning"
+    assert "I learned 'dax' as an ingest action." in learn_reply["reply"]["text"]
+
+    assert recall_reply["reply"]["route"] == "word_recall"
+    assert "'dax' still routes to ingest" in recall_reply["reply"]["text"]
+
+    assert ingest_alice_reply["reply"]["route"] == "text_ingest"
+    assert "3 distinct facts" in ingest_alice_reply["reply"]["text"]
+
+    assert reverse_lookup_reply["reply"]["route"] == "fact_query"
+    assert "Alice knows Bob." in reverse_lookup_reply["reply"]["text"]
+    assert reverse_lookup_reply["reply"]["graph_target"] == "Alice"
+    assert reverse_lookup_reply["reply"]["chain_path"] == ["Bob", "Alice"]
+
+    assert multihop_reply["reply"]["route"] == "multi_hop_query"
+    assert "Alice knows Bob, and Bob works with Carol." in multihop_reply["reply"]["text"]
+    assert "So the answer is Bob." in multihop_reply["reply"]["text"]
+    assert multihop_reply["reply"]["chain_path"] == ["Alice", "Bob", "Carol"]
+
+    routes = [message["route"] for message in history["history"] if message["role"] == "assistant"]
+    assert routes == [
+        "ready",
+        "fallback",
+        "text_ingest",
+        "fact_query",
+        "fact_query",
+        "fact_query",
+        "pattern_prediction",
+        "pattern_prediction",
+        "word_learning",
+        "word_recall",
+        "text_ingest",
+        "fact_query",
+        "multi_hop_query",
+    ]
+    assert len(history["history"]) == 25
+
+
 def test_web_chat_route_supports_multihop_after_chat_learning() -> None:
     state = HHRWebState(extractor=FakeExtractor())
     with running_server(state) as base_url:

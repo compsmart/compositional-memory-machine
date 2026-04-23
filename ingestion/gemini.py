@@ -140,6 +140,7 @@ class TextIngestionPipeline:
         chunk_memory: ChunkedKGMemory | None = None,
         extractor: GeminiExtractor | None = None,
         relation_registry: RelationRegistry | None = None,
+        enable_typed_relation_fallback: bool | None = None,
         min_confidence: float = 0.5,
     ) -> None:
         self.encoder = encoder
@@ -147,7 +148,9 @@ class TextIngestionPipeline:
         self.factgraph = factgraph
         self.chunk_memory = chunk_memory
         self.extractor = extractor or GeminiExtractor()
-        self.relation_registry = relation_registry or RelationRegistry()
+        self.relation_registry = relation_registry or RelationRegistry(
+            enable_typed_fallback=enable_typed_relation_fallback
+        )
         self.min_confidence = min_confidence
 
     def ingest_text(self, text: str, *, source: str = "text", domain: str = "real_text") -> IngestionResult:
@@ -171,23 +174,47 @@ class TextIngestionPipeline:
         pass2_count: int = 0,
         estimated_fact_count: int = 0,
     ) -> IngestionResult:
-        facts = self._deduplicate(facts)
+        learned_aliases = self.relation_registry.learn_from_facts(facts, slot_cleaner=self._clean_slot)
+        resolved_facts: dict[tuple[str, str, str], tuple[ExtractedFact, NormalizedRelation]] = {}
+        for fact in facts:
+            normalized = self.relation_registry.normalize_fact(
+                fact,
+                domain=domain,
+                slot_cleaner=self._clean_slot,
+            )
+            self.relation_registry.observe_resolved_fact(
+                fact,
+                canonical_relation=normalized.canonical,
+                domain=domain,
+                slot_cleaner=self._clean_slot,
+            )
+            key = (
+                self._clean_slot(fact.subject).lower(),
+                normalized.canonical,
+                self._clean_slot(fact.object).lower(),
+            )
+            existing = resolved_facts.get(key)
+            if existing is None or fact.confidence > existing[0].confidence:
+                resolved_facts[key] = (fact, normalized)
         written = 0
         raw_relations: set[str] = set()
         normalized_relations: set[str] = set()
         unresolved_relations: set[str] = set()
         alias_hits = 0
-        for fact in facts:
-            normalized = self.relation_registry.normalize(fact.relation)
+        typed_fallback_hits = 0
+        deduplicated_facts: list[ExtractedFact] = []
+        for fact, normalized in resolved_facts.values():
+            deduplicated_facts.append(fact)
             raw_relations.add(normalized.raw)
             normalized_relations.add(normalized.canonical)
             if not normalized.registry_hit:
                 unresolved_relations.add(normalized.slug)
             alias_hits += int(normalized.matched_alias)
+            typed_fallback_hits += int(normalized.resolution_source == "typed_fallback")
             if self._write_fact(fact, normalized=normalized, source=source, domain=domain):
                 written += 1
         return IngestionResult(
-            facts=facts,
+            facts=deduplicated_facts,
             pass1_count=pass1_count,
             pass2_count=pass2_count,
             estimated_fact_count=estimated_fact_count,
@@ -198,6 +225,10 @@ class TextIngestionPipeline:
                 "alias_hits": alias_hits,
                 "unresolved_relation_labels": len(unresolved_relations),
                 "unresolved_relation_examples": sorted(unresolved_relations),
+                "learned_alias_labels": len(learned_aliases),
+                "learned_alias_examples": learned_aliases,
+                "alias_candidates": self.relation_registry.candidate_aliases(),
+                "typed_fallback_hits": typed_fallback_hits,
                 "chunk_count": len(self.chunk_memory.chunks) if self.chunk_memory is not None else 0,
             },
         )
@@ -209,7 +240,23 @@ class TextIngestionPipeline:
         source: str = "structured",
         domain: str = "structured",
     ) -> bool:
-        normalized = self.relation_registry.normalize(fact.relation)
+        self.relation_registry.observe_fact(
+            fact.subject,
+            fact.relation,
+            fact.object,
+            slot_cleaner=self._clean_slot,
+        )
+        normalized = self.relation_registry.normalize_fact(
+            fact,
+            domain=domain,
+            slot_cleaner=self._clean_slot,
+        )
+        self.relation_registry.observe_resolved_fact(
+            fact,
+            canonical_relation=normalized.canonical,
+            domain=domain,
+            slot_cleaner=self._clean_slot,
+        )
         return self._write_fact(fact, normalized=normalized, source=source, domain=domain)
 
     def _deduplicate(self, facts: list[ExtractedFact]) -> list[ExtractedFact]:
@@ -268,6 +315,8 @@ class TextIngestionPipeline:
             "raw_relation": normalized.raw,
             "normalized_relation": normalized.canonical,
             "matched_alias": normalized.matched_alias,
+            "resolution_source": normalized.resolution_source,
+            "relation_evidence_count": normalized.evidence_count,
         }
         if fact.source_id:
             provenance["source_id"] = fact.source_id
@@ -293,6 +342,8 @@ class TextIngestionPipeline:
             "raw_relation": normalized.raw,
             "normalized_relation": normalized.canonical,
             "matched_alias": normalized.matched_alias,
+            "resolution_source": normalized.resolution_source,
+            "relation_evidence_count": normalized.evidence_count,
             "provenance": provenance,
         }
         return payload

@@ -1,4 +1,5 @@
 from .gemini import ExtractedFact, ExtractionResponse, GeminiExtractor, IngestionResult, TextIngestionPipeline
+from .relation_concepts import RelationConceptMatch, RelationConceptMemory
 from .relations import NormalizedRelation, RelationRegistry
 
 __all__ = [
@@ -7,6 +8,8 @@ __all__ = [
     "GeminiExtractor",
     "IngestionResult",
     "NormalizedRelation",
+    "RelationConceptMatch",
+    "RelationConceptMemory",
     "RelationRegistry",
     "TextIngestionPipeline",
 ]

@@ -1,0 +1,1444 @@
+{
+  "generated_at": "2026-04-23 20:58 UTC",
+  "config": {
+    "preset": "roadmap_serious",
+    "chat_dim": 2048,
+    "chat_seed": 0,
+    "episodic_dim": 2048,
+    "episodic_seeds": [
+      42,
+      123,
+      7
+    ],
+    "episodic_sessions": 3,
+    "episodic_turns": 10,
+    "episodic_facts_per_turn": 3,
+    "temporal_dim": 2048,
+    "temporal_seeds": [
+      42,
+      123
+    ],
+    "case_ids": [
+      "memory_fact_recall",
+      "context_pronoun_carryover",
+      "inverse_relation_lookup",
+      "multihop_bridge_query",
+      "pattern_completion_doctor",
+      "pattern_completion_artist_distribution",
+      "word_meaning_learning",
+      "word_retention_after_interference",
+      "alias_normalization_ingest",
+      "temporal_state_tracking_substrate",
+      "episodic_dialogue_memory_substrate",
+      "episodic_dialogue_metadata_substrate",
+      "trick_unknown_fact_refusal",
+      "explanation_from_memory",
+      "logic_transitive_order",
+      "puzzle_number_sequence",
+      "multilingual_spanish_recall",
+      "coding_python_function",
+      "sentiment_labeling"
+    ]
+  },
+  "rows": [
+    {
+      "summary_type": "case",
+      "case_id": "word_meaning_learning",
+      "category": "canonical_meanings",
+      "track": "implemented",
+      "surface": "web_chat",
+      "description": "Learn a new word from examples and recall its cluster.",
+      "expected_behavior": "Learn `dax` as an ingest-like action and recall that meaning.",
+      "scorer_type": "structured_match",
+      "turn_count": 2,
+      "prompt_sequence": [
+        "Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.",
+        "What does dax mean?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Learned word should map to the ingest cluster when recalled.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "Yes. 'dax' still routes to ingest; nearest action is consume (confidence 0.370).",
+          "route": "word_recall",
+          "confidence": 0.37036201268878133
+        },
+        "history_length": 5
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "Yes. 'dax' still routes to ingest; nearest action is consume (confidence 0.370).",
+        "route": "word_recall",
+        "confidence": 0.37036201268878133
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "alias_normalization_ingest",
+      "category": "canonical_meanings",
+      "track": "implemented",
+      "surface": "structured_ingest",
+      "description": "Normalize an aliased relation during ingestion.",
+      "expected_behavior": "Map `collaborated with` onto canonical `worked_with` with provenance.",
+      "scorer_type": "structured_match",
+      "turn_count": 0,
+      "prompt_sequence": [],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Ingestion should normalize alias-equivalent relations to canonical registry forms.",
+      "observed": {
+        "fact": {
+          "key": "history:Ada Lovelace:worked_with:Charles Babbage",
+          "subject": "Ada Lovelace",
+          "relation": "worked_with",
+          "object": "Charles Babbage",
+          "confidence": 0.95,
+          "source": "benchmark",
+          "kind": "explicit",
+          "domain": "history",
+          "chunk_id": "history:chunk0",
+          "provenance": {
+            "source": "benchmark",
+            "kind": "explicit",
+            "confidence": 0.95,
+            "raw_relation": "collaborated with",
+            "normalized_relation": "worked_with",
+            "matched_alias": true,
+            "resolution_source": "seed",
+            "relation_evidence_count": 0
+          },
+          "metadata": {
+            "domain": "history",
+            "chunk_id": "history:chunk0",
+            "raw_relation": "collaborated with",
+            "normalized_relation": "worked_with",
+            "matched_alias": true
+          }
+        }
+      },
+      "final_reply": {}
+    },
+    {
+      "summary_type": "case",
+      "case_id": "coding_python_function",
+      "category": "coding",
+      "track": "frontier",
+      "surface": "web_chat",
+      "description": "Write a tiny Python helper function.",
+      "expected_behavior": "Return a correct `add(a, b)` implementation.",
+      "scorer_type": "exact_match",
+      "turn_count": 1,
+      "prompt_sequence": [
+        "Write a Python function add(a, b) that returns the sum."
+      ],
+      "weight": 1.0,
+      "weighted_score": 0.0,
+      "score": 0.0,
+      "pass_threshold": 1.0,
+      "passed": false,
+      "notes": "Exact-answer challenge expecting: def add, return, a, b.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
+          "route": "fallback"
+        },
+        "history_length": 3
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
+        "route": "fallback"
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "explanation_from_memory",
+      "category": "explanation_understanding",
+      "track": "frontier",
+      "surface": "web_chat",
+      "description": "Explain an answer rather than merely restating it.",
+      "expected_behavior": "Use evidence-aware language when asked why Ada worked with Charles Babbage.",
+      "scorer_type": "programmatic_validator",
+      "turn_count": 2,
+      "prompt_sequence": [
+        "Remember Ada text",
+        "Why do you think Ada Lovelace worked with Charles Babbage?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 0.5,
+      "score": 0.5,
+      "pass_threshold": 1.0,
+      "passed": false,
+      "notes": "Explanation cases reward evidence-aware answers over bare fact restatement.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "Ada Lovelace worked with Charles Babbage. Confidence: 0.900.",
+          "route": "fact_query",
+          "confidence": 0.9,
+          "graph_target": "Ada Lovelace",
+          "evidence": [
+            {
+              "subject": "Ada Lovelace",
+              "relation": "worked_with",
+              "object": "Charles Babbage",
+              "score": 1.0,
+              "chunk_id": "chat:chunk0"
+            }
+          ],
+          "chain_path": [
+            "Charles Babbage",
+            "Ada Lovelace"
+          ]
+        },
+        "history_length": 5
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "Ada Lovelace worked with Charles Babbage. Confidence: 0.900.",
+        "route": "fact_query",
+        "confidence": 0.9,
+        "graph_target": "Ada Lovelace",
+        "evidence": [
+          {
+            "subject": "Ada Lovelace",
+            "relation": "worked_with",
+            "object": "Charles Babbage",
+            "score": 1.0,
+            "chunk_id": "chat:chunk0"
+          }
+        ],
+        "chain_path": [
+          "Charles Babbage",
+          "Ada Lovelace"
+        ]
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "context_pronoun_carryover",
+      "category": "general_context",
+      "track": "implemented",
+      "surface": "web_chat",
+      "description": "Resolve a pronoun using the prior chat subject.",
+      "expected_behavior": "Carry the subject from the prior factual turn and answer the pronoun question correctly.",
+      "scorer_type": "structured_match",
+      "turn_count": 3,
+      "prompt_sequence": [
+        "Remember Ada text",
+        "Who did Ada Lovelace work with?",
+        "Who did she work with?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Pronoun carryover resolved to the last fact subject.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "Ada Lovelace worked with Charles Babbage. Confidence: 1.000.",
+          "route": "fact_query",
+          "confidence": 1.0,
+          "graph_target": "Charles Babbage",
+          "evidence": [
+            {
+              "key": "chat:Ada Lovelace:worked_with:Charles Babbage",
+              "subject": "Ada Lovelace",
+              "relation": "worked_with",
+              "object": "Charles Babbage",
+              "confidence": 0.95,
+              "score": 1.0,
+              "source": "chat",
+              "domain": "chat",
+              "chunk_id": "chat:chunk0",
+              "provenance": {
+                "source": "chat",
+                "kind": "explicit",
+                "confidence": 0.95,
+                "raw_relation": "collaborated with",
+                "normalized_relation": "worked_with",
+                "matched_alias": true,
+                "resolution_source": "seed",
+                "relation_evidence_count": 0
+              }
+            },
+            {
+              "key": "chat:Ada Lovelace:described:an algorithm for Bernoulli numbers",
+              "subject": "Ada Lovelace",
+              "relation": "described",
+              "object": "an algorithm for Bernoulli numbers",
+              "confidence": 0.8,
+              "score": 0.3382483641123726,
+              "source": "chat",
+              "domain": "chat",
+              "chunk_id": "chat:chunk0",
+              "provenance": {
+                "source": "chat",
+                "kind": "missed",
+                "confidence": 0.8,
+                "raw_relation": "described",
+                "normalized_relation": "described",
+                "matched_alias": false,
+                "resolution_source": "seed",
+                "relation_evidence_count": 0
+              }
+            },
+            {
+              "key": "medical:surgeon:repairs:injury",
+              "subject": "surgeon",
+              "relation": "repairs",
+              "object": "injury",
+              "confidence": 1.0,
+              "score": 0.04962820783996069,
+              "source": "seed",
+              "domain": "medical",
+              "chunk_id": "medical:chunk0",
+              "provenance": {
+                "source": "seed",
+                "kind": "explicit",
+                "confidence": 1.0,
+                "raw_relation": "repairs",
+                "normalized_relation": "repairs",
+                "matched_alias": false,
+                "resolution_source": "self",
+                "relation_evidence_count": 0,
+                "source_id": "seed:medical"
+              }
+            },
+            {
+              "key": "aviation:pilot:flies:plane",
+              "subject": "pilot",
+              "relation": "flies",
+              "object": "plane",
+              "confidence": 1.0,
+              "score": 0.04036931631824339,
+              "source": "seed",
+              "domain": "aviation",
+              "chunk_id": "aviation:chunk0",
+              "provenance": {
+                "source": "seed",
+                "kind": "explicit",
+                "confidence": 1.0,
+                "raw_relation": "flies",
+                "normalized_relation": "flies",
+                "matched_alias": false,
+                "resolution_source": "self",
+                "relation_evidence_count": 0,
+                "source_id": "seed:aviation"
+              }
+            },
+            {
+              "key": "education:student:reads:book",
+              "subject": "student",
+              "relation": "reads",
+              "object": "book",
+              "confidence": 1.0,
+              "score": 0.029183333060580123,
+              "source": "seed",
+              "domain": "education",
+              "chunk_id": "education:chunk0",
+              "provenance": {
+                "source": "seed",
+                "kind": "explicit",
+                "confidence": 1.0,
+                "raw_relation": "reads",
+                "normalized_relation": "reads",
+                "matched_alias": false,
+                "resolution_source": "self",
+                "relation_evidence_count": 0,
+                "source_id": "seed:education"
+              }
+            }
+          ]
+        },
+        "history_length": 7
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "Ada Lovelace worked with Charles Babbage. Confidence: 1.000.",
+        "route": "fact_query",
+        "confidence": 1.0,
+        "graph_target": "Charles Babbage",
+        "evidence": [
+          {
+            "key": "chat:Ada Lovelace:worked_with:Charles Babbage",
+            "subject": "Ada Lovelace",
+            "relation": "worked_with",
+            "object": "Charles Babbage",
+            "confidence": 0.95,
+            "score": 1.0,
+            "source": "chat",
+            "domain": "chat",
+            "chunk_id": "chat:chunk0",
+            "provenance": {
+              "source": "chat",
+              "kind": "explicit",
+              "confidence": 0.95,
+              "raw_relation": "collaborated with",
+              "normalized_relation": "worked_with",
+              "matched_alias": true,
+              "resolution_source": "seed",
+              "relation_evidence_count": 0
+            }
+          },
+          {
+            "key": "chat:Ada Lovelace:described:an algorithm for Bernoulli numbers",
+            "subject": "Ada Lovelace",
+            "relation": "described",
+            "object": "an algorithm for Bernoulli numbers",
+            "confidence": 0.8,
+            "score": 0.3382483641123726,
+            "source": "chat",
+            "domain": "chat",
+            "chunk_id": "chat:chunk0",
+            "provenance": {
+              "source": "chat",
+              "kind": "missed",
+              "confidence": 0.8,
+              "raw_relation": "described",
+              "normalized_relation": "described",
+              "matched_alias": false,
+              "resolution_source": "seed",
+              "relation_evidence_count": 0
+            }
+          },
+          {
+            "key": "medical:surgeon:repairs:injury",
+            "subject": "surgeon",
+            "relation": "repairs",
+            "object": "injury",
+            "confidence": 1.0,
+            "score": 0.04962820783996069,
+            "source": "seed",
+            "domain": "medical",
+            "chunk_id": "medical:chunk0",
+            "provenance": {
+              "source": "seed",
+              "kind": "explicit",
+              "confidence": 1.0,
+              "raw_relation": "repairs",
+              "normalized_relation": "repairs",
+              "matched_alias": false,
+              "resolution_source": "self",
+              "relation_evidence_count": 0,
+              "source_id": "seed:medical"
+            }
+          },
+          {
+            "key": "aviation:pilot:flies:plane",
+            "subject": "pilot",
+            "relation": "flies",
+            "object": "plane",
+            "confidence": 1.0,
+            "score": 0.04036931631824339,
+            "source": "seed",
+            "domain": "aviation",
+            "chunk_id": "aviation:chunk0",
+            "provenance": {
+              "source": "seed",
+              "kind": "explicit",
+              "confidence": 1.0,
+              "raw_relation": "flies",
+              "normalized_relation": "flies",
+              "matched_alias": false,
+              "resolution_source": "self",
+              "relation_evidence_count": 0,
+              "source_id": "seed:aviation"
+            }
+          },
+          {
+            "key": "education:student:reads:book",
+            "subject": "student",
+            "relation": "reads",
+            "object": "book",
+            "confidence": 1.0,
+            "score": 0.029183333060580123,
+            "source": "seed",
+            "domain": "education",
+            "chunk_id": "education:chunk0",
+            "provenance": {
+              "source": "seed",
+              "kind": "explicit",
+              "confidence": 1.0,
+              "raw_relation": "reads",
+              "normalized_relation": "reads",
+              "matched_alias": false,
+              "resolution_source": "self",
+              "relation_evidence_count": 0,
+              "source_id": "seed:education"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "episodic_dialogue_metadata_substrate",
+      "category": "general_context",
+      "track": "implemented",
+      "surface": "episodic_substrate",
+      "description": "Measure dialogue-turn metadata and correction fidelity.",
+      "expected_behavior": "Retain speaker, intent, assistant-answer, and correction facts across turns.",
+      "scorer_type": "programmatic_validator",
+      "turn_count": 0,
+      "prompt_sequence": [],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Dialogue-turn metadata and correction fidelity averaged across seeds.",
+      "observed": {
+        "speaker_intent_em": 1.0,
+        "assistant_answer_em": 1.0,
+        "correction_em": 1.0
+      },
+      "final_reply": {}
+    },
+    {
+      "summary_type": "case",
+      "case_id": "pattern_completion_doctor",
+      "category": "language_patterning",
+      "track": "implemented",
+      "surface": "web_chat",
+      "description": "Complete a deterministic learned pattern.",
+      "expected_behavior": "Predict `treats` for the `the doctor ...` context.",
+      "scorer_type": "exact_match",
+      "turn_count": 1,
+      "prompt_sequence": [
+        "Complete this learned pattern: 'the doctor ...'"
+      ],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Pattern continuation should surface `treats`.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "The next token is 'treats' from context 'the\tdoctor' (confidence 1.000).",
+          "route": "pattern_prediction",
+          "confidence": 1.0,
+          "alternatives": []
+        },
+        "history_length": 3
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "The next token is 'treats' from context 'the\tdoctor' (confidence 1.000).",
+        "route": "pattern_prediction",
+        "confidence": 1.0,
+        "alternatives": []
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "pattern_completion_artist_distribution",
+      "category": "language_patterning",
+      "track": "implemented",
+      "surface": "web_chat",
+      "description": "Surface the ranked alternatives for a probabilistic pattern.",
+      "expected_behavior": "Predict `paints` and show `sketches` and `draws` as alternatives.",
+      "scorer_type": "structured_match",
+      "turn_count": 1,
+      "prompt_sequence": [
+        "Complete this learned pattern: 'the artist ...'"
+      ],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Pattern continuation should surface `paints`.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "The next token is 'paints' from context 'the\tartist' (confidence 0.571). Alternatives: sketches (0.29), draws (0.14).",
+          "route": "pattern_prediction",
+          "confidence": 0.5714285714285714,
+          "alternatives": [
+            {
+              "token": "sketches",
+              "score": 0.44004668088364773,
+              "probability": 0.2857142857142857
+            },
+            {
+              "token": "draws",
+              "score": 0.2239651207033627,
+              "probability": 0.14285714285714285
+            }
+          ]
+        },
+        "history_length": 3
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "The next token is 'paints' from context 'the\tartist' (confidence 0.571). Alternatives: sketches (0.29), draws (0.14).",
+        "route": "pattern_prediction",
+        "confidence": 0.5714285714285714,
+        "alternatives": [
+          {
+            "token": "sketches",
+            "score": 0.44004668088364773,
+            "probability": 0.2857142857142857
+          },
+          {
+            "token": "draws",
+            "score": 0.2239651207033627,
+            "probability": 0.14285714285714285
+          }
+        ]
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "logic_transitive_order",
+      "category": "logic",
+      "track": "frontier",
+      "surface": "web_chat",
+      "description": "Solve a simple transitive-order reasoning problem.",
+      "expected_behavior": "Answer that Alice is tallest in a three-person order chain.",
+      "scorer_type": "exact_match",
+      "turn_count": 1,
+      "prompt_sequence": [
+        "If Alice is taller than Bob and Bob is taller than Carol, who is tallest?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 0.0,
+      "score": 0.0,
+      "pass_threshold": 1.0,
+      "passed": false,
+      "notes": "Exact-answer challenge expecting: alice, tallest.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
+          "route": "fallback"
+        },
+        "history_length": 3
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
+        "route": "fallback"
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "memory_fact_recall",
+      "category": "memory",
+      "track": "implemented",
+      "surface": "web_chat",
+      "description": "Ingest text and recall a stored fact.",
+      "expected_behavior": "Return the learned Ada/Charles collaboration fact from chat memory.",
+      "scorer_type": "structured_match",
+      "turn_count": 2,
+      "prompt_sequence": [
+        "Remember Ada text",
+        "Who did Ada Lovelace work with?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Fact recall via chat after raw-text ingestion.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "Ada Lovelace worked with Charles Babbage. Confidence: 1.000.",
+          "route": "fact_query",
+          "confidence": 1.0,
+          "graph_target": "Charles Babbage",
+          "evidence": [
+            {
+              "key": "chat:Ada Lovelace:worked_with:Charles Babbage",
+              "subject": "Ada Lovelace",
+              "relation": "worked_with",
+              "object": "Charles Babbage",
+              "confidence": 0.95,
+              "score": 1.0,
+              "source": "chat",
+              "domain": "chat",
+              "chunk_id": "chat:chunk0",
+              "provenance": {
+                "source": "chat",
+                "kind": "explicit",
+                "confidence": 0.95,
+                "raw_relation": "collaborated with",
+                "normalized_relation": "worked_with",
+                "matched_alias": true,
+                "resolution_source": "seed",
+                "relation_evidence_count": 0
+              }
+            },
+            {
+              "key": "chat:Ada Lovelace:described:an algorithm for Bernoulli numbers",
+              "subject": "Ada Lovelace",
+              "relation": "described",
+              "object": "an algorithm for Bernoulli numbers",
+              "confidence": 0.8,
+              "score": 0.3382483641123726,
+              "source": "chat",
+              "domain": "chat",
+              "chunk_id": "chat:chunk0",
+              "provenance": {
+                "source": "chat",
+                "kind": "missed",
+                "confidence": 0.8,
+                "raw_relation": "described",
+                "normalized_relation": "described",
+                "matched_alias": false,
+                "resolution_source": "seed",
+                "relation_evidence_count": 0
+              }
+            },
+            {
+              "key": "medical:surgeon:repairs:injury",
+              "subject": "surgeon",
+              "relation": "repairs",
+              "object": "injury",
+              "confidence": 1.0,
+              "score": 0.04962820783996069,
+              "source": "seed",
+              "domain": "medical",
+              "chunk_id": "medical:chunk0",
+              "provenance": {
+                "source": "seed",
+                "kind": "explicit",
+                "confidence": 1.0,
+                "raw_relation": "repairs",
+                "normalized_relation": "repairs",
+                "matched_alias": false,
+                "resolution_source": "self",
+                "relation_evidence_count": 0,
+                "source_id": "seed:medical"
+              }
+            },
+            {
+              "key": "aviation:pilot:flies:plane",
+              "subject": "pilot",
+              "relation": "flies",
+              "object": "plane",
+              "confidence": 1.0,
+              "score": 0.04036931631824339,
+              "source": "seed",
+              "domain": "aviation",
+              "chunk_id": "aviation:chunk0",
+              "provenance": {
+                "source": "seed",
+                "kind": "explicit",
+                "confidence": 1.0,
+                "raw_relation": "flies",
+                "normalized_relation": "flies",
+                "matched_alias": false,
+                "resolution_source": "self",
+                "relation_evidence_count": 0,
+                "source_id": "seed:aviation"
+              }
+            },
+            {
+              "key": "education:student:reads:book",
+              "subject": "student",
+              "relation": "reads",
+              "object": "book",
+              "confidence": 1.0,
+              "score": 0.029183333060580123,
+              "source": "seed",
+              "domain": "education",
+              "chunk_id": "education:chunk0",
+              "provenance": {
+                "source": "seed",
+                "kind": "explicit",
+                "confidence": 1.0,
+                "raw_relation": "reads",
+                "normalized_relation": "reads",
+                "matched_alias": false,
+                "resolution_source": "self",
+                "relation_evidence_count": 0,
+                "source_id": "seed:education"
+              }
+            }
+          ]
+        },
+        "history_length": 5
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "Ada Lovelace worked with Charles Babbage. Confidence: 1.000.",
+        "route": "fact_query",
+        "confidence": 1.0,
+        "graph_target": "Charles Babbage",
+        "evidence": [
+          {
+            "key": "chat:Ada Lovelace:worked_with:Charles Babbage",
+            "subject": "Ada Lovelace",
+            "relation": "worked_with",
+            "object": "Charles Babbage",
+            "confidence": 0.95,
+            "score": 1.0,
+            "source": "chat",
+            "domain": "chat",
+            "chunk_id": "chat:chunk0",
+            "provenance": {
+              "source": "chat",
+              "kind": "explicit",
+              "confidence": 0.95,
+              "raw_relation": "collaborated with",
+              "normalized_relation": "worked_with",
+              "matched_alias": true,
+              "resolution_source": "seed",
+              "relation_evidence_count": 0
+            }
+          },
+          {
+            "key": "chat:Ada Lovelace:described:an algorithm for Bernoulli numbers",
+            "subject": "Ada Lovelace",
+            "relation": "described",
+            "object": "an algorithm for Bernoulli numbers",
+            "confidence": 0.8,
+            "score": 0.3382483641123726,
+            "source": "chat",
+            "domain": "chat",
+            "chunk_id": "chat:chunk0",
+            "provenance": {
+              "source": "chat",
+              "kind": "missed",
+              "confidence": 0.8,
+              "raw_relation": "described",
+              "normalized_relation": "described",
+              "matched_alias": false,
+              "resolution_source": "seed",
+              "relation_evidence_count": 0
+            }
+          },
+          {
+            "key": "medical:surgeon:repairs:injury",
+            "subject": "surgeon",
+            "relation": "repairs",
+            "object": "injury",
+            "confidence": 1.0,
+            "score": 0.04962820783996069,
+            "source": "seed",
+            "domain": "medical",
+            "chunk_id": "medical:chunk0",
+            "provenance": {
+              "source": "seed",
+              "kind": "explicit",
+              "confidence": 1.0,
+              "raw_relation": "repairs",
+              "normalized_relation": "repairs",
+              "matched_alias": false,
+              "resolution_source": "self",
+              "relation_evidence_count": 0,
+              "source_id": "seed:medical"
+            }
+          },
+          {
+            "key": "aviation:pilot:flies:plane",
+            "subject": "pilot",
+            "relation": "flies",
+            "object": "plane",
+            "confidence": 1.0,
+            "score": 0.04036931631824339,
+            "source": "seed",
+            "domain": "aviation",
+            "chunk_id": "aviation:chunk0",
+            "provenance": {
+              "source": "seed",
+              "kind": "explicit",
+              "confidence": 1.0,
+              "raw_relation": "flies",
+              "normalized_relation": "flies",
+              "matched_alias": false,
+              "resolution_source": "self",
+              "relation_evidence_count": 0,
+              "source_id": "seed:aviation"
+            }
+          },
+          {
+            "key": "education:student:reads:book",
+            "subject": "student",
+            "relation": "reads",
+            "object": "book",
+            "confidence": 1.0,
+            "score": 0.029183333060580123,
+            "source": "seed",
+            "domain": "education",
+            "chunk_id": "education:chunk0",
+            "provenance": {
+              "source": "seed",
+              "kind": "explicit",
+              "confidence": 1.0,
+              "raw_relation": "reads",
+              "normalized_relation": "reads",
+              "matched_alias": false,
+              "resolution_source": "self",
+              "relation_evidence_count": 0,
+              "source_id": "seed:education"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "word_retention_after_interference",
+      "category": "memory",
+      "track": "implemented",
+      "surface": "web_chat",
+      "description": "Retain a learned word after another word is taught.",
+      "expected_behavior": "Still recall `dax` after teaching `blick`.",
+      "scorer_type": "structured_match",
+      "turn_count": 3,
+      "prompt_sequence": [
+        "Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.",
+        "Learn another word: blick. A runner blicks a track; a traveler blicks a road; a hiker blicks a trail.",
+        "Do you still remember dax?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Original learned meaning should survive interference from a second new word.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "Yes. 'dax' still routes to ingest; nearest action is consume (confidence 0.370).",
+          "route": "word_recall",
+          "confidence": 0.37036201268878133
+        },
+        "history_length": 7
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "Yes. 'dax' still routes to ingest; nearest action is consume (confidence 0.370).",
+        "route": "word_recall",
+        "confidence": 0.37036201268878133
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "episodic_dialogue_memory_substrate",
+      "category": "memory",
+      "track": "implemented",
+      "surface": "episodic_substrate",
+      "description": "Measure D-2836-style dialogue memory retention.",
+      "expected_behavior": "Maintain immediate, distant, cross-session, revision, and retention EM.",
+      "scorer_type": "programmatic_validator",
+      "turn_count": 0,
+      "prompt_sequence": [],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "D-2836-style episodic dialogue memory metrics averaged across seeds.",
+      "observed": {
+        "immediate_em": 1.0,
+        "distant_em": 1.0,
+        "cross_session_em": 1.0,
+        "revision_em": 1.0,
+        "retention_em": 1.0
+      },
+      "final_reply": {}
+    },
+    {
+      "summary_type": "case",
+      "case_id": "inverse_relation_lookup",
+      "category": "multi_hop",
+      "track": "implemented",
+      "surface": "web_chat",
+      "description": "Answer an inverse relation question.",
+      "expected_behavior": "Traverse the reverse edge and identify Ada Lovelace from Charles Babbage.",
+      "scorer_type": "structured_match",
+      "turn_count": 2,
+      "prompt_sequence": [
+        "Remember Ada text",
+        "Who worked with Charles Babbage?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Reverse relation lookup through the graph-backed chat path.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "Ada Lovelace worked with Charles Babbage. Confidence: 0.900.",
+          "route": "fact_query",
+          "confidence": 0.9,
+          "graph_target": "Ada Lovelace",
+          "evidence": [
+            {
+              "subject": "Ada Lovelace",
+              "relation": "worked_with",
+              "object": "Charles Babbage",
+              "score": 1.0,
+              "chunk_id": "chat:chunk0"
+            }
+          ],
+          "chain_path": [
+            "Charles Babbage",
+            "Ada Lovelace"
+          ]
+        },
+        "history_length": 5,
+        "chain_path": [
+          "Charles Babbage",
+          "Ada Lovelace"
+        ]
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "Ada Lovelace worked with Charles Babbage. Confidence: 0.900.",
+        "route": "fact_query",
+        "confidence": 0.9,
+        "graph_target": "Ada Lovelace",
+        "evidence": [
+          {
+            "subject": "Ada Lovelace",
+            "relation": "worked_with",
+            "object": "Charles Babbage",
+            "score": 1.0,
+            "chunk_id": "chat:chunk0"
+          }
+        ],
+        "chain_path": [
+          "Charles Babbage",
+          "Ada Lovelace"
+        ]
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "multihop_bridge_query",
+      "category": "multi_hop",
+      "track": "implemented",
+      "surface": "web_chat",
+      "description": "Answer a bridge question over linked facts.",
+      "expected_behavior": "Use linked facts to answer who Alice knows that works with Carol.",
+      "scorer_type": "structured_match",
+      "turn_count": 2,
+      "prompt_sequence": [
+        "Remember Alice knows Bob. Bob works with Carol. Carol guides Delta.",
+        "Who does Alice know who works with Carol?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Two-hop bridge question answered from linked chat-ingested facts.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "Alice knows Bob, and Bob works with Carol. So the answer is Bob. Confidence: 0.810.",
+          "route": "multi_hop_query",
+          "confidence": 0.81,
+          "graph_target": "Bob",
+          "evidence": [
+            {
+              "subject": "Alice",
+              "relation": "knows",
+              "object": "Bob",
+              "score": 1.0,
+              "chunk_id": "chat:chunk0"
+            },
+            {
+              "subject": "Bob",
+              "relation": "works_with",
+              "object": "Carol",
+              "score": 1.0,
+              "chunk_id": "chat:chunk0"
+            }
+          ],
+          "chain_path": [
+            "Alice",
+            "Bob",
+            "Carol"
+          ]
+        },
+        "history_length": 5,
+        "chain_path": [
+          "Alice",
+          "Bob",
+          "Carol"
+        ]
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "Alice knows Bob, and Bob works with Carol. So the answer is Bob. Confidence: 0.810.",
+        "route": "multi_hop_query",
+        "confidence": 0.81,
+        "graph_target": "Bob",
+        "evidence": [
+          {
+            "subject": "Alice",
+            "relation": "knows",
+            "object": "Bob",
+            "score": 1.0,
+            "chunk_id": "chat:chunk0"
+          },
+          {
+            "subject": "Bob",
+            "relation": "works_with",
+            "object": "Carol",
+            "score": 1.0,
+            "chunk_id": "chat:chunk0"
+          }
+        ],
+        "chain_path": [
+          "Alice",
+          "Bob",
+          "Carol"
+        ]
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "multilingual_spanish_recall",
+      "category": "multilingual",
+      "track": "frontier",
+      "surface": "web_chat",
+      "description": "Answer a simple memory question in Spanish.",
+      "expected_behavior": "Return Charles Babbage, or at least fail safely instead of bluffing.",
+      "scorer_type": "correct_or_graceful",
+      "turn_count": 2,
+      "prompt_sequence": [
+        "Remember Ada text",
+        "Con quien trabajo Ada Lovelace?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 0.5,
+      "score": 0.5,
+      "pass_threshold": 1.0,
+      "passed": false,
+      "notes": "Graceful limitation was surfaced instead of bluffing.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "I have memories for Ada Lovelace, but I could not match the relation in that question. Try one of: described, worked with.",
+          "route": "fact_prompt_miss"
+        },
+        "history_length": 5
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "I have memories for Ada Lovelace, but I could not match the relation in that question. Try one of: described, worked with.",
+        "route": "fact_prompt_miss"
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "puzzle_number_sequence",
+      "category": "puzzles",
+      "track": "frontier",
+      "surface": "web_chat",
+      "description": "Continue a simple doubling sequence.",
+      "expected_behavior": "Return `32` for the sequence 2, 4, 8, 16, ?.",
+      "scorer_type": "exact_match",
+      "turn_count": 1,
+      "prompt_sequence": [
+        "Which number comes next in the sequence 2, 4, 8, 16, ?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 0.0,
+      "score": 0.0,
+      "pass_threshold": 1.0,
+      "passed": false,
+      "notes": "Exact-answer challenge expecting: 32.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
+          "route": "fallback"
+        },
+        "history_length": 3
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
+        "route": "fallback"
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "sentiment_labeling",
+      "category": "sentiment",
+      "track": "frontier",
+      "surface": "web_chat",
+      "description": "Label simple sentiment from a short utterance.",
+      "expected_behavior": "Classify the example movie review as positive.",
+      "scorer_type": "exact_match",
+      "turn_count": 1,
+      "prompt_sequence": [
+        "The movie was amazing and I loved every minute. Was the sentiment positive, negative, or neutral?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 0.0,
+      "score": 0.0,
+      "pass_threshold": 1.0,
+      "passed": false,
+      "notes": "Exact-answer challenge expecting: positive.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
+          "route": "fallback"
+        },
+        "history_length": 3
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
+        "route": "fallback"
+      }
+    },
+    {
+      "summary_type": "case",
+      "case_id": "temporal_state_tracking_substrate",
+      "category": "temporal",
+      "track": "implemented",
+      "surface": "episodic_substrate",
+      "description": "Track latest and historical state across a revision.",
+      "expected_behavior": "Preserve latest state, full history, and historical lookup fidelity.",
+      "scorer_type": "programmatic_validator",
+      "turn_count": 0,
+      "prompt_sequence": [],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Temporal state tracking metrics averaged across seeds.",
+      "observed": {
+        "latest_state_em": 1.0,
+        "history_em": 1.0,
+        "historical_em": 1.0,
+        "retention_em": 1.0
+      },
+      "final_reply": {}
+    },
+    {
+      "summary_type": "case",
+      "case_id": "trick_unknown_fact_refusal",
+      "category": "trick_questions",
+      "track": "implemented",
+      "surface": "web_chat",
+      "description": "Refuse to hallucinate an unsupported claim.",
+      "expected_behavior": "Avoid inventing an answer when asked what Ada Lovelace invented.",
+      "scorer_type": "graceful_failure_validator",
+      "turn_count": 2,
+      "prompt_sequence": [
+        "Remember Ada text",
+        "What did Ada Lovelace invent?"
+      ],
+      "weight": 1.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
+      "pass_threshold": 1.0,
+      "passed": true,
+      "notes": "Unsupported factual claim should not be answered as if known.",
+      "observed": {
+        "final_reply": {
+          "role": "assistant",
+          "text": "I have memories for Ada Lovelace, but I could not match the relation in that question. Try one of: described, worked with.",
+          "route": "fact_prompt_miss"
+        },
+        "history_length": 5
+      },
+      "final_reply": {
+        "role": "assistant",
+        "text": "I have memories for Ada Lovelace, but I could not match the relation in that question. Try one of: described, worked with.",
+        "route": "fact_prompt_miss"
+      }
+    }
+  ],
+  "summary": [
+    {
+      "summary_type": "category",
+      "label": "canonical_meanings",
+      "case_count": 2.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "category:canonical_meanings",
+      "category": "canonical_meanings"
+    },
+    {
+      "summary_type": "category",
+      "label": "coding",
+      "case_count": 1.0,
+      "mean_score": 0.0,
+      "pass_rate": 0.0,
+      "summary_key": "category:coding",
+      "category": "coding"
+    },
+    {
+      "summary_type": "category",
+      "label": "explanation_understanding",
+      "case_count": 1.0,
+      "mean_score": 0.5,
+      "pass_rate": 0.0,
+      "summary_key": "category:explanation_understanding",
+      "category": "explanation_understanding"
+    },
+    {
+      "summary_type": "category",
+      "label": "general_context",
+      "case_count": 2.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "category:general_context",
+      "category": "general_context"
+    },
+    {
+      "summary_type": "category",
+      "label": "language_patterning",
+      "case_count": 2.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "category:language_patterning",
+      "category": "language_patterning"
+    },
+    {
+      "summary_type": "category",
+      "label": "logic",
+      "case_count": 1.0,
+      "mean_score": 0.0,
+      "pass_rate": 0.0,
+      "summary_key": "category:logic",
+      "category": "logic"
+    },
+    {
+      "summary_type": "category",
+      "label": "memory",
+      "case_count": 3.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "category:memory",
+      "category": "memory"
+    },
+    {
+      "summary_type": "category",
+      "label": "multi_hop",
+      "case_count": 2.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "category:multi_hop",
+      "category": "multi_hop"
+    },
+    {
+      "summary_type": "category",
+      "label": "multilingual",
+      "case_count": 1.0,
+      "mean_score": 0.5,
+      "pass_rate": 0.0,
+      "summary_key": "category:multilingual",
+      "category": "multilingual"
+    },
+    {
+      "summary_type": "category",
+      "label": "puzzles",
+      "case_count": 1.0,
+      "mean_score": 0.0,
+      "pass_rate": 0.0,
+      "summary_key": "category:puzzles",
+      "category": "puzzles"
+    },
+    {
+      "summary_type": "category",
+      "label": "sentiment",
+      "case_count": 1.0,
+      "mean_score": 0.0,
+      "pass_rate": 0.0,
+      "summary_key": "category:sentiment",
+      "category": "sentiment"
+    },
+    {
+      "summary_type": "category",
+      "label": "temporal",
+      "case_count": 1.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "category:temporal",
+      "category": "temporal"
+    },
+    {
+      "summary_type": "category",
+      "label": "trick_questions",
+      "case_count": 1.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "category:trick_questions",
+      "category": "trick_questions"
+    },
+    {
+      "summary_type": "overall",
+      "label": "overall",
+      "case_count": 19.0,
+      "mean_score": 0.7368421052631579,
+      "pass_rate": 0.6842105263157895,
+      "summary_key": "overall:overall"
+    },
+    {
+      "summary_type": "surface",
+      "label": "episodic_substrate",
+      "case_count": 3.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "surface:episodic_substrate",
+      "surface": "episodic_substrate"
+    },
+    {
+      "summary_type": "surface",
+      "label": "structured_ingest",
+      "case_count": 1.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "surface:structured_ingest",
+      "surface": "structured_ingest"
+    },
+    {
+      "summary_type": "surface",
+      "label": "web_chat",
+      "case_count": 15.0,
+      "mean_score": 0.6666666666666666,
+      "pass_rate": 0.6,
+      "summary_key": "surface:web_chat",
+      "surface": "web_chat"
+    },
+    {
+      "summary_type": "track",
+      "label": "frontier",
+      "case_count": 6.0,
+      "mean_score": 0.16666666666666666,
+      "pass_rate": 0.0,
+      "summary_key": "track:frontier",
+      "track": "frontier"
+    },
+    {
+      "summary_type": "track",
+      "label": "implemented",
+      "case_count": 13.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
+      "summary_key": "track:implemented",
+      "track": "implemented"
+    }
+  ]
+}

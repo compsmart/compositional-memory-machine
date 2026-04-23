@@ -36,7 +36,13 @@ def main() -> None:
     chunk_memory = ChunkedKGMemory(dim=2048, role_count=4)
     graph = FactGraph()
     ingestion = TextIngestionPipeline(encoder, memory, graph, chunk_memory=chunk_memory)
-    query = QueryEngine(encoder=encoder, memory=memory, graph=graph, chunk_memory=chunk_memory)
+    query = QueryEngine(
+        encoder=encoder,
+        memory=memory,
+        graph=graph,
+        chunk_memory=chunk_memory,
+        relation_registry=ingestion.relation_registry,
+    )
 
     ngram = NGramLanguageMemory(dim=2048, seed=13)
     ngram.learn_sequence(["the", "doctor", "treats", "the", "patient"], cycles=5)

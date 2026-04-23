@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from factgraph import FactGraph
 from hrr.binding import cosine
 from hrr.encoder import SVOEncoder, SVOFact
 from memory.amm import AMM
 from memory.chunked_kg import ChunkedKGMemory
+
+if TYPE_CHECKING:
+    from ingestion.relations import RelationRegistry
 
 
 def _canonical_key(domain: str | None, subject: str, verb: str, object_: str) -> str | None:
@@ -21,6 +25,7 @@ class QueryEngine:
     memory: AMM
     graph: FactGraph | None = None
     chunk_memory: ChunkedKGMemory | None = None
+    relation_registry: "RelationRegistry | None" = None
     min_confidence: float = 0.35
     hop_decay: float = 0.9
 
@@ -35,15 +40,21 @@ class QueryEngine:
     def _dimension_hop_budget(self, hops: int) -> float:
         return self._dimension_hop_base() ** max(hops, 1)
 
+    def _canonical_relation(self, relation: str) -> str:
+        if self.relation_registry is None:
+            return relation
+        return self.relation_registry.normalize(relation).canonical
+
     def ask_svo(self, subject: str, verb: str, object_: str) -> dict[str, object]:
-        vector = self.encoder.encode(subject, verb, object_)
+        canonical_verb = self._canonical_relation(verb)
+        vector = self.encoder.encode(subject, canonical_verb, object_)
         record, confidence = self.memory.query(vector)
         if record is None or confidence < self.min_confidence:
             return {
                 "found": False,
                 "confidence": confidence,
                 "subject": subject,
-                "verb": verb,
+                "verb": canonical_verb,
                 "object": object_,
                 "source": "amm",
             }
@@ -55,30 +66,31 @@ class QueryEngine:
             "key": record.key,
             "confidence": confidence,
             "subject": payload.get("subject", subject),
-            "verb": payload.get("verb", verb),
+            "verb": payload.get("verb", canonical_verb),
             "object": payload.get("object", object_),
             "domain": domain,
             "chunk_id": payload.get("chunk_id"),
             "source": "amm",
-            "novel_composition": record.key != _canonical_key(domain, subject, verb, object_),
+            "novel_composition": record.key != _canonical_key(domain, subject, canonical_verb, object_),
         }
 
     def ask_chain(self, subject: str, relations: list[str]) -> dict[str, object]:
         if self.graph is None:
             raise ValueError("graph is required for chain queries")
+        canonical_relations = [self._canonical_relation(relation) for relation in relations]
         current = subject
         path = [subject]
         steps: list[dict[str, object]] = []
-        path_confidence = self._dimension_hop_budget(len(relations))
+        path_confidence = self._dimension_hop_budget(len(canonical_relations))
         budget_trace: list[dict[str, object]] = []
 
-        for hop, relation in enumerate(relations, start=1):
+        for hop, relation in enumerate(canonical_relations, start=1):
             target = self.graph.read(current, relation)
             if target is None:
                 return {
                     "found": False,
                     "subject": subject,
-                    "relations": relations,
+                    "relations": canonical_relations,
                     "path": path,
                     "steps": steps,
                     "confidence": 0.0 if not steps else path_confidence,
@@ -118,28 +130,28 @@ class QueryEngine:
             return {
                 "found": False,
                 "subject": subject,
-                "relations": relations,
+                "relations": canonical_relations,
                 "path": path,
                 "steps": steps,
                 "confidence": path_confidence,
                 "target": current,
                 "budget_trace": budget_trace,
                 "budget_exceeded": True,
-                "dimension_budget": self._dimension_hop_budget(len(relations)),
+                "dimension_budget": self._dimension_hop_budget(len(canonical_relations)),
                 "source": "graph+chunk",
             }
 
         return {
             "found": True,
             "subject": subject,
-            "relations": relations,
+            "relations": canonical_relations,
             "path": path,
             "steps": steps,
             "confidence": path_confidence,
             "target": current,
             "budget_trace": budget_trace,
             "source": "graph+chunk",
-            "dimension_budget": self._dimension_hop_budget(len(relations)),
+            "dimension_budget": self._dimension_hop_budget(len(canonical_relations)),
         }
 
     def ask_relational(

@@ -7,34 +7,32 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from factgraph import FactGraph
-from hrr.datasets import fact_key
 from hrr.encoder import SVOEncoder, SVOFact
+from ingestion import ExtractedFact, TextIngestionPipeline
 from memory import AMM, ChunkedKGMemory
 from query import QueryEngine
 
 
 def _write_fact(
-    encoder: SVOEncoder,
-    memory: AMM,
-    chunk_memory: ChunkedKGMemory,
-    graph: FactGraph,
+    pipeline: TextIngestionPipeline,
     domain: str,
     fact: SVOFact,
 ) -> None:
-    key = fact_key(domain, fact)
-    vector = encoder.encode_fact(fact)
-    payload = {
-        "domain": domain,
-        "subject": fact.subject,
-        "verb": fact.verb,
-        "object": fact.object,
-        "source": "exp_chunked_multihop",
-        "confidence": 1.0,
-    }
-    chunk_record = chunk_memory.write_fact(key, domain, fact, vector, payload)
-    payload["chunk_id"] = chunk_record.chunk_id
-    memory.write(key, vector, payload)
-    graph.write(fact.subject, fact.verb, fact.object)
+    written = pipeline.write_structured_fact(
+        ExtractedFact(
+            subject=fact.subject,
+            relation=fact.verb,
+            object=fact.object,
+            confidence=1.0,
+            kind="explicit",
+            source="exp_chunked_multihop",
+            source_id=f"exp_chunked_multihop:{domain}",
+        ),
+        source="exp_chunked_multihop",
+        domain=domain,
+    )
+    if not written:
+        raise RuntimeError(f"failed to write fact for domain={domain}: {fact}")
 
 
 def run(
@@ -58,15 +56,17 @@ def run(
             memory = AMM()
             graph = FactGraph()
             chunk_memory = ChunkedKGMemory(chunk_size=chunk_size, dim=dim, role_count=4)
+            pipeline = TextIngestionPipeline(encoder, memory, graph, chunk_memory=chunk_memory)
             query = QueryEngine(
                 encoder=encoder,
                 memory=memory,
                 graph=graph,
                 chunk_memory=chunk_memory,
+                relation_registry=pipeline.relation_registry,
             )
 
             for domain, fact in facts:
-                _write_fact(encoder, memory, chunk_memory, graph, domain, fact)
+                _write_fact(pipeline, domain, fact)
 
             hop2 = query.ask_chain("alice", ["knows", "works_with"])
             hop3 = query.ask_chain("alice", ["knows", "works_with", "guides"])

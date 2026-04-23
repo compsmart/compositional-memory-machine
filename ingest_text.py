@@ -46,7 +46,7 @@ def main() -> None:
         print(f"{fact.kind}: {fact.subject} --{fact.relation}--> {fact.object} ({fact.confidence})")
 
     if args.probe_subject and args.probe_relation and args.probe_object:
-        query = QueryEngine(encoder=encoder, memory=memory)
+        query = QueryEngine(encoder=encoder, memory=memory, relation_registry=pipeline.relation_registry)
         print("Probe:", query.ask_svo(args.probe_subject, args.probe_relation, args.probe_object))
 
 

@@ -16,6 +16,15 @@ from experiments.exp_d2839_sequence_chain import summarize as summarize_sequence
 from experiments.exp_d2839_sequence_chain import run as run_sequence_chain
 from experiments.exp_d2836_episodic_memory import run as run_episodic_memory
 from experiments.exp_temporal_state_tracking import run as run_temporal_state_tracking
+from experiments.exp_conversation_benchmark import (
+    build_results_payload as build_conversation_benchmark_payload,
+    compare_summary_rows as compare_conversation_benchmark_summary,
+    load_results as load_conversation_benchmark_results,
+    render_markdown_report as render_conversation_benchmark_report,
+    run as run_conversation_benchmark,
+    save_results as save_conversation_benchmark_results,
+    summarize as summarize_conversation_benchmark,
+)
 from experiments.exp_collision_stress import run as run_collision_stress
 from experiments.exp_projected_address_sweep import (
     render_markdown_report,
@@ -78,6 +87,62 @@ def test_projected_address_sweep_smoke() -> None:
 
     assert "## Aggregate Results" in report
     assert "| one_hot | 16 |" in report
+
+
+def test_conversation_benchmark_smoke(tmp_path) -> None:
+    rows = run_conversation_benchmark(
+        preset="smoke",
+        episodic_seeds=(0,),
+        temporal_seeds=(0,),
+    )
+    by_case = {str(row["case_id"]): row for row in rows}
+
+    assert len(rows) == 7
+    assert by_case["memory_fact_recall"]["score"] == 1.0
+    assert by_case["alias_normalization_ingest"]["score"] == 1.0
+    assert by_case["coding_python_function"]["score"] == 0.0
+
+    summary_rows = summarize_conversation_benchmark(rows)
+    overall = next(row for row in summary_rows if row["summary_type"] == "overall")
+    implemented = next(row for row in summary_rows if row["summary_type"] == "track" and row["track"] == "implemented")
+    frontier = next(row for row in summary_rows if row["summary_type"] == "track" and row["track"] == "frontier")
+
+    assert overall["mean_score"] > 0.8
+    assert implemented["mean_score"] == 1.0
+    assert frontier["mean_score"] == 0.0
+
+    config = {
+        "preset": "smoke",
+        "chat_dim": 2048,
+        "chat_seed": 0,
+        "episodic_dim": 2048,
+        "episodic_seeds": (0,),
+        "episodic_sessions": 3,
+        "episodic_turns": 10,
+        "episodic_facts_per_turn": 3,
+        "temporal_dim": 2048,
+        "temporal_seeds": (0,),
+        "case_ids": tuple(by_case),
+    }
+    payload = build_conversation_benchmark_payload(rows=rows, summary_rows=summary_rows, config=config)
+    results_path = tmp_path / "conversation_benchmark.json"
+    save_conversation_benchmark_results(results_path, payload)
+    loaded = load_conversation_benchmark_results(results_path)
+    compared = compare_conversation_benchmark_summary(summary_rows, loaded["summary"])
+
+    assert loaded["config"]["preset"] == "smoke"
+    assert next(row for row in compared if row["summary_key"] == "overall:overall")["mean_score_delta"] == 0.0
+
+    report = render_conversation_benchmark_report(
+        rows,
+        summary_rows,
+        config=config,
+        previous_summary_rows=loaded["summary"],
+    )
+
+    assert "## Category Scorecard" in report
+    assert "| implemented | 1.000 | 1.000 | +0.000 |" in report
+    assert "coding_python_function" in report
 
 
 def test_episodic_memory_experiment_smoke() -> None:

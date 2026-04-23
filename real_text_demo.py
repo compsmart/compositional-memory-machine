@@ -36,7 +36,7 @@ def main() -> None:
     for fact in result.facts:
         print(f"{fact.kind}: {fact.subject} --{fact.relation}--> {fact.object} ({fact.confidence})")
 
-    query = QueryEngine(encoder=encoder, memory=memory)
+    query = QueryEngine(encoder=encoder, memory=memory, relation_registry=pipeline.relation_registry)
     generator = FrozenGeneratorAdapter()
     probe = query.ask_svo("Ada Lovelace", "worked_with", "Charles Babbage")
     print("Probe:", probe)

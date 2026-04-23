@@ -19,13 +19,21 @@ list.
   `addr_dim=512`, HRR n-gram keeps stronger top-1 than candidate-pool purity at
   mid dimensions, and continuous keys still route through large stale candidate
   pools even when noisy top-1 is perfect.
-- The next active track is relation identity and provenance: the Gemini path is
-  already normalized, and the current implementation work is extending the same
-  registry / provenance shape across direct structured writes.
+- Relation identity and provenance now have a concrete next-step shape: exact
+  registry hits stay first, and an experimental typed relation fallback exists
+  behind a feature flag for unknown relation surfaces.
+- The typed relation research result is now split cleanly into two stages:
+  synthetic feasibility is strong, but the first curated real-corpus validation
+  is mixed. The fallback looks promising enough to keep exploring, but not yet
+  strong enough to treat as rollout-ready behavior.
 - The episodic benchmark is now grounded in verified conversation findings:
   dialogue turns carry `speaker`, `intent`, introduced-word, assistant-answer,
   and correction facts while still matching the D-2836 / D-2857 success pattern
   in repo-local verification.
+- The repo now has a longitudinal conversation benchmark that can be rerun
+  after each roadmap item and splits current implemented strengths from
+  frontier challenge probes such as logic, coding, multilingual prompts,
+  sentiment, and explanation quality.
 
 ## Claim Boundary
 
@@ -51,6 +59,178 @@ Why the projected-address caveat still matters:
   full positive SDM gating recipe from the lab.
 
 ## Iteration Log
+
+### 2026-04-23 - Curated real-corpus validation for typed relation fallback
+
+Scope:
+
+- Added `research/exp_relation_fallback_real_corpus.py` plus
+  `research/results/relation_fallback_real_corpus.md` to validate the
+  experimental typed relation fallback on more realistic corpus-style facts.
+- Tested both positive alias-style cases and negative safety cases with the
+  fallback off vs on.
+- Re-ran the roadmap serious conversation benchmark after the iteration to keep
+  the project scorecard current.
+
+Verification:
+
+- `python research/exp_relation_fallback_real_corpus.py --output summary --json-file research/results/relation_fallback_real_corpus.json --report-file research/results/relation_fallback_real_corpus.md`
+- `python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md`
+
+Observed repo-local behavior:
+
+- With fallback off, the curated positive corpus cases achieved
+  `pass_rate=0.0` / `exact_canonical_recovery_rate=0.0`.
+- With fallback on, the same positive set improved to
+  `pass_rate=0.25` / `exact_canonical_recovery_rate=0.25`, meaning the current
+  typed fallback recovered one of the four realistic unseen relation surfaces.
+- The negative safety cases stayed clean at `pass_rate=1.0` with fallback on,
+  so the current thresholds remained conservative rather than over-collapsing.
+- The roadmap serious conversation benchmark stayed unchanged at
+  `mean_score=0.737` / `pass_rate=0.684`, so this validation pass did not
+  regress the broader repo scorecard.
+
+Implication:
+
+- The typed fallback has cleared the "worth exploring" bar but not the "ready
+  for broad rollout" bar.
+- The current implementation is best understood as an experimental substrate:
+  safe enough to keep behind a feature flag, but not yet strong enough on
+  realistic corpora to replace conservative unresolved-relation handling.
+
+Next:
+
+- Improve typed relation features or support accumulation so the real-corpus
+  recovery rate rises materially above the current `0.25`.
+- Validate against larger extracted corpora and harder benchmark misses before
+  treating typed fallback as more than an experimental assist path.
+
+### 2026-04-23 - Typed relation fallback feasibility and feature-flag prototype
+
+Scope:
+
+- Added `research/exp_relation_concept_memory.py` plus
+  `research/results/relation_concept_memory.md` to test whether a `dax`-style
+  relation concept memory is worth implementing.
+- Compared exact pair-overlap aliasing against identity-only, typed-context, and
+  hybrid HRR relation memories on synthetic unseen-relation data.
+- Added an experimental staged hybrid path in the main codebase: exact registry
+  lookup first, then typed relation fallback for unresolved surfaces, guarded by
+  `HHR_ENABLE_TYPED_RELATION_FALLBACK=1` or
+  `TextIngestionPipeline(..., enable_typed_relation_fallback=True)`.
+- Added focused ingestion coverage showing the fallback stays off by default and
+  can map a disjoint unknown relation surface onto a known canonical family when
+  enabled.
+
+Verification:
+
+- `python research/exp_relation_concept_memory.py --output summary --json-file research/results/relation_concept_memory.json --report-file research/results/relation_concept_memory.md`
+- `python -m pytest tests/test_ingestion.py tests/test_query.py tests/test_experiments.py`
+
+Observed repo-local behavior:
+
+- In the synthetic `pair_reuse` setting, exact pair overlap remains perfect and
+  should stay the first-stage path.
+- In the harder `disjoint_entities` setting, exact pair overlap collapses to
+  `accuracy=0.0` / `unresolved_rate=1.0`, while typed relation memory reaches
+  `accuracy=1.0` across supports `1,2,4,8`.
+- Identity-only relation memory stays near chance on disjoint entities, which
+  argues against a pure entity-overlap fallback.
+- The best current architecture is therefore staged rather than monolithic:
+  deterministic registry first, typed relation fallback second, cautious alias
+  registration last.
+
+Implication:
+
+- A typed relation concept subsystem looks worth prototyping further in the repo
+  because it solves the specific failure mode that exact overlap cannot touch:
+  new relation surfaces on new entity pairs.
+- The current feature-flag implementation should still be treated as
+  experimental because the positive result is synthetic and cue-rich, not yet a
+  broad extracted-corpus benchmark.
+
+Next:
+
+- Validate the typed fallback on real extracted corpora and conversation
+  benchmark misses before considering any broader rollout.
+- Keep pair-overlap alias growth as the safe exact path for seen relation pairs,
+  with typed fallback acting only on misses.
+
+### 2026-04-23 - Longitudinal conversation benchmark
+
+Scope:
+
+- Added `experiments/conversation_benchmark_cases.py` with deterministic case
+  definitions spanning memory, multi-hop, temporal, canonical meanings,
+  explanation, logic, puzzles, trick questions, multilingual prompts, coding,
+  sentiment, and general context handling.
+- Added `experiments/exp_conversation_benchmark.py` with `run(...)`,
+  `summarize(...)`, markdown report generation, JSON result export, and
+  previous-run delta comparison.
+- Added smoke coverage in `tests/test_experiments.py`.
+- Wrote the first benchmark artifacts to
+  `reports/conversation_benchmark_latest.json` and
+  `reports/conversation_benchmark_latest.md`.
+
+Verification:
+
+- `python -m pytest tests/test_experiments.py`
+- `python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md`
+
+Observed repo-local behavior:
+
+- Implemented capabilities score perfectly in the first serious benchmark pass:
+  `implemented=1.0`, with strong `memory`, `multi_hop`, `temporal`,
+  `general_context`, `canonical_meanings`, `language_patterning`, and
+  `trick_questions` slices.
+- The broader challenge track is intentionally weak today:
+  `frontier=0.167`, with `explanation_understanding=0.5`,
+  `multilingual=0.5`, and `coding`, `logic`, `puzzles`, plus `sentiment` all
+  at `0.0`.
+- The combined serious preset currently lands at `mean_score=0.737` and
+  `pass_rate=0.684`, which gives the project a stable before/after scorecard
+  for future roadmap work.
+
+Implication:
+
+- The repo now has a reusable benchmark that measures whether conversational
+  capability is actually broadening over time instead of only checking that
+  today's implemented paths still pass focused tests.
+- The benchmark sharpens the current product boundary: the system is strong on
+  memory-backed structured dialogue, but broader reasoning and open-ended
+  assistant behaviors remain roadmap gaps rather than hidden assumptions.
+
+Next:
+
+- Re-run the benchmark after each roadmap item and compare against the previous
+  JSON artifact to make regressions and capability gains explicit.
+- Use the current lowest-scoring categories (`coding`, `logic`, `puzzles`,
+  `sentiment`, richer `explanation`, and multilingual answer quality) as the
+  clearest expansion targets for future conversational work.
+
+### 2026-04-23 - Shared structured-write path for chain helpers
+
+Scope:
+
+- Switched the remaining chain-oriented helper paths in
+  `tests/test_query.py` and `experiments/exp_chunked_multihop.py` from
+  hand-rolled AMM / FactGraph writes to `TextIngestionPipeline.write_structured_fact`.
+- Aligned those helpers with the shared relation registry and provenance payload
+  shape already used by Gemini ingestion, the web surface, and episodic memory.
+- Added a query-chain regression that writes an alias relation through the shared
+  path and verifies canonical graph routing plus stored provenance.
+
+Verification:
+
+- `python -m pytest tests/test_query.py tests/test_experiments.py`
+
+Observed repo-local behavior:
+
+- Multi-hop chain helpers now store the same normalized relation fields and
+  provenance envelope as other structured-ingest paths instead of bypassing
+  them.
+- Alias-written edges such as `worked on with` now land under the canonical
+  `works_with` graph edge while preserving the raw relation in memory payloads.
 
 ### 2026-04-23 - Serious projected-address sweep review
 
@@ -241,12 +421,16 @@ Observed repo-local behavior:
 ## Active Todo List
 
 1. Relation registry and provenance
-   - Extend the shared registry / payload shape across the remaining ad hoc
-     experiment helpers that still write directly to AMM / FactGraph.
+   - Improve typed relation features / support accumulation, then rerun the
+     curated real-corpus validation to push recovery above the current `0.25`
+     positive-case pass rate.
+   - Validate typed relation fallback on larger extracted corpora and benchmark
+     misses before treating it as anything more than an experimental flag.
    - Grow aliases from benchmark misses without collapsing distinct relation
      families prematurely.
-   - Use the new unresolved-relation examples to drive alias expansion from real
-     benchmark misses rather than guessed synonym lists.
+   - Use unresolved-relation examples plus typed-fallback proposals to drive
+     alias expansion from real benchmark misses rather than guessed synonym
+     lists.
 2. Episodic conversation memory
    - Move beyond scripted dialogue-turn facts toward controller-driven or
      extracted conversational episodes with the same verified metric structure.

@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+Use the ai labs grounded research, or your own verfified research to create the roadmap items. After each iteration run the end to end benchmark to check if its improving on general intelligence
+python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md
+Update docs\research-synthesis.md has project state, change log and next steps (roadmap) keep it updated between iterations before making any commit.
+Update the readme with any new features or capabilities, architecture changes or usage instructions.
+Commit and push changes to the project after you verify they are implemented correctly and produce the expected result

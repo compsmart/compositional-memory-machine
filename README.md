@@ -56,8 +56,14 @@ template answer or optional generator
 - D-2836-style episodic conversation benchmark with persistent sessions,
   revision, cross-session recall, final retention checks, and dialogue-turn
   metadata / correction probes.
+- A longitudinal conversation benchmark that separates current implemented
+  capabilities from frontier challenge probes such as logic, coding,
+  multilingual prompts, sentiment, and explanation quality.
 - Relation registry and provenance payloads for extracted triples and episodic
   writes.
+- An experimental typed relation fallback, gated behind
+  `HHR_ENABLE_TYPED_RELATION_FALLBACK=1`, that can map disjoint unseen relation
+  surfaces onto known canonical relations in the focused repo-local prototype.
 
 ## Research Grounding
 
@@ -123,7 +129,7 @@ Verified locally:
 
 ```text
 python -m pytest
-44 passed
+53 passed
 ```
 
 Representative outcomes:
@@ -170,6 +176,19 @@ Representative outcomes:
   keeps `speaker_intent_em=1.0`, `assistant_answer_em=1.0`, and
   `correction_em=1.0` across 3 seeds while preserving the original D-2836
   recall / revision / retention metrics at 1.0.
+- Longitudinal conversation benchmark (`roadmap_serious` preset): implemented
+  track currently scores `1.0`, frontier challenge track scores `0.167`, and
+  the combined scorecard lands at `0.737` mean score / `0.684` pass rate; see
+  [reports/conversation_benchmark_latest.md](reports/conversation_benchmark_latest.md).
+- Relation concept memory research: in the synthetic disjoint-entity setting,
+  exact pair overlap fell to `0.0` accuracy / `1.0` unresolved rate, while the
+  typed relation memory prototype reached `1.0` accuracy across supports
+  `1,2,4,8`; see
+  [research/results/relation_concept_memory.md](research/results/relation_concept_memory.md).
+- Curated real-corpus validation is more mixed: the current typed fallback
+  improved unseen canonical recovery from `0.0` to `0.25` across four positive
+  corpus-style cases while keeping two negative safety cases clean; see
+  [research/results/relation_fallback_real_corpus.md](research/results/relation_fallback_real_corpus.md).
 - The demo now includes a compositional value answer generated from a retrieved
   HRR value vector: `entity_demo has property silver signal.`
 - The web UI now mirrors the `nexus-16` dashboard style while exposing HHR
@@ -187,9 +206,10 @@ claim boundary rather than removing it: one-hot and HRR families can stay clean
 at higher `addr_dim`, while continuous keys still carry heavy stale-candidate
 contamination even when noisy top-1 is perfect. D-2837's positive one-hot SDM
 result should therefore stay separate from HRR and continuous embedding key
-families. Relation normalization is now registry-based, and the next roadmap
-track is to extend that normalization and provenance shape across direct
-structured-ingest helpers.
+families. Relation normalization is now registry-based, with an experimental
+typed fallback behind a feature flag. The next roadmap step is to validate that
+fallback on real extracted corpora and benchmark misses before expanding it
+beyond a conservative experimental path.
 
 ## Quick Start
 
@@ -198,6 +218,15 @@ Run tests:
 ```powershell
 python -m pytest
 ```
+
+Run the longitudinal conversation benchmark:
+
+```powershell
+python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md
+```
+
+Use `--preset smoke` for a fast regression-oriented slice, or pass
+`--compare-to <prior-results.json>` to show score deltas against an earlier run.
 
 Run the scripted conversation demo:
 
@@ -229,6 +258,7 @@ python experiments/exp_d2830_word_learning.py
 python experiments/exp_d2838_compositional_generation.py --summary
 python experiments/exp_d2839_sequence_chain.py --summary
 python experiments/exp_chunked_multihop.py
+python experiments/exp_conversation_benchmark.py --preset smoke --output summary
 python experiments/exp_revision_chain3.py
 python experiments/exp_projected_address_sweep.py
 python experiments/exp_d2836_episodic_memory.py
@@ -262,6 +292,28 @@ python ingest_text.py --text "Ada Lovelace worked with Charles Babbage." --domai
 
 Gemini ingestion requires `GOOGLE_API_KEY` or `GEMINI_API_KEY`.
 
+Enable the experimental typed relation fallback:
+
+```powershell
+$env:HHR_ENABLE_TYPED_RELATION_FALLBACK = "1"
+python conversation_demo.py
+```
+
+The flag keeps exact registry hits first and only uses typed relation memory on
+unresolved surfaces.
+
+Run the relation concept memory feasibility study:
+
+```powershell
+python research/exp_relation_concept_memory.py --output summary --json-file research/results/relation_concept_memory.json --report-file research/results/relation_concept_memory.md
+```
+
+Run the curated real-corpus fallback validation:
+
+```powershell
+python research/exp_relation_fallback_real_corpus.py --output summary --json-file research/results/relation_fallback_real_corpus.json --report-file research/results/relation_fallback_real_corpus.md
+```
+
 ## Example Output
 
 ```text
@@ -287,6 +339,7 @@ ingestion/        Gemini 2.5 Flash Lite text-to-triples ingestion
 language/         n-gram prediction and context word-learning primitives
 generation/       optional frozen-generator adapter interface
 experiments/      reproducible PoC experiments
+research/         standalone feasibility studies and research artifacts
 tests/            focused unit tests
 web_static/       browser dashboard assets
 web.py            local HTTP server for the web UI demo
@@ -301,6 +354,10 @@ docs/             living research synthesis and design notes
 - The conversation demo is scripted, not an autonomous chat loop.
 - Syntax learning and general reasoning are not implemented.
 - Word learning currently uses controlled context hints.
+- Typed relation fallback is experimental, off by default, and currently backed
+  by synthetic feasibility results, a first mixed curated real-corpus
+  validation, and focused ingestion tests rather than a large extracted-corpus
+  benchmark.
 - The current `FactGraph` still stores one active target per `(source, relation)`,
   so branching graph queries remain intentionally conservative.
 - The D-2858 chunk law is applied conservatively to this repo's full-vector

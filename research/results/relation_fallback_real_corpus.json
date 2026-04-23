@@ -1,0 +1,368 @@
+{
+  "rows": [
+    {
+      "case_id": "worked_with_teamed_up_with",
+      "category": "positive",
+      "description": "Map a disjoint collaboration surface onto worked_with.",
+      "fallback_enabled": false,
+      "expected_canonical": "worked_with",
+      "normalized_relation": "teamed_up_with",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "teamed_up_with"
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "John McCarthy",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "research:Barbara Liskov:teamed_up_with:John McCarthy",
+        "confidence": 0.6684324782767936,
+        "subject": "Barbara Liskov",
+        "verb": "teamed_up_with",
+        "object": "John McCarthy",
+        "domain": "research",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true
+      }
+    },
+    {
+      "case_id": "published_notes_about_memo_on",
+      "category": "positive",
+      "description": "Map memo-style phrasing onto published_notes_about.",
+      "fallback_enabled": false,
+      "expected_canonical": "published_notes_about",
+      "normalized_relation": "circulated_a_memo_on",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "circulated_a_memo_on"
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "the decoder design",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "archives:Elena Torres:circulated_a_memo_on:the decoder design",
+        "confidence": 0.6684324782767936,
+        "subject": "Elena Torres",
+        "verb": "circulated_a_memo_on",
+        "object": "the decoder design",
+        "domain": "archives",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true
+      }
+    },
+    {
+      "case_id": "proposed_as_pitched_as",
+      "category": "positive",
+      "description": "Map pitched-as language onto proposed_as.",
+      "fallback_enabled": false,
+      "expected_canonical": "proposed_as",
+      "normalized_relation": "pitched_as",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "pitched_as"
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "a general-purpose research engine",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "history:Analytical Loom:pitched_as:a general-purpose research engine",
+        "confidence": 0.6684324782767936,
+        "subject": "Analytical Loom",
+        "verb": "pitched_as",
+        "object": "a general-purpose research engine",
+        "domain": "history",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true
+      }
+    },
+    {
+      "case_id": "described_outlined",
+      "category": "positive",
+      "description": "Map outlined onto described for a technical artifact.",
+      "fallback_enabled": false,
+      "expected_canonical": "described",
+      "normalized_relation": "outlined",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "outlined"
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "a layered protocol",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "technical:Marin Chen:outlined:a layered protocol",
+        "confidence": 0.6684324782767936,
+        "subject": "Marin Chen",
+        "verb": "outlined",
+        "object": "a layered protocol",
+        "domain": "technical",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true
+      }
+    },
+    {
+      "case_id": "negative_mentored",
+      "category": "negative",
+      "description": "Leave a mentorship-style relation unresolved when no canonical family exists.",
+      "fallback_enabled": false,
+      "expected_canonical": null,
+      "normalized_relation": "mentored",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "mentored"
+      ],
+      "canonical_query_found": false,
+      "canonical_query_confidence": 0.0,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Katherine Johnson",
+      "passed": true,
+      "canonical_query": null
+    },
+    {
+      "case_id": "negative_relocated_to",
+      "category": "negative",
+      "description": "Leave a relocation relation unresolved instead of forcing it into proposed_as.",
+      "fallback_enabled": false,
+      "expected_canonical": null,
+      "normalized_relation": "relocated_to",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "relocated_to"
+      ],
+      "canonical_query_found": false,
+      "canonical_query_confidence": 0.0,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Bristol",
+      "passed": true,
+      "canonical_query": null
+    },
+    {
+      "case_id": "worked_with_teamed_up_with",
+      "category": "positive",
+      "description": "Map a disjoint collaboration surface onto worked_with.",
+      "fallback_enabled": true,
+      "expected_canonical": "worked_with",
+      "normalized_relation": "worked_with",
+      "resolution_source": "typed_fallback",
+      "typed_fallback_hits": 1,
+      "unresolved_relation_examples": [],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 1.0000000000000002,
+      "exact_canonical_recovery": true,
+      "raw_graph_target": "John McCarthy",
+      "passed": true,
+      "canonical_query": {
+        "found": true,
+        "key": "research:Barbara Liskov:worked_with:John McCarthy",
+        "confidence": 1.0000000000000002,
+        "subject": "Barbara Liskov",
+        "verb": "worked_with",
+        "object": "John McCarthy",
+        "domain": "research",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": false
+      }
+    },
+    {
+      "case_id": "published_notes_about_memo_on",
+      "category": "positive",
+      "description": "Map memo-style phrasing onto published_notes_about.",
+      "fallback_enabled": true,
+      "expected_canonical": "published_notes_about",
+      "normalized_relation": "circulated_a_memo_on",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "circulated_a_memo_on"
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "the decoder design",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "archives:Elena Torres:circulated_a_memo_on:the decoder design",
+        "confidence": 0.6684324782767936,
+        "subject": "Elena Torres",
+        "verb": "circulated_a_memo_on",
+        "object": "the decoder design",
+        "domain": "archives",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true
+      }
+    },
+    {
+      "case_id": "proposed_as_pitched_as",
+      "category": "positive",
+      "description": "Map pitched-as language onto proposed_as.",
+      "fallback_enabled": true,
+      "expected_canonical": "proposed_as",
+      "normalized_relation": "pitched_as",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "pitched_as"
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "a general-purpose research engine",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "history:Analytical Loom:pitched_as:a general-purpose research engine",
+        "confidence": 0.6684324782767936,
+        "subject": "Analytical Loom",
+        "verb": "pitched_as",
+        "object": "a general-purpose research engine",
+        "domain": "history",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true
+      }
+    },
+    {
+      "case_id": "described_outlined",
+      "category": "positive",
+      "description": "Map outlined onto described for a technical artifact.",
+      "fallback_enabled": true,
+      "expected_canonical": "described",
+      "normalized_relation": "outlined",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "outlined"
+      ],
+      "canonical_query_found": true,
+      "canonical_query_confidence": 0.6684324782767936,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "a layered protocol",
+      "passed": false,
+      "canonical_query": {
+        "found": true,
+        "key": "technical:Marin Chen:outlined:a layered protocol",
+        "confidence": 0.6684324782767936,
+        "subject": "Marin Chen",
+        "verb": "outlined",
+        "object": "a layered protocol",
+        "domain": "technical",
+        "chunk_id": null,
+        "source": "amm",
+        "novel_composition": true
+      }
+    },
+    {
+      "case_id": "negative_mentored",
+      "category": "negative",
+      "description": "Leave a mentorship-style relation unresolved when no canonical family exists.",
+      "fallback_enabled": true,
+      "expected_canonical": null,
+      "normalized_relation": "mentored",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "mentored"
+      ],
+      "canonical_query_found": false,
+      "canonical_query_confidence": 0.0,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Katherine Johnson",
+      "passed": true,
+      "canonical_query": null
+    },
+    {
+      "case_id": "negative_relocated_to",
+      "category": "negative",
+      "description": "Leave a relocation relation unresolved instead of forcing it into proposed_as.",
+      "fallback_enabled": true,
+      "expected_canonical": null,
+      "normalized_relation": "relocated_to",
+      "resolution_source": "self",
+      "typed_fallback_hits": 0,
+      "unresolved_relation_examples": [
+        "relocated_to"
+      ],
+      "canonical_query_found": false,
+      "canonical_query_confidence": 0.0,
+      "exact_canonical_recovery": false,
+      "raw_graph_target": "Bristol",
+      "passed": true,
+      "canonical_query": null
+    }
+  ],
+  "summary": [
+    {
+      "fallback_enabled": false,
+      "category": "positive",
+      "pass_rate": 0.0,
+      "exact_canonical_recovery_rate": 0.0,
+      "typed_fallback_rate": 0.0,
+      "cases": 4
+    },
+    {
+      "fallback_enabled": false,
+      "category": "negative",
+      "pass_rate": 1.0,
+      "exact_canonical_recovery_rate": 0.0,
+      "typed_fallback_rate": 0.0,
+      "cases": 2
+    },
+    {
+      "fallback_enabled": false,
+      "category": "overall",
+      "pass_rate": 0.3333333333333333,
+      "exact_canonical_recovery_rate": 0.0,
+      "typed_fallback_rate": 0.0,
+      "cases": 6
+    },
+    {
+      "fallback_enabled": true,
+      "category": "positive",
+      "pass_rate": 0.25,
+      "exact_canonical_recovery_rate": 0.25,
+      "typed_fallback_rate": 0.25,
+      "cases": 4
+    },
+    {
+      "fallback_enabled": true,
+      "category": "negative",
+      "pass_rate": 1.0,
+      "exact_canonical_recovery_rate": 0.0,
+      "typed_fallback_rate": 0.0,
+      "cases": 2
+    },
+    {
+      "fallback_enabled": true,
+      "category": "overall",
+      "pass_rate": 0.5,
+      "exact_canonical_recovery_rate": 0.16666666666666666,
+      "typed_fallback_rate": 0.16666666666666666,
+      "cases": 6
+    }
+  ]
+}

@@ -75,6 +75,7 @@ class HHRWebState:
             memory=self.memory,
             graph=self.graph,
             chunk_memory=self.chunk_memory,
+            relation_registry=self.pipeline.relation_registry,
         )
         self.generator = FrozenGeneratorAdapter()
         self._seed_fact_memory()
