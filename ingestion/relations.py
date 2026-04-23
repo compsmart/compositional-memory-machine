@@ -30,8 +30,10 @@ DEFAULT_ALIASES: dict[str, tuple[str, ...]] = {
 @dataclass(frozen=True)
 class NormalizedRelation:
     raw: str
+    slug: str
     canonical: str
     matched_alias: bool
+    registry_hit: bool
 
 
 class RelationRegistry:
@@ -49,7 +51,13 @@ class RelationRegistry:
     def normalize(self, value: str) -> NormalizedRelation:
         slug = self._slug(value)
         canonical = self._lookup.get(slug, slug)
-        return NormalizedRelation(raw=value, canonical=canonical, matched_alias=canonical != slug)
+        return NormalizedRelation(
+            raw=value,
+            slug=slug,
+            canonical=canonical,
+            matched_alias=canonical != slug,
+            registry_hit=slug in self._lookup,
+        )
 
     @staticmethod
     def _slug(value: str) -> str:

@@ -54,8 +54,10 @@ template answer or optional generator
 - Projected-address sweep harness for one-hot, HRR SVO, HRR n-gram, and
   continuous context keys.
 - D-2836-style episodic conversation benchmark with persistent sessions,
-  revision, cross-session recall, and final retention checks.
-- Relation registry and provenance payloads for extracted triples.
+  revision, cross-session recall, final retention checks, and dialogue-turn
+  metadata / correction probes.
+- Relation registry and provenance payloads for extracted triples and episodic
+  writes.
 
 ## Research Grounding
 
@@ -109,8 +111,8 @@ The design is grounded in Compsmart AI Research Lab findings:
   must use shared entity pools plus explicit chain construction for multi-hop
   evaluation.
 
-See [docs/research-roadmap.md](docs/research-roadmap.md) for the detailed lab
-mapping, external VSA/HDC literature context, risk register, and next research
+See [docs/research-synthesis.md](docs/research-synthesis.md) for the living
+research synthesis, completed roadmap items, claim boundary, and next research
 tracks. See [reports/lab_claim_validation.md](reports/lab_claim_validation.md)
 for the repo-vs-lab claim ledger and the validation status for the current
 scorecard.
@@ -164,23 +166,30 @@ Representative outcomes:
   (`sim=0.95`), while overwrite without reset collapses toward a `50/50` blend.
 - D-2857 mirror: `perkey_reset` restores `revised_em=1.0` and
   `retained_em=1.0`, while no-reset revision stays far lower.
+- D-2836 dialogue benchmark extension: the repo-local scripted dialogue run now
+  keeps `speaker_intent_em=1.0`, `assistant_answer_em=1.0`, and
+  `correction_em=1.0` across 3 seeds while preserving the original D-2836
+  recall / revision / retention metrics at 1.0.
 - The demo now includes a compositional value answer generated from a retrieved
   HRR value vector: `entity_demo has property silver signal.`
 - The web UI now mirrors the `nexus-16` dashboard style while exposing HHR
   structured querying, text ingestion, resettable seed memory, chunk summaries,
   chain queries, and the same 3D fact visualization pattern.
 - FactGraph chain3 revision: 100% exact match across tested positions.
-- Bounded projected-address sweep: top-1 stayed high in the small repo run, but
-  candidate contamination separated key families; see
-  [reports/projected_address_sweep.md](reports/projected_address_sweep.md).
+- Projected-address roadmap sweep: top-1 stayed strong across the serious
+  `dim=2048` run, but candidate contamination still separated one-hot, HRR SVO,
+  HRR n-gram, and continuous key families; see
+  [reports/projected_address_sweep_full.md](reports/projected_address_sweep_full.md).
 
 Important boundary: the repo's core AMM is currently full-vector
-nearest-neighbor memory. The lab's D-2831/D-2832 results show that projected SDM
-addressing needs a dedicated `addr_dim` sweep before making stronger CI claims.
-D-2837's positive one-hot SDM result should be tracked separately from HRR and
-continuous embedding key families. Relation normalization is now registry-based,
-but the default alias set is intentionally small and should grow from benchmark
-misses.
+nearest-neighbor memory. The serious projected-address sweep sharpened the same
+claim boundary rather than removing it: one-hot and HRR families can stay clean
+at higher `addr_dim`, while continuous keys still carry heavy stale-candidate
+contamination even when noisy top-1 is perfect. D-2837's positive one-hot SDM
+result should therefore stay separate from HRR and continuous embedding key
+families. Relation normalization is now registry-based, and the next roadmap
+track is to extend that normalization and provenance shape across direct
+structured-ingest helpers.
 
 ## Quick Start
 
@@ -195,6 +204,9 @@ Run the scripted conversation demo:
 ```powershell
 python conversation_demo.py
 ```
+
+`conversation_demo.py` uses Gemini-backed text extraction, so it requires
+`GOOGLE_API_KEY` or `GEMINI_API_KEY`.
 
 Run the web UI:
 
@@ -279,7 +291,7 @@ tests/            focused unit tests
 web_static/       browser dashboard assets
 web.py            local HTTP server for the web UI demo
 reports/          result notes
-docs/             research roadmap and design notes
+docs/             living research synthesis and design notes
 ```
 
 ## Limitations

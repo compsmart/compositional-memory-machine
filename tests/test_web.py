@@ -5,7 +5,6 @@ import threading
 from contextlib import contextmanager
 from urllib.request import Request, urlopen
 
-from hrr.datasets import fact_key
 from hrr.encoder import SVOFact
 from ingestion import ExtractedFact, ExtractionResponse, GeminiExtractor
 from web import HHRWebState, make_web_server
@@ -114,20 +113,19 @@ def _post(url: str, payload: dict[str, object]) -> dict[str, object]:
 
 
 def _write_fact(state: HHRWebState, domain: str, fact: SVOFact) -> None:
-    key = fact_key(domain, fact)
-    vector = state.encoder.encode_fact(fact)
-    payload = {
-        "domain": domain,
-        "subject": fact.subject,
-        "verb": fact.verb,
-        "object": fact.object,
-        "source": "fixture",
-        "confidence": 1.0,
-    }
-    chunk_record = state.chunk_memory.write_fact(key, domain, fact, vector, payload)
-    payload["chunk_id"] = chunk_record.chunk_id
-    state.memory.write(key, vector, payload)
-    state.graph.write(fact.subject, fact.verb, fact.object)
+    state.pipeline.write_structured_fact(
+        ExtractedFact(
+            subject=fact.subject,
+            relation=fact.verb,
+            object=fact.object,
+            confidence=1.0,
+            kind="explicit",
+            source="fixture",
+            source_id=f"fixture:{domain}",
+        ),
+        source="fixture",
+        domain=domain,
+    )
 
 
 def test_web_status_and_facts_routes() -> None:
@@ -205,6 +203,9 @@ def test_web_ingest_and_compositional_routes() -> None:
     assert compositional["hrr_native"]["text"] == "silver signal"
     assert "silver signal" in compositional["answer"]
     assert any(fact["subject"] == "Ada Lovelace" and fact["relation"] == "worked_with" for fact in facts["facts"])
+    ada_fact = next(fact for fact in facts["facts"] if fact["subject"] == "Ada Lovelace" and fact["relation"] == "worked_with")
+    assert ada_fact["provenance"]["raw_relation"] == "collaborated with"
+    assert ada_fact["provenance"]["matched_alias"] is True
 
 
 def test_web_chat_route_supports_multi_turn_memory() -> None:

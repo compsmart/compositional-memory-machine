@@ -18,7 +18,7 @@ from factgraph import FactGraph
 from generation import CompositionalValueDecoder, FrozenGeneratorAdapter, make_value_vector
 from hrr import SVOEncoder, VectorStore
 from hrr.datasets import all_facts, fact_key
-from ingestion import GeminiExtractor, TextIngestionPipeline
+from ingestion import ExtractedFact, GeminiExtractor, TextIngestionPipeline
 from language import ContextExample, NGramLanguageMemory, WordLearningMemory
 from memory import AMM, ChunkedKGMemory
 from query import QueryEngine
@@ -225,26 +225,19 @@ class HHRWebState:
 
     def _seed_fact_memory(self) -> None:
         for domain, fact in all_facts():
-            key = fact_key(domain, fact)
-            payload = {
-                "domain": domain,
-                "subject": fact.subject,
-                "verb": fact.verb,
-                "object": fact.object,
-                "source": "seed",
-                "kind": "explicit",
-                "confidence": 1.0,
-            }
-            chunk_record = self.chunk_memory.write_fact(
-                key,
-                domain,
-                fact,
-                self.encoder.encode_fact(fact),
-                payload,
+            self.pipeline.write_structured_fact(
+                ExtractedFact(
+                    subject=fact.subject,
+                    relation=fact.verb,
+                    object=fact.object,
+                    confidence=1.0,
+                    kind="explicit",
+                    source="seed",
+                    source_id=f"seed:{domain}",
+                ),
+                source="seed",
+                domain=domain,
             )
-            payload["chunk_id"] = chunk_record.chunk_id
-            self.memory.write(key, self.encoder.encode_fact(fact), payload)
-            self.graph.write(fact.subject, fact.verb, fact.object)
 
     def _build_compositional_demo(self) -> None:
         self.value_store = VectorStore(dim=256, seed=self.seed)
@@ -906,9 +899,13 @@ class HHRWebState:
                     "kind": str(payload.get("kind", "explicit")),
                     "domain": str(payload.get("domain", "unknown")),
                     "chunk_id": payload.get("chunk_id"),
+                    "provenance": to_jsonable(payload.get("provenance", {})),
                     "metadata": {
                         "domain": str(payload.get("domain", "unknown")),
                         "chunk_id": payload.get("chunk_id"),
+                        "raw_relation": payload.get("raw_relation"),
+                        "normalized_relation": payload.get("normalized_relation"),
+                        "matched_alias": bool(payload.get("matched_alias", False)),
                     },
                 }
             )
@@ -939,6 +936,7 @@ class HHRWebState:
                     "source": str(payload.get("source", "seed")),
                     "domain": str(payload.get("domain", "unknown")),
                     "chunk_id": payload.get("chunk_id"),
+                    "provenance": to_jsonable(payload.get("provenance", {})),
                 }
             )
         return evidence

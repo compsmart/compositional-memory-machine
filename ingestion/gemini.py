@@ -12,7 +12,7 @@ from hrr.datasets import fact_key
 from hrr.encoder import SVOEncoder, SVOFact
 from memory.amm import AMM
 from memory.chunked_kg import ChunkedKGMemory
-from .relations import RelationRegistry
+from .relations import NormalizedRelation, RelationRegistry
 
 
 class ExtractedFact(BaseModel):
@@ -22,6 +22,12 @@ class ExtractedFact(BaseModel):
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     kind: Literal["explicit", "missed", "implied", "derived"] = "explicit"
     source: str = ""
+    source_id: str = ""
+    source_chunk_id: str = ""
+    excerpt: str = ""
+    char_start: int | None = Field(default=None, ge=0)
+    char_end: int | None = Field(default=None, ge=0)
+    sentence_index: int | None = Field(default=None, ge=0)
 
 
 class ExtractionResponse(BaseModel):
@@ -36,7 +42,7 @@ class IngestionResult:
     pass2_count: int
     estimated_fact_count: int
     written_facts: int
-    relation_stats: dict[str, int]
+    relation_stats: dict[str, object]
 
     @property
     def enrichment(self) -> float:
@@ -169,45 +175,17 @@ class TextIngestionPipeline:
         written = 0
         raw_relations: set[str] = set()
         normalized_relations: set[str] = set()
+        unresolved_relations: set[str] = set()
         alias_hits = 0
         for fact in facts:
-            if fact.confidence < self.min_confidence:
-                continue
             normalized = self.relation_registry.normalize(fact.relation)
             raw_relations.add(normalized.raw)
             normalized_relations.add(normalized.canonical)
+            if not normalized.registry_hit:
+                unresolved_relations.add(normalized.slug)
             alias_hits += int(normalized.matched_alias)
-            svo = SVOFact(
-                subject=self._clean_slot(fact.subject),
-                verb=normalized.canonical,
-                object=self._clean_slot(fact.object),
-            )
-            key = fact_key(domain, svo)
-            vector = self.encoder.encode_fact(svo)
-            source_name = fact.source or source
-            payload = {
-                "domain": domain,
-                "subject": svo.subject,
-                "verb": svo.verb,
-                "object": svo.object,
-                "confidence": fact.confidence,
-                "kind": fact.kind,
-                "source": source_name,
-                "raw_relation": normalized.raw,
-                "normalized_relation": normalized.canonical,
-                "provenance": {
-                    "source": source_name,
-                    "kind": fact.kind,
-                    "confidence": fact.confidence,
-                    "raw_relation": normalized.raw,
-                },
-            }
-            if self.chunk_memory is not None:
-                chunk_record = self.chunk_memory.write_fact(key, domain, svo, vector, payload)
-                payload["chunk_id"] = chunk_record.chunk_id
-            self.memory.write(key, vector, payload)
-            self.factgraph.write(svo.subject, svo.verb, svo.object)
-            written += 1
+            if self._write_fact(fact, normalized=normalized, source=source, domain=domain):
+                written += 1
         return IngestionResult(
             facts=facts,
             pass1_count=pass1_count,
@@ -218,10 +196,21 @@ class TextIngestionPipeline:
                 "raw_relation_labels": len(raw_relations),
                 "normalized_relation_labels": len(normalized_relations),
                 "alias_hits": alias_hits,
-                "unresolved_relation_labels": len(raw_relations) - alias_hits,
+                "unresolved_relation_labels": len(unresolved_relations),
+                "unresolved_relation_examples": sorted(unresolved_relations),
                 "chunk_count": len(self.chunk_memory.chunks) if self.chunk_memory is not None else 0,
             },
         )
+
+    def write_structured_fact(
+        self,
+        fact: ExtractedFact,
+        *,
+        source: str = "structured",
+        domain: str = "structured",
+    ) -> bool:
+        normalized = self.relation_registry.normalize(fact.relation)
+        return self._write_fact(fact, normalized=normalized, source=source, domain=domain)
 
     def _deduplicate(self, facts: list[ExtractedFact]) -> list[ExtractedFact]:
         seen: dict[tuple[str, str, str], ExtractedFact] = {}
@@ -235,6 +224,78 @@ class TextIngestionPipeline:
             if existing is None or fact.confidence > existing.confidence:
                 seen[key] = fact
         return list(seen.values())
+
+    def _write_fact(
+        self,
+        fact: ExtractedFact,
+        *,
+        normalized: NormalizedRelation,
+        source: str,
+        domain: str,
+    ) -> bool:
+        if fact.confidence < self.min_confidence:
+            return False
+
+        svo = SVOFact(
+            subject=self._clean_slot(fact.subject),
+            verb=normalized.canonical,
+            object=self._clean_slot(fact.object),
+        )
+        key = fact_key(domain, svo)
+        vector = self.encoder.encode_fact(svo)
+        source_name = fact.source or source
+        payload = self._build_payload(fact, source_name=source_name, domain=domain, svo=svo, normalized=normalized)
+        if self.chunk_memory is not None:
+            chunk_record = self.chunk_memory.write_fact(key, domain, svo, vector, payload)
+            payload["chunk_id"] = chunk_record.chunk_id
+        self.memory.write(key, vector, payload)
+        self.factgraph.write(svo.subject, svo.verb, svo.object)
+        return True
+
+    def _build_payload(
+        self,
+        fact: ExtractedFact,
+        *,
+        source_name: str,
+        domain: str,
+        svo: SVOFact,
+        normalized: NormalizedRelation,
+    ) -> dict[str, object]:
+        provenance: dict[str, object] = {
+            "source": source_name,
+            "kind": fact.kind,
+            "confidence": fact.confidence,
+            "raw_relation": normalized.raw,
+            "normalized_relation": normalized.canonical,
+            "matched_alias": normalized.matched_alias,
+        }
+        if fact.source_id:
+            provenance["source_id"] = fact.source_id
+        if fact.source_chunk_id:
+            provenance["source_chunk_id"] = fact.source_chunk_id
+        if fact.excerpt:
+            provenance["excerpt"] = fact.excerpt
+        if fact.char_start is not None:
+            provenance["char_start"] = fact.char_start
+        if fact.char_end is not None:
+            provenance["char_end"] = fact.char_end
+        if fact.sentence_index is not None:
+            provenance["sentence_index"] = fact.sentence_index
+
+        payload: dict[str, object] = {
+            "domain": domain,
+            "subject": svo.subject,
+            "verb": svo.verb,
+            "object": svo.object,
+            "confidence": fact.confidence,
+            "kind": fact.kind,
+            "source": source_name,
+            "raw_relation": normalized.raw,
+            "normalized_relation": normalized.canonical,
+            "matched_alias": normalized.matched_alias,
+            "provenance": provenance,
+        }
+        return payload
 
     @staticmethod
     def _clean_slot(value: str) -> str:

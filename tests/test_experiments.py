@@ -81,13 +81,16 @@ def test_projected_address_sweep_smoke() -> None:
 
 
 def test_episodic_memory_experiment_smoke() -> None:
-    rows = run_episodic_memory(dim=512, seeds=(0,), sessions=2, turns=4, facts_per_turn=2)
+    rows = run_episodic_memory(dim=512, seeds=(0,), sessions=2, turns=4, facts_per_turn=3)
 
     assert rows[0]["immediate_em"] == 1.0
     assert rows[0]["distant_em"] == 1.0
     assert rows[0]["cross_session_em"] == 1.0
     assert rows[0]["revision_em"] == 1.0
     assert rows[0]["retention_em"] == 1.0
+    assert rows[0]["speaker_intent_em"] == 1.0
+    assert rows[0]["assistant_answer_em"] == 1.0
+    assert rows[0]["correction_em"] == 1.0
 
 
 def test_compositional_generation_experiment_smoke() -> None:

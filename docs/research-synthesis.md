@@ -1,24 +1,100 @@
 # Research Synthesis
 
-Generated: 2026-04-22
+Generated: 2026-04-23
 
-This document tracks roadmap and research iterations on `main` so experiment
-work stays cumulative, commit-sized, and easy to review.
+This is the living research document for the repo. It replaces the old split
+between a separate roadmap and synthesis note: completed work moves into the
+iteration log below, and active next steps stay at the bottom as a small todo
+list.
 
 ## Current Position
 
 - Full-vector HRR+AMM behavior remains strong in the repo PoC.
-- The projected-address harness is the active critical-path experiment because
-  projected routing, not raw HRR width alone, is where the repo needs sharper
-  evidence before making stronger SDM-style claims.
-- The bounded sweep showed top-1 retrieval remains strong at small scale, but
-  stale candidate contamination clearly separates one-hot, HRR SVO, HRR n-gram,
-  and continuous keys.
-- Generation and sequence-memory evidence are now stronger: the repo has a
-  compositional generation benchmark and a sequence-chain prefix benchmark that
-  connect recent lab findings to concrete local experiments.
+- The serious projected-address sweep is now complete at
+  `dim=2048`, `addr_dim={64,128,256,512,1024,2048}`,
+  `families={one_hot,hrr_svo,hrr_ngram,continuous}`,
+  `items={500,1000,2000}`, and `noise={0.5,1.0}`.
+- The sweep resolved the immediate address-dimension question enough to tighten
+  claims: one-hot is the easy case, HRR SVO becomes comfortably clean by about
+  `addr_dim=512`, HRR n-gram keeps stronger top-1 than candidate-pool purity at
+  mid dimensions, and continuous keys still route through large stale candidate
+  pools even when noisy top-1 is perfect.
+- The next active track is relation identity and provenance: the Gemini path is
+  already normalized, and the current implementation work is extending the same
+  registry / provenance shape across direct structured writes.
+- The episodic benchmark is now grounded in verified conversation findings:
+  dialogue turns carry `speaker`, `intent`, introduced-word, assistant-answer,
+  and correction facts while still matching the D-2836 / D-2857 success pattern
+  in repo-local verification.
+
+## Claim Boundary
+
+Defensible repo-local claim:
+
+> This repo is a working PoC for continual language-shaped memory. HRR+AMM can
+> store, retrieve, revise, and recombine structured facts, while preserving a
+> clean boundary between transformer extraction or generation and
+> non-transformer memory.
+
+Not supported yet:
+
+> This repo has solved full SDM-style projected-address routing for all key
+> families, or acts as a standalone open-ended language model.
+
+Why the projected-address caveat still matters:
+
+- One-hot projected addressing should stay separate from HRR and continuous-key
+  claims.
+- Strong noisy top-1 is not enough by itself; candidate contamination and stale
+  routing still matter, especially for continuous keys.
+- The repo's core memory is still full-vector nearest-neighbor AMM, not the
+  full positive SDM gating recipe from the lab.
 
 ## Iteration Log
+
+### 2026-04-23 - Serious projected-address sweep review
+
+Scope:
+
+- Ran the full serious preset in
+  `experiments/exp_projected_address_sweep.py`.
+- Wrote the aggregate report to
+  `reports/projected_address_sweep_full.md`.
+- Reviewed the serious-run outcome against the address-dimension critical-path
+  success criteria.
+
+Verification:
+
+- `python experiments/exp_projected_address_sweep.py --preset roadmap_serious --output summary --report-file reports/projected_address_sweep_full.md`
+
+Observed repo-local behavior:
+
+- `one_hot`: effectively clean by `addr_dim=256`, with candidate sets collapsing
+  to singleton or near-singleton routing.
+- `hrr_svo`: perfect noisy top-1 by `addr_dim>=256`, with candidate-pool purity
+  becoming clearly comfortable around `addr_dim=512` and improving further at
+  `1024-2048`.
+- `hrr_ngram`: perfect noisy top-1 by `addr_dim>=256`, but candidate pools stay
+  materially dirtier than SVO until about `1024-2048`.
+- `continuous`: noisy top-1 also reaches 1.0 by `addr_dim>=256`, but stale
+  contamination remains very high across the whole sweep, staying around
+  `0.94-0.98` at the larger settings.
+
+Implication:
+
+- The address-dimension critical path is no longer blocked on "run the serious
+  sweep."
+- The right project message is now "projected top-1 can work, but routing
+  cleanliness remains strongly family-dependent," not "projected SDM routing is
+  solved."
+- This is enough evidence to move to the next roadmap item while keeping the
+  claim boundary explicit.
+
+Next:
+
+- Move to relation registry and provenance as the active implementation track.
+- Keep projected-address follow-up narrow: candidate-pool purity or fuller
+  SDM-gating reproduction, not another broad sweep immediately.
 
 ### 2026-04-22 - Projected-address serious-run harness
 
@@ -30,33 +106,23 @@ Scope:
   reporting across seeds.
 - Added markdown report generation so a serious run can write a reusable
   artifact directly into `reports/`.
-- Added a `roadmap_serious` preset for the planned `dim=2048`,
-  `addr_dim={64,128,256,512,1024,2048}`, multi-noise, larger-item sweep.
+- Added a `roadmap_serious` preset for the intended full run.
 
 Verification:
 
 - `python -m pytest tests/test_experiments.py`
 
-Next:
+Outcome:
 
-- Execute the `roadmap_serious` preset and inspect where candidate contamination
-  remains high even when top-1 is near saturation.
-- Use the aggregate report as the reference point for the next roadmap update.
+- This harness is now validated by the completed 2026-04-23 serious run above.
 
 ### 2026-04-22 - D-2838 and D-2839 benchmark pass
 
 Scope:
 
-- Added `experiments/exp_d2838_compositional_generation.py` to benchmark
-  compositional value decoding through two routes: HRR-native unbinding plus
-  nearest-neighbour cleanup, and a linear ridge-regression head over retrieved
-  HRR value vectors.
-- Added `experiments/exp_d2839_sequence_chain.py` to benchmark the minimum HRR
-  prefix length needed to disambiguate which rule generated a chained sequence.
-- Extended `tests/test_experiments.py` with smoke coverage for both new
-  benchmarks.
-- Updated the roadmap, README, and synthesis docs so `D-2838` and `D-2839`
-  are tracked explicitly as lab-grounded findings and local repo capabilities.
+- Added `experiments/exp_d2838_compositional_generation.py`.
+- Added `experiments/exp_d2839_sequence_chain.py`.
+- Extended `tests/test_experiments.py` with smoke coverage.
 
 Verification:
 
@@ -66,31 +132,19 @@ Verification:
 
 Observed repo-local behavior:
 
-- The current `D-2838` synthetic benchmark reaches 1.0 exact retrieval, 1.0
-  HRR-native EM, and 1.0 linear-head EM across
-  `D={64,128,256,512,2048}` for the tested 150-entity setup.
-- The current `D-2839` benchmark reproduces the sharp structural transition:
-  `K={1,2}` stays at 0.25 EM and `K={3,5,7,10}` reaches 1.0 EM across 3 seeds.
-
-Next:
-
-- Decide whether to connect the `D-2838` decoding path to the existing
-  `generation` adapter as a structured evidence-to-surface prototype.
-- Expand `D-2839` from rule disambiguation into a harder sequence benchmark with
-  partially overlapping prefixes or noisy token corruption.
+- `D-2838` reaches 1.0 exact retrieval, 1.0 HRR-native EM, and 1.0 linear-head
+  EM across `D={64,128,256,512,2048}` in the current synthetic setup.
+- `D-2839` reproduces the sharp prefix threshold: `K={1,2}` stays at chance and
+  `K>=3` reaches 1.0 EM across 3 seeds.
 
 ### 2026-04-22 - D-2838 adapter prototype
 
 Scope:
 
-- Added a shared `generation.compositional` decoder module so the HRR-native and
-  linear `D-2838` decode paths are available outside the experiment script.
+- Added the shared `generation.compositional` decoder module.
 - Extended `FrozenGeneratorAdapter` to answer from retrieved `value_vector`
   evidence when a compositional decoder is available.
-- Updated `demo.py` to show a controlled compositional value answer produced from
-  retrieved HRR evidence.
-- Added `tests/test_generation.py` to regression-test held-out decoding and the
-  adapter surface itself.
+- Updated `demo.py` and added `tests/test_generation.py`.
 
 Verification:
 
@@ -99,33 +153,15 @@ Verification:
 
 Observed repo-local behavior:
 
-- The adapter now produces a controlled compositional answer:
+- The adapter now produces the controlled compositional answer
   `entity_demo has property silver signal.`
-- The shared decoder keeps the benchmark and adapter paths aligned, so the
-  generation prototype exercises the same HRR-native and linear decode logic as
-  the `D-2838` experiment.
-
-Next:
-
-- Add a small query layer for non-SVO value memories so compositional answers can
-  be retrieved through the same interface as fact queries.
-- Stress the adapter path with noisy value vectors and partial-value prompts to
-  see where decode quality drops before any stronger generation claims.
 
 ### 2026-04-22 - Web UI demo prototype
 
 Scope:
 
-- Added `web.py` as a local HTTP server with an HHR `WebState` that owns seeded
-  AMM memory, FactGraph state, ingestion, structured SVO querying, demo reset,
-  and compositional-value demo endpoints.
-- Added `web_static/index.html`, `web_static/app.css`, and `web_static/app.js`
-  to mirror the `nexus-16` dashboard design and 3D fact visualization while
-  swapping in HHR-native controls.
-- Added `tests/test_web.py` to cover status, facts, structured query, ingestion,
-  compositional demo, and graph-export routes.
-- Updated README, roadmap, and results docs so the browser UI is tracked as a
-  product-shaped demo surface rather than an undocumented side artifact.
+- Added `web.py` plus `web_static/` as a local browser workbench.
+- Added `tests/test_web.py`.
 
 Verification:
 
@@ -134,16 +170,101 @@ Verification:
 
 Observed repo-local behavior:
 
-- The browser UI now exposes seeded HHR fact memory through the same dashboard
-  pattern used in `nexus-16`, including the 3D fact graph and node inspector.
-- Structured SVO queries return template answers plus top nearest-neighbour
-  evidence, and the graph view focuses on the retrieved answer path.
-- The compositional demo card surfaces the shared `D-2838` decoder logic in the
-  browser without exposing raw vectors to the frontend.
+- The UI exposes seeded fact memory, structured query, text ingestion, chunk
+  summaries, graph export, and the compositional demo path in one local surface.
 
-Next:
+### 2026-04-23 - Relation registry pass for episodic memory
 
-- Add a dedicated value-memory query surface so compositional values are queried
-  alongside SVO facts instead of only through a fixed demo card.
-- Decide whether to add manual fact authoring and graph revision controls to the
-  UI or keep the browser demo narrower and benchmark-focused.
+Scope:
+
+- Extended `memory/episodic.py` so episodic facts normalize relations through the
+  shared registry before writing to the graph, chunk store, and global AMM.
+- Added richer episodic payload provenance, including `source`, `source_id`,
+  `source_chunk_id`, `excerpt`, character spans, and sentence index when
+  available.
+- Added focused alias / revision coverage in `tests/test_episodic.py`.
+
+Verification:
+
+- `python -m pytest tests/test_episodic.py tests/test_experiments.py`
+
+Observed repo-local behavior:
+
+- Episodic writes now collapse alias-equivalent relations such as
+  `collaborated with` and `worked on with` onto the same canonical graph edge.
+- Episodic evidence payloads now carry the same relation/provenance shape as the
+  shared ingestion path, while preserving temporal state tokens for `observed`
+  and `revised` events.
+- Ingestion stats now expose unresolved normalized relation examples directly, so
+  alias growth can be driven from observed misses instead of only summary counts.
+
+### 2026-04-23 - D-2836 dialogue-metadata episodic benchmark
+
+Grounding:
+
+- `D-2836` (discovery): multi-turn conversational memory reached 100% EM across
+  immediate recall, distant recall, cross-session recall, in-conversation
+  revision, and long-term retention at `D=2048`, `3 sessions`, `10 turns`,
+  `3 facts`, `3 seeds`.
+- `D-2857` (discovery): PerKey-reset-style revision is the certified mechanism
+  for perfect revision and retention.
+- `D-2830` (discovery): word-teaching scenarios are a validated language-memory
+  primitive, which makes introduced-word / assistant-answer dialogue facts a
+  reasonable benchmark extension rather than an arbitrary product feature.
+
+Scope:
+
+- Extended `experiments/exp_d2836_episodic_memory.py` from anonymous synthetic
+  facts into a scripted dialogue-turn benchmark with:
+  - turn-level `speaker` and `intent` metadata,
+  - `introduced_word` user facts,
+  - assistant `means` answers,
+  - in-conversation correction turns that revise earlier answers.
+- Kept the original D-2836 metric family intact while adding dialogue-shaped
+  probes for metadata, assistant answers, and correction history integrity.
+
+Verification:
+
+- `python -m pytest tests/test_experiments.py tests/test_episodic.py`
+- `python experiments/exp_d2836_episodic_memory.py --dim 2048 --seeds 42 123 7 --sessions 3 --turns 10 --facts-per-turn 3`
+
+Observed repo-local behavior:
+
+- All three seeds reached 1.0 on the original D-2836 metrics:
+  `immediate_em`, `distant_em`, `cross_session_em`, `revision_em`,
+  `retention_em`.
+- The richer dialogue probes also stayed perfect:
+  `speaker_intent_em=1.0`, `assistant_answer_em=1.0`, `correction_em=1.0`.
+- The repo-local benchmark now exercises a more conversational evidence shape
+  without changing the verified research envelope it is supposed to mirror.
+
+## Active Todo List
+
+1. Relation registry and provenance
+   - Extend the shared registry / payload shape across the remaining ad hoc
+     experiment helpers that still write directly to AMM / FactGraph.
+   - Grow aliases from benchmark misses without collapsing distinct relation
+     families prematurely.
+   - Use the new unresolved-relation examples to drive alias expansion from real
+     benchmark misses rather than guessed synonym lists.
+2. Episodic conversation memory
+   - Move beyond scripted dialogue-turn facts toward controller-driven or
+     extracted conversational episodes with the same verified metric structure.
+   - Add a benchmark slice for pronoun carryover, conversational self-reference,
+     or mixed fact-plus-word-teaching turns without losing the D-2836-style
+     exact-match discipline.
+3. Large-document memory
+   - Run a benchmark over larger extracted corpora with contradiction and refusal
+     checks.
+4. Codebase memory
+   - Parse Python code into explicit graph facts and support dependency-style
+     questions.
+5. Contradiction and temporal revision
+   - Distinguish current truth from historical evidence with explicit source
+     provenance.
+6. Emergent syntax
+   - Push beyond the existing prefix benchmark into broader structural
+     generalization.
+7. MemoryWorkbench
+   - Keep evolving the browser and CLI surfaces into a reusable research
+     instrument rather than a fixed demo.

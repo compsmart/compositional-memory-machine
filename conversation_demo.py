@@ -4,7 +4,7 @@ from factgraph import FactGraph
 from hrr import SVOEncoder
 from hrr.datasets import fact_key
 from hrr.encoder import SVOFact
-from ingestion import TextIngestionPipeline
+from ingestion import ExtractedFact, TextIngestionPipeline
 from language import ContextExample, NGramLanguageMemory, WordLearningMemory
 from memory import AMM, ChunkedKGMemory
 from query import QueryEngine
@@ -73,22 +73,19 @@ def main() -> None:
     else:
         say("Assistant", "I do not have that fact in memory.")
 
-    bridge_fact = SVOFact("Charles Babbage", "worked_on", "Analytical Engine")
-    bridge_key = fact_key("history", bridge_fact)
-    bridge_vector = encoder.encode_fact(bridge_fact)
-    bridge_payload = {
-        "domain": "history",
-        "subject": bridge_fact.subject,
-        "verb": bridge_fact.verb,
-        "object": bridge_fact.object,
-        "source": "conversation_demo",
-        "kind": "explicit",
-        "confidence": 1.0,
-    }
-    chunk_record = chunk_memory.write_fact(bridge_key, "history", bridge_fact, bridge_vector, bridge_payload)
-    bridge_payload["chunk_id"] = chunk_record.chunk_id
-    memory.write(bridge_key, bridge_vector, bridge_payload)
-    graph.write(bridge_fact.subject, bridge_fact.verb, bridge_fact.object)
+    ingestion.write_structured_fact(
+        ExtractedFact(
+            subject="Charles Babbage",
+            relation="worked_on",
+            object="Analytical Engine",
+            confidence=1.0,
+            kind="explicit",
+            source="conversation_demo",
+            source_id="conversation_demo:bridge",
+        ),
+        source="conversation_demo",
+        domain="history",
+    )
 
     say("User", "Can you follow a two-step chain from Ada Lovelace?")
     chain = query.ask_chain("Ada Lovelace", ["worked_with", "worked_on"])
