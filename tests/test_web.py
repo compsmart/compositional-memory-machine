@@ -80,6 +80,7 @@ def test_web_status_and_facts_routes() -> None:
     with running_server(HHRWebState()) as base_url:
         status = _get(f"{base_url}/api/status")
         facts = _get(f"{base_url}/api/facts")
+        chat = _get(f"{base_url}/api/chat/history")
         home = _get_text(f"{base_url}/")
         script = _get_text(f"{base_url}/static/app.js")
 
@@ -87,9 +88,11 @@ def test_web_status_and_facts_routes() -> None:
     assert status["graph_facts"] == 20
     assert status["memory_records"] == 20
     assert facts["total"] == 20
+    assert chat["history"][0]["route"] == "ready"
     assert len(facts["graph"]["nodes"]) >= 10
     assert len(facts["graph"]["edges"]) == 20
     assert "HRR + AMM Language Memory" in home
+    assert 'id="chatForm"' in home
     assert "MemoryGraph3D" in script
 
 
@@ -123,3 +126,31 @@ def test_web_ingest_and_compositional_routes() -> None:
     assert compositional["hrr_native"]["text"] == "silver signal"
     assert "silver signal" in compositional["answer"]
     assert any(fact["subject"] == "Ada Lovelace" and fact["relation"] == "worked_with" for fact in facts["facts"])
+
+
+def test_web_chat_route_supports_multi_turn_memory() -> None:
+    state = HHRWebState(extractor=FakeExtractor())
+    with running_server(state) as base_url:
+        _post(
+            f"{base_url}/api/ingest/text",
+            {"text": "Ada text", "domain": "history", "source": "fixture"},
+        )
+        fact_reply = _post(f"{base_url}/api/chat", {"message": "Who did Ada Lovelace work with?"})
+        pronoun_reply = _post(f"{base_url}/api/chat", {"message": "Who did she work with?"})
+        pattern_reply = _post(f"{base_url}/api/chat", {"message": "Complete this learned pattern: 'the doctor ...'"})
+        learn_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed."},
+        )
+        recall_reply = _post(f"{base_url}/api/chat", {"message": "Do you still remember dax?"})
+
+    assert fact_reply["reply"]["route"] == "fact_query"
+    assert "Charles Babbage" in fact_reply["reply"]["text"]
+    assert pronoun_reply["reply"]["route"] == "fact_query"
+    assert "Charles Babbage" in pronoun_reply["reply"]["text"]
+    assert pattern_reply["reply"]["route"] == "pattern_prediction"
+    assert "treats" in pattern_reply["reply"]["text"]
+    assert learn_reply["reply"]["route"] == "word_learning"
+    assert "ingest action" in learn_reply["reply"]["text"]
+    assert recall_reply["reply"]["route"] == "word_recall"
+    assert "nearest action is" in recall_reply["reply"]["text"]

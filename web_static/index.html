@@ -21,21 +21,21 @@
       <main class="workspace">
         <section class="pane pane-command">
           <div class="pane-head">
-            <h2>Query</h2>
-            <span id="routeBadge" class="badge">idle</span>
+            <h2>Chat</h2>
+            <span id="routeBadge" class="badge">ready</span>
           </div>
-          <form id="queryForm" class="stack">
-            <div class="query-grid">
-              <input id="querySubject" placeholder="doctor" />
-              <input id="queryRelation" placeholder="treats" />
-              <input id="queryObject" placeholder="patient" />
-            </div>
+          <div id="chatHistory" class="chat-history empty">Loading chat state</div>
+          <form id="chatForm" class="stack">
+            <textarea
+              id="chatInput"
+              rows="4"
+              placeholder="Ask about memory, continue a pattern like 'the doctor ...', or teach it a word."
+            ></textarea>
             <button type="submit" class="primary">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h12M13 6l6 6-6 6"/></svg>
-              <span>Run Query</span>
+              <span>Send</span>
             </button>
           </form>
-          <div id="queryResult" class="result-block empty">No answer yet</div>
         </section>
 
         <section class="pane pane-memory">

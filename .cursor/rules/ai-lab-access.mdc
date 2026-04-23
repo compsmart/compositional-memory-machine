@@ -1,0 +1,37 @@
+---
+description: Use the local AI Lab CLI for live CompSmart research data
+alwaysApply: true
+---
+
+# AI Lab Access
+
+When you need current CompSmart lab data, prefer the local CLI at `cli/mcp_cli.py`
+instead of relying on stale memory or ad-hoc HTTP calls.
+
+- Configure once with `python cli/mcp_cli.py config set token <TOKEN>`.
+- The default server is `https://mcp.compsmart.cloud/mcp`, but it can be
+  overridden with `--url`, `MCP_URL`, or the saved config.
+- Discover available tools with `python cli/mcp_cli.py tools`.
+- Inspect one tool's schema with `python cli/mcp_cli.py describe <tool-name>`.
+- Use `--json` when you want raw machine-readable output.
+
+Common commands:
+
+- `python cli/mcp_cli.py list-findings --sort-by date --limit 50`
+- `python cli/mcp_cli.py get-finding D-2874`
+- `python cli/mcp_cli.py search "holographic memory" --limit 10`
+- `python cli/mcp_cli.py list-tracks --limit 20`
+- `python cli/mcp_cli.py list-experiments --track holonomic-sequence-model --limit 20`
+
+Use the generic escape hatch when the server adds tools before the CLI gets a
+dedicated wrapper:
+
+- `python cli/mcp_cli.py call get_track --arg slug=holonomic-sequence-model`
+
+Preferred workflow:
+
+1. `tools` or `describe` to confirm the right command and arguments.
+2. Run the narrowest query possible (`get-finding`, `get-track`, filtered lists).
+3. Summarize findings using their IDs and note whether they are discoveries or lessons.
+
+See `cli/README.md` for the full command list and examples.

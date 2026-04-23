@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import re
+from collections import Counter
 from dataclasses import asdict, is_dataclass
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -17,11 +19,14 @@ from generation import CompositionalValueDecoder, FrozenGeneratorAdapter, make_v
 from hrr import SVOEncoder, VectorStore
 from hrr.datasets import all_facts, fact_key
 from ingestion import GeminiExtractor, TextIngestionPipeline
+from language import ContextExample, NGramLanguageMemory, WordLearningMemory
 from memory import AMM
 from query import QueryEngine
 
 
 STATIC_DIR = Path(__file__).with_name("web_static")
+CHAT_INGEST_OBJECTS = {"apple", "meal", "seed", "soup", "sandwich", "water", "tea", "food"}
+CHAT_MOVE_OBJECTS = {"track", "road", "trail", "route", "path", "lane", "street"}
 
 
 def to_jsonable(value: Any) -> Any:
@@ -67,6 +72,8 @@ class HHRWebState:
         self.generator = FrozenGeneratorAdapter()
         self._seed_fact_memory()
         self._build_compositional_demo()
+        self._build_language_demo()
+        self._reset_chat_state()
 
     def status(self) -> dict[str, Any]:
         facts = self._list_facts()
@@ -88,6 +95,9 @@ class HHRWebState:
             "facts": facts[-limit:],
             "graph": self._graph_payload(),
         }
+
+    def chat_history_payload(self) -> dict[str, Any]:
+        return {"history": self.chat_history}
 
     def query_svo(self, payload: dict[str, Any]) -> dict[str, Any]:
         subject = str(payload.get("subject", "")).strip()
@@ -142,12 +152,27 @@ class HHRWebState:
             "facts": self.facts(),
         }
 
+    def chat(self, payload: dict[str, Any]) -> dict[str, Any]:
+        message = str(payload.get("message", "")).strip()
+        if not message:
+            raise ValueError("message is required")
+        self._append_chat_message("user", message)
+        reply = self._reply_to_chat(message)
+        assistant = self._append_chat_message("assistant", **reply)
+        return {
+            "reply": assistant,
+            "history": self.chat_history,
+            "status": self.status(),
+            "facts": self.facts(),
+        }
+
     def demo_reset(self, _payload: dict[str, Any] | None = None) -> dict[str, Any]:
         self.reset_demo()
         return {
             "status": self.status(),
             "facts": self.facts(),
             "compositional": self.demo_compositional(),
+            "chat": self.chat_history_payload(),
         }
 
     def demo_compositional(self) -> dict[str, Any]:
@@ -216,6 +241,301 @@ class HHRWebState:
             "question": f"What property does {self.value_entity} have?",
             "expected_value": "silver signal",
         }
+
+    def _build_language_demo(self) -> None:
+        self.ngram = NGramLanguageMemory(dim=self.dim, seed=self.seed + 1)
+        self.ngram.learn_sequence(["the", "doctor", "treats", "the", "patient"], cycles=5)
+        self.ngram.learn_sequence(["the", "chef", "prepares", "the", "meal"], cycles=5)
+        self.word_learning = WordLearningMemory(dim=self.dim, seed=self.seed + 2)
+        for action in ["eat", "drink", "consume"]:
+            self.word_learning.add_known_action(action, "ingest", "ingest")
+        for action in ["run", "walk", "travel"]:
+            self.word_learning.add_known_action(action, "move", "move")
+
+    def _reset_chat_state(self) -> None:
+        self.chat_history: list[dict[str, Any]] = []
+        self.chat_subject: str | None = None
+        self.chat_word: str | None = None
+        self._append_chat_message(
+            "assistant",
+            text=(
+                "Memory ready. Ask about a stored fact, continue a learned pattern like "
+                "\"Complete this learned pattern: 'the doctor ...'\", or teach me a new "
+                "word. Use the Ingest pane or say \"Remember: <passage>\" to add new text."
+            ),
+            route="ready",
+        )
+
+    def _append_chat_message(self, role: str, text: str, **metadata: Any) -> dict[str, Any]:
+        message = {"role": role, "text": text}
+        for key, value in metadata.items():
+            if value is None:
+                continue
+            message[key] = value
+        self.chat_history.append(message)
+        return message
+
+    def _reply_to_chat(self, message: str) -> dict[str, Any]:
+        for handler in (
+            self._reply_to_ingest_prompt,
+            self._reply_to_word_learning,
+            self._reply_to_word_recall,
+            self._reply_to_pattern_prompt,
+            self._reply_to_fact_prompt,
+        ):
+            reply = handler(message)
+            if reply is not None:
+                return reply
+        return {
+            "text": (
+                "I can answer memory-backed fact questions, continue a learned pattern, "
+                "or learn a demo word from examples. Try \"Who did Ada Lovelace work "
+                "with?\", \"Complete this learned pattern: 'the doctor ...'\", or "
+                "\"Learn a new word: dax. A child daxes an apple; a chef daxes soup; "
+                "a bird daxes seed.\""
+            ),
+            "route": "fallback",
+        }
+
+    def _reply_to_ingest_prompt(self, message: str) -> dict[str, Any] | None:
+        if not re.match(r"(?is)^\s*(remember|memorize|ingest|read)\b", message):
+            return None
+        parts = re.split(r":|\n", message, maxsplit=1)
+        if len(parts) < 2 or not parts[1].strip():
+            return {
+                "text": "Paste the passage after ':' or use the Ingest pane so I can write it into memory.",
+                "route": "ingest_prompt",
+            }
+        if not self.pipeline.extractor._api_key():
+            return {
+                "text": "I need GOOGLE_API_KEY or GEMINI_API_KEY before I can ingest raw text in chat.",
+                "route": "ingest_unavailable",
+            }
+        text = parts[1].strip()
+        result = self.pipeline.ingest_text(text, source="chat", domain="chat")
+        if result.facts:
+            self.chat_subject = result.facts[0].subject
+        return {
+            "text": (
+                f"I extracted {len(result.facts)} distinct facts and wrote "
+                f"{result.written_facts} of them into HRR memory."
+            ),
+            "route": "text_ingest",
+        }
+
+    def _reply_to_word_learning(self, message: str) -> dict[str, Any] | None:
+        match = re.search(r"\blearn(?:\s+\w+){0,3}\s+word:\s*([A-Za-z][\w-]*)", message, re.IGNORECASE)
+        if match is None:
+            return None
+        word = match.group(1).lower()
+        examples = self._extract_word_examples(message, word)
+        if not examples:
+            return {
+                "text": (
+                    f"I need a few examples for '{word}', for example "
+                    "\"A child daxes an apple; a chef daxes soup.\""
+                ),
+                "route": "word_learning_prompt",
+            }
+        learned = self.word_learning.learn_word(word, examples)
+        self.chat_word = word
+        cluster = learned.get("cluster") or "unknown"
+        nearest_action = learned.get("nearest_action") or "unknown"
+        confidence = float(learned.get("confidence") or 0.0)
+        return {
+            "text": (
+                f"I learned '{word}' as an {cluster} action. Nearest known action: "
+                f"{nearest_action} (confidence {confidence:.3f})."
+            ),
+            "route": "word_learning",
+            "confidence": confidence,
+        }
+
+    def _reply_to_word_recall(self, message: str) -> dict[str, Any] | None:
+        match = re.search(r"\b(?:remember|recall|know|mean)\s+([A-Za-z][\w-]*)\b", message, re.IGNORECASE)
+        if match is None:
+            match = re.search(r"\bwhat does\s+([A-Za-z][\w-]*)\s+mean\b", message, re.IGNORECASE)
+        if match is None:
+            return None
+        word = match.group(1).lower()
+        if word in {"it", "that"} and self.chat_word:
+            word = self.chat_word
+        retrieved = self.word_learning.retrieve_word(word)
+        if not retrieved.get("found"):
+            return {
+                "text": f"I have not learned '{word}' yet.",
+                "route": "word_recall_miss",
+            }
+        self.chat_word = word
+        confidence = float(retrieved.get("confidence") or 0.0)
+        return {
+            "text": (
+                f"Yes. '{word}' still routes to {retrieved['cluster']}; nearest action is "
+                f"{retrieved['nearest_action']} (confidence {confidence:.3f})."
+            ),
+            "route": "word_recall",
+            "confidence": confidence,
+        }
+
+    def _reply_to_pattern_prompt(self, message: str) -> dict[str, Any] | None:
+        context = self._extract_pattern_context(message)
+        if context is None:
+            return None
+        tokens = re.findall(r"[A-Za-z0-9']+", context.lower())
+        if len(tokens) < 2:
+            return {
+                "text": "Give me at least two tokens of context before the ellipsis.",
+                "route": "pattern_prompt",
+            }
+        prediction = self.ngram.predict(tokens[-2], tokens[-1])
+        if prediction.token is None:
+            return {
+                "text": "I do not know a reliable continuation for that pattern yet.",
+                "route": "pattern_miss",
+                "confidence": float(prediction.confidence),
+            }
+        return {
+            "text": (
+                f"The next token is '{prediction.token}' from context "
+                f"'{prediction.context_key}' (confidence {prediction.confidence:.3f})."
+            ),
+            "route": "pattern_prediction",
+            "confidence": float(prediction.confidence),
+        }
+
+    def _reply_to_fact_prompt(self, message: str) -> dict[str, Any] | None:
+        subject = self._resolve_subject(message)
+        if subject is None:
+            return None
+        edge = self._match_relation(subject, message)
+        if edge is None:
+            relations = sorted(
+                {edge.relation.replace("_", " ") for edge in self.graph.edges() if edge.source == subject}
+            )
+            if not relations:
+                return None
+            return {
+                "text": (
+                    f"I have memories for {subject}, but I could not match the relation in that question. "
+                    f"Try one of: {', '.join(relations[:4])}."
+                ),
+                "route": "fact_prompt_miss",
+            }
+        target = edge.target
+        probe = self.query.ask_svo(subject, edge.relation, target)
+        self.chat_subject = subject
+        if not probe["found"]:
+            return {
+                "text": f"I do not have a reliable memory for that. Best confidence was {probe['confidence']:.3f}.",
+                "route": "no_reliable_match",
+                "confidence": float(probe["confidence"]),
+            }
+        evidence = self._candidate_facts(self.encoder.encode(subject, edge.relation, target), top_k=5)
+        return {
+            "text": f"{self._sentence(subject, edge.relation, target)} Confidence: {probe['confidence']:.3f}.",
+            "route": "fact_query",
+            "confidence": float(probe["confidence"]),
+            "graph_target": target,
+            "evidence": evidence,
+        }
+
+    def _extract_pattern_context(self, message: str) -> str | None:
+        quoted = re.search(r"""["']([^"']+?)\s*\.\.\.["']""", message)
+        if quoted:
+            return quoted.group(1)
+        raw = re.search(r"([A-Za-z][A-Za-z0-9' -]+)\s*\.\.\.", message)
+        if raw:
+            return raw.group(1)
+        return None
+
+    def _extract_word_examples(self, message: str, word: str) -> list[ContextExample]:
+        examples: list[ContextExample] = []
+        pattern = re.compile(
+            rf"(?i)\b(?:a|an|the)\s+(?P<subject>[a-z][\w-]*)\s+{re.escape(word)}(?:es|s)?\s+"
+            rf"(?:a|an|the)\s+(?P<object>[a-z][\w-]*)"
+        )
+        for clause in re.split(r"[;\n]+", message):
+            match = pattern.search(clause)
+            if match is None:
+                continue
+            subject = match.group("subject").lower()
+            object_ = match.group("object").lower()
+            examples.append(
+                ContextExample(
+                    subject,
+                    word,
+                    object_,
+                    self._infer_property_hint(subject, object_),
+                )
+            )
+        hints = [example.property_hint for example in examples if example.property_hint]
+        if hints:
+            default_hint = Counter(hints).most_common(1)[0][0]
+            examples = [
+                ContextExample(example.subject, example.action, example.object, example.property_hint or default_hint)
+                for example in examples
+            ]
+        return examples
+
+    def _infer_property_hint(self, subject: str, object_: str) -> str | None:
+        if object_ in CHAT_INGEST_OBJECTS:
+            return "ingest"
+        if object_ in CHAT_MOVE_OBJECTS:
+            return "move"
+        if subject in {"chef", "doctor", "child", "bird", "student"}:
+            return "ingest"
+        if subject in {"runner", "traveler", "hiker", "pilot"}:
+            return "move"
+        return None
+
+    def _resolve_subject(self, message: str) -> str | None:
+        lowered = message.lower()
+        if re.search(r"\b(she|her|he|him|they|them)\b", lowered) and self.chat_subject:
+            return self.chat_subject
+        subjects = sorted({fact["subject"] for fact in self._list_facts()}, key=len, reverse=True)
+        for subject in subjects:
+            if subject.lower() in lowered:
+                return subject
+        for subject in subjects:
+            parts = subject.lower().split()
+            if len(parts) > 1 and lowered.find(parts[-1]) != -1:
+                return subject
+        return None
+
+    def _match_relation(self, subject: str, message: str) -> Any | None:
+        edges = [edge for edge in self.graph.edges() if edge.source == subject]
+        if not edges:
+            return None
+        message_tokens = set(self._normalized_tokens(message))
+        best_edge = None
+        best_score = 0
+        for edge in edges:
+            relation_tokens = self._normalized_tokens(edge.relation.replace("_", " "))
+            overlap = sum(1 for token in relation_tokens if token in message_tokens)
+            if overlap == len(relation_tokens) and overlap > best_score:
+                best_edge = edge
+                best_score = overlap
+        if best_edge is not None:
+            return best_edge
+        if len(edges) == 1 and "?" in message:
+            return edges[0]
+        return None
+
+    def _normalized_tokens(self, value: str) -> list[str]:
+        return [self._stem_token(token) for token in re.findall(r"[a-z0-9]+", value.lower())]
+
+    @staticmethod
+    def _stem_token(token: str) -> str:
+        if token.endswith("ies") and len(token) > 4:
+            return token[:-3] + "y"
+        for suffix in ("ing", "ed", "es", "s"):
+            if token.endswith(suffix) and len(token) > len(suffix) + 2:
+                return token[: -len(suffix)]
+        return token
+
+    @staticmethod
+    def _sentence(subject: str, relation: str, object_: str) -> str:
+        return f"{subject} {relation.replace('_', ' ')} {object_}."
 
     def _list_facts(self) -> list[dict[str, Any]]:
         facts: list[dict[str, Any]] = []
@@ -286,6 +606,8 @@ class HHRWebHandler(BaseHTTPRequestHandler):
                 self._send_json(self.state.status())
             elif parsed.path == "/api/facts":
                 self._send_json(self.state.facts())
+            elif parsed.path == "/api/chat/history":
+                self._send_json(self.state.chat_history_payload())
             elif parsed.path == "/api/demo/compositional":
                 self._send_json(self.state.demo_compositional())
             else:
@@ -300,6 +622,7 @@ class HHRWebHandler(BaseHTTPRequestHandler):
         try:
             payload = self._read_json()
             routes = {
+                "/api/chat": self.state.chat,
                 "/api/query/svo": self.state.query_svo,
                 "/api/ingest/text": self.state.ingest_text,
                 "/api/demo/reset": self.state.demo_reset,

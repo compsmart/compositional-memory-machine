@@ -276,6 +276,66 @@ button:disabled {
   color: var(--muted);
 }
 
+.chat-history {
+  display: grid;
+  gap: 12px;
+  min-height: 320px;
+  max-height: 420px;
+  overflow: auto;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfaf6;
+  padding: 12px;
+}
+
+.chat-history.empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 760;
+}
+
+.chat-message {
+  display: grid;
+  gap: 6px;
+}
+
+.chat-message.user {
+  justify-items: end;
+}
+
+.chat-message-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-message.user .chat-message-head {
+  justify-self: end;
+}
+
+.chat-bubble {
+  max-width: min(100%, 520px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-message.user .chat-bubble {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.chat-message.assistant .chat-bubble {
+  background: var(--panel-2);
+}
+
 .memory-scene {
   position: relative;
   width: 100%;

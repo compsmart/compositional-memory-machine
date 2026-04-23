@@ -4,11 +4,9 @@ const els = {
   metricsGrid: $("#metricsGrid"),
   factList: $("#factList"),
   factCountBadge: $("#factCountBadge"),
-  queryForm: $("#queryForm"),
-  querySubject: $("#querySubject"),
-  queryRelation: $("#queryRelation"),
-  queryObject: $("#queryObject"),
-  queryResult: $("#queryResult"),
+  chatForm: $("#chatForm"),
+  chatInput: $("#chatInput"),
+  chatHistory: $("#chatHistory"),
   routeBadge: $("#routeBadge"),
   ingestForm: $("#ingestForm"),
   ingestText: $("#ingestText"),
@@ -30,6 +28,7 @@ const els = {
 let latestFacts = [];
 let filteredFacts = [];
 let memoryGraph = null;
+let chatHistory = [];
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -151,27 +150,62 @@ function uniqueSorted(values) {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
-function renderQuery(payload) {
-  const result = payload.result;
-  const evidence = result.evidence || [];
-  els.routeBadge.textContent = result.route || "route";
-  els.queryResult.classList.remove("empty");
-  els.queryResult.innerHTML = `
-    <div class="answer">${escapeHtml(result.answer || "No answer")}</div>
-    <div class="meta-line">route ${escapeHtml(result.route || "unknown")} - confidence ${Number(result.confidence || 0).toFixed(3)}</div>
-    ${result.graph_target ? `<div class="meta-line">graph target: ${escapeHtml(result.graph_target)}</div>` : ""}
-    ${
-      evidence.length
-        ? `<ul class="query-evidence">${evidence
-            .map(
-              (fact) =>
-                `<li>${escapeHtml(fact.subject)} ${escapeHtml(fact.relation)} ${escapeHtml(fact.object)} <span class="meta-line">(score ${Number(fact.score).toFixed(3)})</span></li>`
-            )
-            .join("")}</ul>`
-        : ""
-    }
+function renderChatHistory(history) {
+  chatHistory = history || [];
+  const lastAssistant = [...chatHistory].reverse().find((message) => message.role === "assistant");
+  els.routeBadge.textContent = lastAssistant?.route || "ready";
+  els.chatHistory.classList.toggle("empty", chatHistory.length === 0);
+  if (!chatHistory.length) {
+    els.chatHistory.innerHTML = "No messages yet";
+    return;
+  }
+  els.chatHistory.innerHTML = chatHistory.map(renderChatMessage).join("");
+  els.chatHistory.scrollTop = els.chatHistory.scrollHeight;
+  if (memoryGraph && lastAssistant?.evidence?.length) {
+    memoryGraph.focusFromAnswer(String(lastAssistant.graph_target || lastAssistant.text || ""), lastAssistant.evidence);
+  }
+}
+
+function renderChatMessage(message) {
+  const meta = [];
+  if (message.route) meta.push(`route ${escapeHtml(message.route)}`);
+  if (Number.isFinite(message.confidence)) meta.push(`confidence ${Number(message.confidence).toFixed(3)}`);
+  const evidence = Array.isArray(message.evidence) ? message.evidence.slice(0, 3) : [];
+  return `
+    <article class="chat-message ${escapeHtml(message.role || "assistant")}">
+      <div class="chat-message-head">
+        <strong>${escapeHtml(message.role === "user" ? "You" : "Assistant")}</strong>
+        ${meta.length ? `<span class="meta-line">${meta.join(" - ")}</span>` : ""}
+      </div>
+      <div class="chat-bubble">${escapeHtml(message.text || "")}</div>
+      ${
+        message.graph_target
+          ? `<div class="meta-line">graph target: ${escapeHtml(message.graph_target)}</div>`
+          : ""
+      }
+      ${
+        evidence.length
+          ? `<ul class="query-evidence">${evidence
+              .map(
+                (fact) =>
+                  `<li>${escapeHtml(fact.subject)} ${escapeHtml(fact.relation)} ${escapeHtml(fact.object)} <span class="meta-line">(score ${Number(fact.score).toFixed(3)})</span></li>`
+              )
+              .join("")}</ul>`
+          : ""
+      }
+    </article>
   `;
-  if (memoryGraph) memoryGraph.focusFromAnswer(String(result.object || result.answer || ""), evidence);
+}
+
+function renderChatError(error) {
+  renderChatHistory([
+    ...chatHistory,
+    {
+      role: "assistant",
+      text: error.message || String(error),
+      route: "error",
+    },
+  ]);
 }
 
 function renderCompositional(payload) {
@@ -649,33 +683,35 @@ async function initMemoryGraph() {
 }
 
 async function refresh() {
-  const [status, facts, compositional] = await Promise.all([
+  const [status, facts, compositional, chat] = await Promise.all([
     api("/api/status"),
     api("/api/facts"),
     api("/api/demo/compositional"),
+    api("/api/chat/history"),
   ]);
   renderStatus(status);
   renderFacts(facts.facts || []);
   renderCompositional(compositional);
+  renderChatHistory(chat.history || []);
 }
 
-els.queryForm.addEventListener("submit", async (event) => {
+els.chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const message = els.chatInput.value.trim();
+  if (!message) return;
   const button = event.submitter;
   setBusy(button, true);
   try {
-    renderQuery(
-      await api("/api/query/svo", {
-        method: "POST",
-        body: JSON.stringify({
-          subject: els.querySubject.value,
-          relation: els.queryRelation.value,
-          object: els.queryObject.value,
-        }),
-      })
-    );
+    const payload = await api("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    });
+    renderChatHistory(payload.history || []);
+    renderStatus(payload.status);
+    renderFacts(payload.facts?.facts || []);
+    els.chatInput.value = "";
   } catch (error) {
-    renderError(els.queryResult, error);
+    renderChatError(error);
   } finally {
     setBusy(button, false);
   }
@@ -708,7 +744,10 @@ els.resetDemoButton.addEventListener("click", async () => {
   try {
     const payload = await api("/api/demo/reset", { method: "POST", body: JSON.stringify({}) });
     renderIngestResult({ reset: true, status: payload.status });
-    await refresh();
+    renderStatus(payload.status);
+    renderFacts(payload.facts?.facts || []);
+    renderCompositional(payload.compositional);
+    renderChatHistory(payload.chat?.history || []);
   } catch (error) {
     renderError(els.ingestResult, error);
   } finally {
@@ -716,7 +755,7 @@ els.resetDemoButton.addEventListener("click", async () => {
   }
 });
 
-els.refreshButton.addEventListener("click", () => refresh().catch((error) => renderError(els.queryResult, error)));
+els.refreshButton.addEventListener("click", () => refresh().catch((error) => renderChatError(error)));
 els.memoryFilter.addEventListener("input", applyMemoryFilters);
 els.domainFilter.addEventListener("change", applyMemoryFilters);
 els.sourceFilter.addEventListener("change", applyMemoryFilters);
@@ -737,11 +776,8 @@ els.spinButton.addEventListener("click", () => {
   if (memoryGraph) memoryGraph.setAutoSpin(enabled);
 });
 
-els.querySubject.value = "doctor";
-els.queryRelation.value = "treats";
-els.queryObject.value = "patient";
 els.ingestDomain.value = "history";
 els.ingestSource.value = "web-ui";
 
 initMemoryGraph();
-refresh().catch((error) => renderError(els.queryResult, error));
+refresh().catch((error) => renderChatError(error));
