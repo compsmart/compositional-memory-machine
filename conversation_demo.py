@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from factgraph import FactGraph
 from hrr import SVOEncoder
+from hrr.datasets import fact_key
+from hrr.encoder import SVOFact
 from ingestion import TextIngestionPipeline
 from language import ContextExample, NGramLanguageMemory, WordLearningMemory
-from memory import AMM
+from memory import AMM, ChunkedKGMemory
 from query import QueryEngine
 
 
@@ -31,9 +33,10 @@ def find_object(graph: FactGraph, subject: str, relation: str) -> str | None:
 def main() -> None:
     encoder = SVOEncoder(dim=2048, seed=12)
     memory = AMM()
+    chunk_memory = ChunkedKGMemory(chunk_size=3)
     graph = FactGraph()
-    ingestion = TextIngestionPipeline(encoder, memory, graph)
-    query = QueryEngine(encoder=encoder, memory=memory)
+    ingestion = TextIngestionPipeline(encoder, memory, graph, chunk_memory=chunk_memory)
+    query = QueryEngine(encoder=encoder, memory=memory, graph=graph, chunk_memory=chunk_memory)
 
     ngram = NGramLanguageMemory(dim=2048, seed=13)
     ngram.learn_sequence(["the", "doctor", "treats", "the", "patient"], cycles=5)
@@ -68,6 +71,30 @@ def main() -> None:
         say("Assistant", sentence("Ada Lovelace", "published_notes_about", notes_target))
     else:
         say("Assistant", "I do not have that fact in memory.")
+
+    bridge_fact = SVOFact("Charles Babbage", "worked_on", "Analytical Engine")
+    bridge_key = fact_key("history", bridge_fact)
+    bridge_vector = encoder.encode_fact(bridge_fact)
+    bridge_payload = {
+        "domain": "history",
+        "subject": bridge_fact.subject,
+        "verb": bridge_fact.verb,
+        "object": bridge_fact.object,
+        "source": "conversation_demo",
+        "kind": "explicit",
+        "confidence": 1.0,
+    }
+    chunk_record = chunk_memory.write_fact(bridge_key, "history", bridge_fact, bridge_vector, bridge_payload)
+    bridge_payload["chunk_id"] = chunk_record.chunk_id
+    memory.write(bridge_key, bridge_vector, bridge_payload)
+    graph.write(bridge_fact.subject, bridge_fact.verb, bridge_fact.object)
+
+    say("User", "Can you follow a two-step chain from Ada Lovelace?")
+    chain = query.ask_chain("Ada Lovelace", ["worked_with", "worked_on"])
+    if chain["found"]:
+        say("Assistant", f"Ada Lovelace reaches {chain['target']} via worked_with -> worked_on.")
+    else:
+        say("Assistant", "I could not trace a reliable chain.")
 
     say("User", "Complete this learned pattern: 'the doctor ...'")
     prediction = ngram.predict("the", "doctor")

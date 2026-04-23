@@ -35,8 +35,10 @@ template answer or optional generator
 
 - HRR SVO sentence encoding and retrieval.
 - Append-oriented AMM fact storage.
+- Chunked HRR knowledge-graph storage with per-chunk provenance and bridge-entity tracking.
 - Compositional routing for controlled SVO facts.
 - FactGraph local revision via PerKey Reset.
+- Multi-hop chain querying that combines symbolic graph traversal with chunk-local HRR evidence.
 - Gemini 2.5 Flash Lite real-text extraction into triples.
 - HRR bigram-context next-token prediction.
 - Context-based word learning by ACTION-role unbinding.
@@ -79,6 +81,12 @@ The design is grounded in Compsmart AI Research Lab findings:
 - D-2839: chained HRR sequence prefixes show a hard disambiguation threshold:
   1-2 tokens are ambiguous, while 3 tokens are sufficient for perfect rule
   identification in the tested setup.
+- D-2862/D-2863: temporal role binding and hierarchical syntax are viable in the
+  CI setting, motivating explicit temporal and nested-role extensions.
+- D-2866/D-2870/D-2871/D-2874: chunked HRR memory enables reliable multi-hop
+  retrieval across bounded local fact sets and many domains.
+- D-2872/D-2873: dynamic state tracking and 2-hop relational chaining benefit
+  from higher dimensions (`D>=1024`, with `D=2048` as the robust target).
 
 See [docs/research-roadmap.md](docs/research-roadmap.md) for the detailed lab
 mapping, external VSA/HDC literature context, risk register, and next research
@@ -90,7 +98,7 @@ Verified locally:
 
 ```text
 python -m pytest
-23 passed
+32 passed
 ```
 
 Representative outcomes:
@@ -106,11 +114,16 @@ Representative outcomes:
   `D={64,128,256,512,2048}`.
 - D-2839-style sequence chains: `K={1,2}` stays at 0.25 EM (chance across 4
   rules), while `K={3,5,7,10}` reaches 1.0 EM across 3 seeds.
+- Chunked multi-hop benchmark: 2-hop, 3-hop, and cross-domain 4-step chain
+  retrieval all reach 1.0 EM in the repo smoke test while preserving chunk
+  provenance.
+- Temporal state tracking benchmark: current state, state history, and
+  historical lookup all reach 1.0 EM in the repo smoke test.
 - The demo now includes a compositional value answer generated from a retrieved
   HRR value vector: `entity_demo has property silver signal.`
 - The web UI now mirrors the `nexus-16` dashboard style while exposing HHR
-  structured querying, text ingestion, resettable seed memory, and the same 3D
-  fact visualization pattern.
+  structured querying, text ingestion, resettable seed memory, chunk summaries,
+  chain queries, and the same 3D fact visualization pattern.
 - FactGraph chain3 revision: 100% exact match across tested positions.
 - Bounded projected-address sweep: top-1 stayed high in the small repo run, but
   candidate contamination separated key families; see
@@ -157,9 +170,11 @@ python experiments/exp_d2829_next_token.py
 python experiments/exp_d2830_word_learning.py
 python experiments/exp_d2838_compositional_generation.py --summary
 python experiments/exp_d2839_sequence_chain.py --summary
+python experiments/exp_chunked_multihop.py
 python experiments/exp_revision_chain3.py
 python experiments/exp_projected_address_sweep.py
 python experiments/exp_d2836_episodic_memory.py
+python experiments/exp_temporal_state_tracking.py
 ```
 
 Run the full projected-address roadmap sweep and write an aggregate report:
@@ -201,7 +216,7 @@ Assistant: I do not have a reliable memory for that. Best confidence was 0.340.
 
 ```text
 hrr/              HRR vectors, binding, and SVO encoding
-memory/           append-oriented associative memory and metrics
+memory/           append-oriented associative memory, chunked KG memory, and metrics
 factgraph/        local revision graph for chain facts
 ingestion/        Gemini 2.5 Flash Lite text-to-triples ingestion
 language/         n-gram prediction and context word-learning primitives
@@ -221,5 +236,7 @@ docs/             research roadmap and design notes
 - The conversation demo is scripted, not an autonomous chat loop.
 - Syntax learning and general reasoning are not implemented.
 - Word learning currently uses controlled context hints.
+- The current `FactGraph` still stores one active target per `(source, relation)`,
+  so branching graph queries remain intentionally conservative.
 - Full SDM projected-address CI remains an open engineering target for HRR and
   continuous embedding keys; one-hot key results should be tracked separately.

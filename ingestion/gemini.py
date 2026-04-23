@@ -11,6 +11,7 @@ from factgraph import FactGraph
 from hrr.datasets import fact_key
 from hrr.encoder import SVOEncoder, SVOFact
 from memory.amm import AMM
+from memory.chunked_kg import ChunkedKGMemory
 from .relations import RelationRegistry
 
 
@@ -130,6 +131,7 @@ class TextIngestionPipeline:
         memory: AMM,
         factgraph: FactGraph,
         *,
+        chunk_memory: ChunkedKGMemory | None = None,
         extractor: GeminiExtractor | None = None,
         relation_registry: RelationRegistry | None = None,
         min_confidence: float = 0.5,
@@ -137,13 +139,33 @@ class TextIngestionPipeline:
         self.encoder = encoder
         self.memory = memory
         self.factgraph = factgraph
+        self.chunk_memory = chunk_memory
         self.extractor = extractor or GeminiExtractor()
         self.relation_registry = relation_registry or RelationRegistry()
         self.min_confidence = min_confidence
 
     def ingest_text(self, text: str, *, source: str = "text", domain: str = "real_text") -> IngestionResult:
         pass1, pass2 = self.extractor.extract(text, source=source)
-        facts = self._deduplicate([*pass1.facts, *pass2.facts])
+        return self.ingest_facts(
+            [*pass1.facts, *pass2.facts],
+            source=source,
+            domain=domain,
+            pass1_count=len(pass1.facts),
+            pass2_count=len(pass2.facts),
+            estimated_fact_count=pass1.estimated_fact_count,
+        )
+
+    def ingest_facts(
+        self,
+        facts: list[ExtractedFact],
+        *,
+        source: str = "structured",
+        domain: str = "structured",
+        pass1_count: int = 0,
+        pass2_count: int = 0,
+        estimated_fact_count: int = 0,
+    ) -> IngestionResult:
+        facts = self._deduplicate(facts)
         written = 0
         raw_relations: set[str] = set()
         normalized_relations: set[str] = set()
@@ -180,20 +202,24 @@ class TextIngestionPipeline:
                     "raw_relation": normalized.raw,
                 },
             }
+            if self.chunk_memory is not None:
+                chunk_record = self.chunk_memory.write_fact(key, domain, svo, vector, payload)
+                payload["chunk_id"] = chunk_record.chunk_id
             self.memory.write(key, vector, payload)
             self.factgraph.write(svo.subject, svo.verb, svo.object)
             written += 1
         return IngestionResult(
             facts=facts,
-            pass1_count=len(pass1.facts),
-            pass2_count=len(pass2.facts),
-            estimated_fact_count=pass1.estimated_fact_count,
+            pass1_count=pass1_count,
+            pass2_count=pass2_count,
+            estimated_fact_count=estimated_fact_count,
             written_facts=written,
             relation_stats={
                 "raw_relation_labels": len(raw_relations),
                 "normalized_relation_labels": len(normalized_relations),
                 "alias_hits": alias_hits,
                 "unresolved_relation_labels": len(raw_relations) - alias_hits,
+                "chunk_count": len(self.chunk_memory.chunks) if self.chunk_memory is not None else 0,
             },
         )
 

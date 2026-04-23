@@ -105,7 +105,11 @@ The repo currently implements:
 
 - HRR SVO encoding with circular convolution and unitary role vectors.
 - Full-vector AMM storage and cosine nearest-neighbor retrieval.
+- Chunked HRR knowledge-graph storage with bounded chunk size, chunk provenance,
+  and bridge-entity tracking.
 - FactGraph local revision through `per_key_reset`.
+- Multi-hop chain queries that combine symbolic `FactGraph` traversal with
+  chunk-local HRR evidence and hop-aware confidence.
 - Gemini 2.5 Flash Lite two-pass extraction into triples.
 - HRR bigram-context next-token memory.
 - Context word learning with ACTION-role unbinding and semantic cluster lookup.
@@ -118,9 +122,13 @@ The repo currently implements:
   unbinding and a linear ridge-regression decoding head.
 - A D-2839-style sequence-chain benchmark that measures the prefix length needed
   to disambiguate a rule family.
+- A chunked multi-hop benchmark that exercises deterministic 2-hop, 3-hop, and
+  cross-domain chain retrieval over chunked HRR memory.
+- A temporal state benchmark that validates latest-state lookup, state history,
+  and historical retrieval over the episodic memory path.
 - A browser UI demo in `web.py` + `web_static/` that mirrors the `nexus-16`
   dashboard style and 3D fact visualization while using HHR-native structured
-  query and ingestion flows.
+  query, chain query, chunk inspection, and ingestion flows.
 - A relation registry that canonicalizes extracted relation labels, deduplicates
   aliases before memory writes, and stores provenance payloads for each triple.
 
@@ -128,15 +136,34 @@ Verified locally:
 
 ```text
 python -m pytest
-23 passed
+32 passed
 ```
 
 The important caveat: this repo's AMM is full-vector nearest-neighbor memory,
 not the full SDM hard-location architecture from the negative `addr_dim=64`
 findings. The repo includes an address-routed stress test, but it does not yet
-implement the lab's full SDM projection/gating stack.
+implement the lab's full SDM projection/gating stack. The new chunked KG and
+multi-hop features should therefore be read as improvements to the full-vector
+PoC, not as evidence that projected-address CI has been solved.
 
 ## Priority Research Tracks
+
+### 0. Chunked KG And Multi-Hop Retrieval
+
+Status: implemented in the repo as a bounded chunk layer over full-vector AMM
+plus a chain query surface in `query.py`, `memory/chunked_kg.py`, `web.py`, and
+the new `exp_chunked_multihop.py` benchmark.
+
+Goal: keep multi-hop retrieval, chunk provenance, and bridge entities stable
+while scaling the evidence surface beyond single-fact lookup.
+
+Next:
+
+- Add branching-graph support beyond one active `(source, relation) -> target`
+  edge in `FactGraph`.
+- Expand from deterministic chain queries to constrained relational queries and
+  mixed graph/vector reranking.
+- Measure chunk-size sensitivity on larger synthetic and real extracted corpora.
 
 ### 1. Address-Dimension Critical Path
 
@@ -172,7 +199,7 @@ embedding keys.
 
 ### 2. Relation Registry And Provenance
 
-Status: initial registry and provenance payloads implemented in
+Status: initial registry, chunk provenance payloads, and structured ingest path implemented in
 `ingestion/relations.py` and `TextIngestionPipeline`.
 
 Goal: prevent relation-label fragmentation before scaling ingestion.
@@ -206,6 +233,13 @@ Status: initial D-2836-style benchmark implemented in
 
 Goal: extend the benchmark beyond controlled synthetic facts into dialogue-turn
 metadata and correction scenarios.
+
+Progress since the initial draft:
+
+- `memory/episodic.py` now stores temporalized HRR traces alongside current
+  graph state.
+- The repo includes `exp_temporal_state_tracking.py` for latest-state, history,
+  and historical-retrieval smoke coverage.
 
 Facts to store:
 

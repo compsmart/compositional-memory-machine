@@ -171,6 +171,7 @@ function renderChatMessage(message) {
   if (message.route) meta.push(`route ${escapeHtml(message.route)}`);
   if (Number.isFinite(message.confidence)) meta.push(`confidence ${Number(message.confidence).toFixed(3)}`);
   const evidence = Array.isArray(message.evidence) ? message.evidence.slice(0, 3) : [];
+  const chainPath = Array.isArray(message.chain_path) ? message.chain_path : [];
   return `
     <article class="chat-message ${escapeHtml(message.role || "assistant")}">
       <div class="chat-message-head">
@@ -184,11 +185,16 @@ function renderChatMessage(message) {
           : ""
       }
       ${
+        chainPath.length
+          ? `<div class="meta-line">chain: ${chainPath.map((item) => escapeHtml(String(item))).join(" -> ")}</div>`
+          : ""
+      }
+      ${
         evidence.length
           ? `<ul class="query-evidence">${evidence
               .map(
                 (fact) =>
-                  `<li>${escapeHtml(fact.subject)} ${escapeHtml(fact.relation)} ${escapeHtml(fact.object)} <span class="meta-line">(score ${Number(fact.score).toFixed(3)})</span></li>`
+                  `<li>${escapeHtml(fact.subject)} ${escapeHtml(fact.relation)} ${escapeHtml(fact.object)} <span class="meta-line">(score ${Number(fact.score).toFixed(3)}${fact.chunk_id ? `, chunk ${escapeHtml(String(fact.chunk_id))}` : ""})</span></li>`
               )
               .join("")}</ul>`
           : ""

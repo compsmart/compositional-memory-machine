@@ -20,7 +20,7 @@ from hrr import SVOEncoder, VectorStore
 from hrr.datasets import all_facts, fact_key
 from ingestion import GeminiExtractor, TextIngestionPipeline
 from language import ContextExample, NGramLanguageMemory, WordLearningMemory
-from memory import AMM
+from memory import AMM, ChunkedKGMemory
 from query import QueryEngine
 
 
@@ -61,14 +61,21 @@ class HHRWebState:
     def reset_demo(self) -> None:
         self.encoder = SVOEncoder(dim=self.dim, seed=self.seed)
         self.memory = AMM()
+        self.chunk_memory = ChunkedKGMemory(chunk_size=4)
         self.graph = FactGraph()
         self.pipeline = TextIngestionPipeline(
             self.encoder,
             self.memory,
             self.graph,
+            chunk_memory=self.chunk_memory,
             extractor=self._extractor or GeminiExtractor(),
         )
-        self.query = QueryEngine(encoder=self.encoder, memory=self.memory)
+        self.query = QueryEngine(
+            encoder=self.encoder,
+            memory=self.memory,
+            graph=self.graph,
+            chunk_memory=self.chunk_memory,
+        )
         self.generator = FrozenGeneratorAdapter()
         self._seed_fact_memory()
         self._build_compositional_demo()
@@ -82,6 +89,7 @@ class HHRWebState:
             "stored_facts": len(facts),
             "graph_facts": len(self.graph.edges()),
             "memory_records": len(self.memory.records),
+            "chunk_count": len(self.chunk_memory.chunks),
             "google_api_key": bool(self.pipeline.extractor._api_key()),
             "dim": self.dim,
             "demo_entity": self.compositional_demo["entity"],
@@ -94,6 +102,7 @@ class HHRWebState:
             "total": len(facts),
             "facts": facts[-limit:],
             "graph": self._graph_payload(),
+            "chunks": self.chunk_memory.chunk_summaries(),
         }
 
     def chat_history_payload(self) -> dict[str, Any]:
@@ -126,8 +135,25 @@ class HHRWebState:
                 "graph_target": current_target,
                 "novel_composition": bool(probe.get("novel_composition", False)),
                 "evidence": evidence,
+                "chunk_id": probe.get("chunk_id"),
             }
         }
+
+    def query_chain(self, payload: dict[str, Any]) -> dict[str, Any]:
+        subject = str(payload.get("subject", "")).strip()
+        relations = payload.get("relations")
+        if not subject:
+            raise ValueError("subject is required")
+        if not isinstance(relations, list) or not relations or not all(isinstance(item, str) and item.strip() for item in relations):
+            raise ValueError("relations must be a non-empty list of strings")
+
+        result = self.query.ask_chain(subject, [item.strip() for item in relations])
+        if result["found"]:
+            target = str(result["target"])
+            answer = f"{subject} reaches {target} via {' -> '.join(relations)}."
+        else:
+            answer = f"I could not trace a reliable chain for {subject}."
+        return {"result": {"answer": answer, **result}}
 
     def ingest_text(self, payload: dict[str, Any]) -> dict[str, Any]:
         text = str(payload.get("text", "")).strip()
@@ -197,19 +223,24 @@ class HHRWebState:
     def _seed_fact_memory(self) -> None:
         for domain, fact in all_facts():
             key = fact_key(domain, fact)
-            self.memory.write(
+            payload = {
+                "domain": domain,
+                "subject": fact.subject,
+                "verb": fact.verb,
+                "object": fact.object,
+                "source": "seed",
+                "kind": "explicit",
+                "confidence": 1.0,
+            }
+            chunk_record = self.chunk_memory.write_fact(
                 key,
+                domain,
+                fact,
                 self.encoder.encode_fact(fact),
-                {
-                    "domain": domain,
-                    "subject": fact.subject,
-                    "verb": fact.verb,
-                    "object": fact.object,
-                    "source": "seed",
-                    "kind": "explicit",
-                    "confidence": 1.0,
-                },
+                payload,
             )
+            payload["chunk_id"] = chunk_record.chunk_id
+            self.memory.write(key, self.encoder.encode_fact(fact), payload)
             self.graph.write(fact.subject, fact.verb, fact.object)
 
     def _build_compositional_demo(self) -> None:
@@ -261,7 +292,8 @@ class HHRWebState:
             text=(
                 "Memory ready. Ask about a stored fact, continue a learned pattern like "
                 "\"Complete this learned pattern: 'the doctor ...'\", or teach me a new "
-                "word. Use the Ingest pane or say \"Remember: <passage>\" to add new text."
+                "word. Use the Ingest pane or say \"Remember: <passage>\" to add new text. "
+                "I can also trace simple multi-hop chains after you teach me linked facts."
             ),
             route="ready",
         )
@@ -279,6 +311,7 @@ class HHRWebState:
         for handler in (
             self._reply_to_ingest_prompt,
             self._reply_to_word_learning,
+            self._reply_to_multihop_prompt,
             self._reply_to_word_recall,
             self._reply_to_pattern_prompt,
             self._reply_to_fact_prompt,
@@ -292,7 +325,8 @@ class HHRWebState:
                 "or learn a demo word from examples. Try \"Who did Ada Lovelace work "
                 "with?\", \"Complete this learned pattern: 'the doctor ...'\", or "
                 "\"Learn a new word: dax. A child daxes an apple; a chef daxes soup; "
-                "a bird daxes seed.\""
+                "a bird daxes seed.\" You can also teach me linked facts and ask a "
+                "multi-hop question like \"Who does Alice know who works with Carol?\""
             ),
             "route": "fallback",
         }
@@ -301,7 +335,10 @@ class HHRWebState:
         if not re.match(r"(?is)^\s*(remember|memorize|ingest|read)\b", message):
             return None
         parts = re.split(r":|\n", message, maxsplit=1)
-        if len(parts) < 2 or not parts[1].strip():
+        text = parts[1].strip() if len(parts) >= 2 else ""
+        if not text:
+            text = re.sub(r"(?is)^\s*(remember|memorize|ingest|read)\b\s*:?\s*", "", message, count=1).strip()
+        if not text:
             return {
                 "text": "Paste the passage after ':' or use the Ingest pane so I can write it into memory.",
                 "route": "ingest_prompt",
@@ -311,16 +348,53 @@ class HHRWebState:
                 "text": "I need GOOGLE_API_KEY or GEMINI_API_KEY before I can ingest raw text in chat.",
                 "route": "ingest_unavailable",
             }
-        text = parts[1].strip()
         result = self.pipeline.ingest_text(text, source="chat", domain="chat")
         if result.facts:
             self.chat_subject = result.facts[0].subject
         return {
             "text": (
                 f"I extracted {len(result.facts)} distinct facts and wrote "
-                f"{result.written_facts} of them into HRR memory."
+                f"{result.written_facts} of them into HRR memory across "
+                f"{result.relation_stats.get('chunk_count', 0)} chunk(s)."
             ),
             "route": "text_ingest",
+        }
+
+    def _reply_to_multihop_prompt(self, message: str) -> dict[str, Any] | None:
+        subject = self._resolve_subject(message)
+        if subject is None:
+            return None
+        match = self._match_multihop_path(subject, message)
+        if match is None:
+            return None
+
+        relations = [edge.relation for edge in match]
+        result = self.query.ask_chain(subject, relations)
+        if not result["found"]:
+            return {
+                "text": f"I found a possible chain start for {subject}, but I could not complete a reliable multi-hop trace.",
+                "route": "multi_hop_miss",
+                "confidence": float(result["confidence"]),
+            }
+
+        self.chat_subject = subject
+        evidence = [
+            {
+                "subject": step["subject"],
+                "relation": step["relation"],
+                "object": step["target"],
+                "score": float(step["confidence"]),
+                "chunk_id": step.get("chunk_id"),
+            }
+            for step in result["steps"]
+        ]
+        return {
+            "text": self._chain_sentence(result["steps"]),
+            "route": "multi_hop_query",
+            "confidence": float(result["confidence"]),
+            "graph_target": result["target"],
+            "chain_path": result["path"],
+            "evidence": evidence,
         }
 
     def _reply_to_word_learning(self, message: str) -> dict[str, Any] | None:
@@ -358,6 +432,8 @@ class HHRWebState:
         if match is None:
             return None
         word = match.group(1).lower()
+        if word in {"who", "what", "where", "when", "why", "how"}:
+            return None
         if word in {"it", "that"} and self.chat_word:
             word = self.chat_word
         retrieved = self.word_learning.retrieve_word(word)
@@ -521,6 +597,83 @@ class HHRWebState:
             return edges[0]
         return None
 
+    def _match_multihop_path(self, subject: str, message: str, *, max_hops: int = 4) -> list[Any] | None:
+        message_tokens = set(self._normalized_tokens(message))
+        mentioned_entities = {
+            entity.lower()
+            for entity in self._mentioned_entities(message)
+            if entity.lower() != subject.lower()
+        }
+        best_path = None
+        best_score = 0
+        for path in self._graph_paths_from(subject, max_hops=max_hops):
+            if len(path) < 2:
+                continue
+            relation_hits = 0
+            relation_score = 0
+            node_score = 0
+            for edge in path:
+                relation_tokens = self._normalized_tokens(edge.relation.replace("_", " "))
+                overlap = sum(1 for token in relation_tokens if token in message_tokens)
+                if overlap > 0:
+                    relation_hits += 1
+                    relation_score += overlap
+                if edge.target.lower() in mentioned_entities:
+                    node_score += 2
+            if relation_hits < 2:
+                continue
+            score = relation_score * 4 + node_score - len(path)
+            if score > best_score:
+                best_score = score
+                best_path = path
+        return best_path
+
+    def _graph_paths_from(self, subject: str, *, max_hops: int) -> list[list[Any]]:
+        adjacency: dict[str, list[Any]] = {}
+        for edge in self.graph.edges():
+            adjacency.setdefault(edge.source, []).append(edge)
+
+        paths: list[list[Any]] = []
+
+        def walk(current: str, current_path: list[Any], seen: set[str]) -> None:
+            if current_path:
+                paths.append(current_path.copy())
+            if len(current_path) >= max_hops:
+                return
+            for edge in adjacency.get(current, []):
+                if edge.target in seen:
+                    continue
+                seen.add(edge.target)
+                current_path.append(edge)
+                walk(edge.target, current_path, seen)
+                current_path.pop()
+                seen.remove(edge.target)
+
+        walk(subject, [], {subject})
+        return paths
+
+    def _mentioned_entities(self, message: str) -> list[str]:
+        lowered = message.lower()
+        entities = sorted(
+            {edge.source for edge in self.graph.edges()} | {edge.target for edge in self.graph.edges()},
+            key=len,
+            reverse=True,
+        )
+        return [entity for entity in entities if entity.lower() in lowered]
+
+    def _chain_sentence(self, steps: list[dict[str, Any]]) -> str:
+        if not steps:
+            return "I could not trace a chain."
+        clauses = [
+            f"{step['subject']} {step['relation'].replace('_', ' ')} {step['target']}"
+            for step in steps
+        ]
+        if len(clauses) == 1:
+            return clauses[0] + "."
+        if len(clauses) == 2:
+            return f"{clauses[0]}, and {clauses[1]}."
+        return ", ".join(clauses[:-1]) + f", and {clauses[-1]}."
+
     def _normalized_tokens(self, value: str) -> list[str]:
         return [self._stem_token(token) for token in re.findall(r"[a-z0-9]+", value.lower())]
 
@@ -553,8 +706,10 @@ class HHRWebState:
                     "source": str(payload.get("source", "seed")),
                     "kind": str(payload.get("kind", "explicit")),
                     "domain": str(payload.get("domain", "unknown")),
+                    "chunk_id": payload.get("chunk_id"),
                     "metadata": {
                         "domain": str(payload.get("domain", "unknown")),
+                        "chunk_id": payload.get("chunk_id"),
                     },
                 }
             )
@@ -584,6 +739,7 @@ class HHRWebState:
                     "score": float(score),
                     "source": str(payload.get("source", "seed")),
                     "domain": str(payload.get("domain", "unknown")),
+                    "chunk_id": payload.get("chunk_id"),
                 }
             )
         return evidence
@@ -624,6 +780,7 @@ class HHRWebHandler(BaseHTTPRequestHandler):
             routes = {
                 "/api/chat": self.state.chat,
                 "/api/query/svo": self.state.query_svo,
+                "/api/query/chain": self.state.query_chain,
                 "/api/ingest/text": self.state.ingest_text,
                 "/api/demo/reset": self.state.demo_reset,
             }

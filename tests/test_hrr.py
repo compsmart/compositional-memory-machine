@@ -20,3 +20,12 @@ def test_svo_encoding_is_stable_for_same_seed() -> None:
 
     assert cosine(left.encode("doctor", "treats", "patient"), right.encode("doctor", "treats", "patient")) > 0.999
     assert cosine(left.encode("doctor", "treats", "patient"), left.encode("chef", "prepares", "meal")) < 0.3
+
+
+def test_temporal_encoding_changes_representation() -> None:
+    encoder = SVOEncoder(dim=256, seed=3)
+
+    observed = encoder.encode_temporal("robot", "location", "lab", time_token="t0", state_token="observed")
+    revised = encoder.encode_temporal("robot", "location", "lab", time_token="t1", state_token="revised")
+
+    assert cosine(observed, revised) < 0.99

@@ -5,12 +5,49 @@ import threading
 from contextlib import contextmanager
 from urllib.request import Request, urlopen
 
+from hrr.datasets import fact_key
+from hrr.encoder import SVOFact
 from ingestion import ExtractedFact, ExtractionResponse, GeminiExtractor
 from web import HHRWebState, make_web_server
 
 
 class FakeExtractor(GeminiExtractor):
     def extract(self, text: str, *, source: str = "") -> tuple[ExtractionResponse, ExtractionResponse]:
+        if "Alice" in text:
+            pass1 = ExtractionResponse(
+                estimated_fact_count=3,
+                facts=[
+                    ExtractedFact(
+                        subject="Alice",
+                        relation="knows",
+                        object="Bob",
+                        confidence=0.95,
+                        kind="explicit",
+                        source=source,
+                    ),
+                    ExtractedFact(
+                        subject="Bob",
+                        relation="works with",
+                        object="Carol",
+                        confidence=0.95,
+                        kind="explicit",
+                        source=source,
+                    ),
+                ],
+            )
+            pass2 = ExtractionResponse(
+                facts=[
+                    ExtractedFact(
+                        subject="Carol",
+                        relation="guides",
+                        object="Delta",
+                        confidence=0.8,
+                        kind="missed",
+                        source=source,
+                    )
+                ]
+            )
+            return pass1, pass2
         pass1 = ExtractionResponse(
             estimated_fact_count=2,
             facts=[
@@ -87,7 +124,9 @@ def test_web_status_and_facts_routes() -> None:
     assert status["stored_facts"] == 20
     assert status["graph_facts"] == 20
     assert status["memory_records"] == 20
+    assert status["chunk_count"] == 5
     assert facts["total"] == 20
+    assert len(facts["chunks"]) == 5
     assert chat["history"][0]["route"] == "ready"
     assert len(facts["graph"]["nodes"]) >= 10
     assert len(facts["graph"]["edges"]) == 20
@@ -109,6 +148,40 @@ def test_web_query_route_returns_structured_answer() -> None:
     assert result["answer"] == "doctor treats patient."
     assert result["graph_target"] == "patient"
     assert result["evidence"][0]["subject"] == "doctor"
+
+
+def test_web_chain_query_route_returns_multi_hop_answer() -> None:
+    state = HHRWebState()
+    for domain, fact in [
+        ("bridge", SVOFact("alice", "knows", "bob")),
+        ("bridge", SVOFact("bob", "works_with", "carol")),
+        ("bridge", SVOFact("carol", "guides", "delta")),
+    ]:
+        key = fact_key(domain, fact)
+        vector = state.encoder.encode_fact(fact)
+        payload = {
+            "domain": domain,
+            "subject": fact.subject,
+            "verb": fact.verb,
+            "object": fact.object,
+            "source": "fixture",
+            "confidence": 1.0,
+        }
+        chunk_record = state.chunk_memory.write_fact(key, domain, fact, vector, payload)
+        payload["chunk_id"] = chunk_record.chunk_id
+        state.memory.write(key, vector, payload)
+        state.graph.write(fact.subject, fact.verb, fact.object)
+
+    with running_server(state) as base_url:
+        payload = _post(
+            f"{base_url}/api/query/chain",
+            {"subject": "alice", "relations": ["knows", "works_with", "guides"]},
+        )
+
+    result = payload["result"]
+    assert result["found"] is True
+    assert result["target"] == "delta"
+    assert result["path"] == ["alice", "bob", "carol", "delta"]
 
 
 def test_web_ingest_and_compositional_routes() -> None:
@@ -154,3 +227,23 @@ def test_web_chat_route_supports_multi_turn_memory() -> None:
     assert "ingest action" in learn_reply["reply"]["text"]
     assert recall_reply["reply"]["route"] == "word_recall"
     assert "nearest action is" in recall_reply["reply"]["text"]
+
+
+def test_web_chat_route_supports_multihop_after_chat_learning() -> None:
+    state = HHRWebState(extractor=FakeExtractor())
+    with running_server(state) as base_url:
+        ingest_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Remember Alice knows Bob. Bob works with Carol. Carol guides Delta."},
+        )
+        multihop_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Who does Alice know who works with Carol?"},
+        )
+
+    assert ingest_reply["reply"]["route"] == "text_ingest"
+    assert "3 distinct facts" in ingest_reply["reply"]["text"]
+    assert multihop_reply["reply"]["route"] == "multi_hop_query"
+    assert "Alice knows Bob" in multihop_reply["reply"]["text"]
+    assert "Bob works with Carol" in multihop_reply["reply"]["text"]
+    assert multihop_reply["reply"]["chain_path"] == ["Alice", "Bob", "Carol"]
