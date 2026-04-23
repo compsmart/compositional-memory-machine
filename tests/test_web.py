@@ -113,6 +113,23 @@ def _post(url: str, payload: dict[str, object]) -> dict[str, object]:
         return json.loads(response.read().decode("utf-8"))
 
 
+def _write_fact(state: HHRWebState, domain: str, fact: SVOFact) -> None:
+    key = fact_key(domain, fact)
+    vector = state.encoder.encode_fact(fact)
+    payload = {
+        "domain": domain,
+        "subject": fact.subject,
+        "verb": fact.verb,
+        "object": fact.object,
+        "source": "fixture",
+        "confidence": 1.0,
+    }
+    chunk_record = state.chunk_memory.write_fact(key, domain, fact, vector, payload)
+    payload["chunk_id"] = chunk_record.chunk_id
+    state.memory.write(key, vector, payload)
+    state.graph.write(fact.subject, fact.verb, fact.object)
+
+
 def test_web_status_and_facts_routes() -> None:
     with running_server(HHRWebState()) as base_url:
         status = _get(f"{base_url}/api/status")
@@ -159,20 +176,7 @@ def test_web_chain_query_route_returns_multi_hop_answer() -> None:
         ("bridge", SVOFact("bob", "works_with", "carol")),
         ("bridge", SVOFact("carol", "guides", "delta")),
     ]:
-        key = fact_key(domain, fact)
-        vector = state.encoder.encode_fact(fact)
-        payload = {
-            "domain": domain,
-            "subject": fact.subject,
-            "verb": fact.verb,
-            "object": fact.object,
-            "source": "fixture",
-            "confidence": 1.0,
-        }
-        chunk_record = state.chunk_memory.write_fact(key, domain, fact, vector, payload)
-        payload["chunk_id"] = chunk_record.chunk_id
-        state.memory.write(key, vector, payload)
-        state.graph.write(fact.subject, fact.verb, fact.object)
+        _write_fact(state, domain, fact)
 
     with running_server(state) as base_url:
         payload = _post(
@@ -255,3 +259,45 @@ def test_web_chat_route_supports_multihop_after_chat_learning() -> None:
     assert "Alice knows Bob" in multihop_reply["reply"]["text"]
     assert "Bob works with Carol" in multihop_reply["reply"]["text"]
     assert multihop_reply["reply"]["chain_path"] == ["Alice", "Bob", "Carol"]
+
+
+def test_web_chat_route_handles_inverse_and_natural_relational_questions() -> None:
+    state = HHRWebState()
+    for fact in [
+        SVOFact("Ada", "founded", "Meridian Labs"),
+        SVOFact("Ada", "hired", "Ben"),
+        SVOFact("Ben", "manages", "Cara"),
+        SVOFact("Dev", "works_on", "Project Atlas"),
+        SVOFact("Project Atlas", "uses", "Graphite Engine"),
+        SVOFact("Jon", "maintains", "Graphite Engine"),
+        SVOFact("Iris", "supports", "Jon"),
+    ]:
+        _write_fact(state, "assessment", fact)
+
+    with running_server(state) as base_url:
+        inverse_reply = _post(f"{base_url}/api/chat", {"message": "Who founded Meridian Labs?"})
+        direct_reply = _post(f"{base_url}/api/chat", {"message": "Who did Ada hire?"})
+        bridge_reply = _post(f"{base_url}/api/chat", {"message": "Who does Ada hire who manages Cara?"})
+        forward_chain_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "What engine does the project Dev works on use?"},
+        )
+        reverse_chain_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Who supports the person who maintains Graphite Engine?"},
+        )
+
+    assert inverse_reply["reply"]["route"] == "fact_query"
+    assert "Ada founded Meridian Labs" in inverse_reply["reply"]["text"]
+    assert direct_reply["reply"]["route"] == "fact_query"
+    assert "Ada hired Ben" in direct_reply["reply"]["text"]
+    assert bridge_reply["reply"]["route"] == "multi_hop_query"
+    assert bridge_reply["reply"]["chain_path"] == ["Ada", "Ben", "Cara"]
+    assert "So the answer is Ben" in bridge_reply["reply"]["text"]
+    assert forward_chain_reply["reply"]["route"] == "multi_hop_query"
+    assert "Project Atlas uses Graphite Engine" in forward_chain_reply["reply"]["text"]
+    assert "So the answer is Graphite Engine" in forward_chain_reply["reply"]["text"]
+    assert reverse_chain_reply["reply"]["route"] == "multi_hop_query"
+    assert "Jon maintains Graphite Engine" in reverse_chain_reply["reply"]["text"]
+    assert "Iris supports Jon" in reverse_chain_reply["reply"]["text"]
+    assert "So the answer is Iris" in reverse_chain_reply["reply"]["text"]

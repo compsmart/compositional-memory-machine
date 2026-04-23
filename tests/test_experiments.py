@@ -3,6 +3,13 @@ from __future__ import annotations
 from experiments.exp_d2824_ci_storage import run as run_ci
 from experiments.exp_d2825_composition import run as run_composition
 from experiments.exp_d2849_probabilistic_next_token import run as run_probabilistic_next_token
+from experiments.exp_d2850_temporal_role_binding import run as run_temporal_role_binding
+from experiments.exp_d2851_pragmatic_roles import run as run_pragmatic_roles
+from experiments.exp_d2852_narrative_chunking import run as run_narrative_chunking
+from experiments.exp_d2854_generation_boundary import run as run_generation_boundary
+from experiments.exp_d2855_hierarchical_syntax import run as run_hierarchical_syntax
+from experiments.exp_d2856_failure_boundary import run as run_failure_boundary
+from experiments.exp_d2857_language_revision import run as run_language_revision
 from experiments.exp_chunked_multihop import run as run_chunked_multihop
 from experiments.exp_d2838_compositional_generation import run as run_compositional_generation
 from experiments.exp_d2839_sequence_chain import summarize as summarize_sequence_chain
@@ -128,3 +135,63 @@ def test_probabilistic_next_token_experiment_smoke() -> None:
     assert rows[0]["top1_correct"] == 1.0
     assert rows[0]["top3_hit"] == 1.0
     assert abs(rows[0]["probability_sum"] - 1.0) < 1e-6
+
+
+def test_temporal_role_binding_experiment_smoke() -> None:
+    rows = run_temporal_role_binding(dim=4096, seeds=(0,), n_events_values=(25, 50, 200))
+    by_events = {int(row["n_events"]): row for row in rows}
+
+    assert by_events[25]["role_acc"] >= 0.95
+    assert by_events[50]["role_acc"] >= 0.95
+    assert by_events[200]["role_acc"] < by_events[50]["role_acc"]
+
+
+def test_pragmatic_roles_experiment_smoke() -> None:
+    rows = run_pragmatic_roles(dim=4096, seeds=(0,), sentence_counts=(50,))
+    row = rows[0]
+
+    assert row["core_acc"] >= 0.95
+    assert row["nuanced_acc"] > row["core_acc"]
+
+
+def test_narrative_chunking_experiment_smoke() -> None:
+    rows = run_narrative_chunking(dim=4096, seeds=(0,), lengths=(200,))
+    by_strategy = {str(row["strategy"]): row for row in rows}
+
+    assert by_strategy["chunked"]["recall"] == 1.0
+    assert by_strategy["chunked"]["latest_state"] == 1.0
+    assert by_strategy["flat"]["recall"] < by_strategy["chunked"]["recall"]
+
+
+def test_generation_boundary_experiment_smoke() -> None:
+    rows = run_generation_boundary(dim=4096, seeds=(0,), n_sequences_values=(50,))
+
+    assert all(float(row["seq_em"]) < 0.2 for row in rows)
+    assert all(float(row["tok_acc"]) < 0.8 for row in rows)
+
+
+def test_hierarchical_syntax_experiment_smoke() -> None:
+    rows = run_hierarchical_syntax(dim=4096, seeds=(0,), depths=(2, 3), sentence_counts=(25,))
+    by_depth = {int(row["depth"]): row for row in rows}
+
+    assert by_depth[2]["main_acc"] >= 0.9
+    assert by_depth[3]["main_acc"] >= 0.8
+
+
+def test_failure_boundary_experiment_smoke() -> None:
+    rows = run_failure_boundary(dim=4096, seeds=(0,), similarities=(0.95, 0.4), conflict_sizes=(50,))
+    similarity_rows = {float(row["similarity"]): row for row in rows if row["mode"] == "similarity"}
+    overwrite_row = next(row for row in rows if row["mode"] == "overwrite")
+
+    assert similarity_rows[0.4]["correct_retrieval"] == 1.0
+    assert similarity_rows[0.95]["correct_retrieval"] < 0.7
+    assert 0.4 <= overwrite_row["old_contamination"] <= 0.6
+
+
+def test_language_revision_experiment_smoke() -> None:
+    rows = run_language_revision(dims=(256, 1024), seeds=(0,), n_entities=20)
+    by_condition = {str(row["condition"]): row for row in rows if int(row["dim"]) == 256}
+
+    assert by_condition["no_reset"]["revised_em"] < 0.7
+    assert by_condition["perkey_reset"]["revised_em"] == 1.0
+    assert by_condition["perkey_reset"]["retained_em"] == 1.0

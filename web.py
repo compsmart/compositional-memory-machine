@@ -365,41 +365,20 @@ class HHRWebState:
         }
 
     def _reply_to_multihop_prompt(self, message: str) -> dict[str, Any] | None:
-        subject = self._resolve_subject(message)
-        if subject is None:
+        if "?" not in message and not re.match(r"(?i)^\s*(who|what|which|where|whom)\b", message):
             return None
-        match = self._match_multihop_path(subject, message)
+        match = self._match_multihop_path(message)
         if match is None:
             return None
+        path = match["path"]
+        if len(path) == 1 and path[0]["direction"] == "forward":
+            return None
 
-        relations = [edge.relation for edge in match]
-        result = self.query.ask_chain(subject, relations)
-        if not result["found"]:
-            return {
-                "text": f"I found a possible chain start for {subject}, but I could not complete a reliable multi-hop trace.",
-                "route": "multi_hop_miss",
-                "confidence": float(result["confidence"]),
-            }
-
-        self.chat_subject = subject
-        evidence = [
-            {
-                "subject": step["subject"],
-                "relation": step["relation"],
-                "object": step["target"],
-                "score": float(step["confidence"]),
-                "chunk_id": step.get("chunk_id"),
-            }
-            for step in result["steps"]
-        ]
-        return {
-            "text": self._chain_sentence(result["steps"]),
-            "route": "multi_hop_query",
-            "confidence": float(result["confidence"]),
-            "graph_target": result["target"],
-            "chain_path": result["path"],
-            "evidence": evidence,
-        }
+        result = self._probe_relational_path(message, match)
+        if result is None:
+            return None
+        self.chat_subject = str(result["graph_target"])
+        return result
 
     def _reply_to_word_learning(self, message: str) -> dict[str, Any] | None:
         match = re.search(r"\blearn(?:\s+\w+){0,3}\s+word:\s*([A-Za-z][\w-]*)", message, re.IGNORECASE)
@@ -601,13 +580,20 @@ class HHRWebState:
         edges = [edge for edge in self.graph.edges() if edge.source == subject]
         if not edges:
             return None
-        message_tokens = set(self._normalized_tokens(message))
+        message_tokens = self._question_tokens(message)
         best_edge = None
         best_score = 0
         for edge in edges:
-            relation_tokens = self._normalized_tokens(edge.relation.replace("_", " "))
-            overlap = sum(1 for token in relation_tokens if token in message_tokens)
-            if overlap == len(relation_tokens) and overlap > best_score:
+            relation_token_count = len(self._question_tokens(edge.relation.replace("_", " ")))
+            overlap = self._relation_overlap(edge.relation, message_tokens)
+            if overlap == relation_token_count and overlap > best_score:
+                best_edge = edge
+                best_score = overlap
+        if best_edge is not None:
+            return best_edge
+        for edge in edges:
+            overlap = self._relation_overlap(edge.relation, message_tokens)
+            if overlap > best_score:
                 best_edge = edge
                 best_score = overlap
         if best_edge is not None:
@@ -616,41 +602,35 @@ class HHRWebState:
             return edges[0]
         return None
 
-    def _match_multihop_path(self, subject: str, message: str, *, max_hops: int = 4) -> list[Any] | None:
-        message_tokens = set(self._normalized_tokens(message))
-        mentioned_entities = {
-            entity.lower()
-            for entity in self._mentioned_entities(message)
-            if entity.lower() != subject.lower()
-        }
+    def _match_multihop_path(self, message: str, *, max_hops: int = 4) -> dict[str, Any] | None:
+        message_tokens = self._question_tokens(message)
+        anchors = self._path_anchors(message)
+        if not anchors:
+            return None
+        mentioned_entities = {entity.lower() for entity in self._mentioned_entities(message)}
         best_path = None
-        best_score = 0
-        for path in self._graph_paths_from(subject, max_hops=max_hops):
-            if len(path) < 2:
-                continue
-            relation_hits = 0
-            relation_score = 0
-            node_score = 0
-            for edge in path:
-                relation_tokens = self._normalized_tokens(edge.relation.replace("_", " "))
-                overlap = sum(1 for token in relation_tokens if token in message_tokens)
-                if overlap > 0:
-                    relation_hits += 1
-                    relation_score += overlap
-                if edge.target.lower() in mentioned_entities:
-                    node_score += 2
-            if relation_hits < 2:
-                continue
-            score = relation_score * 4 + node_score - len(path)
-            if score > best_score:
-                best_score = score
-                best_path = path
+        best_score = float("-inf")
+        for anchor_index, subject in enumerate(anchors):
+            for path in self._graph_paths_from(subject, max_hops=max_hops):
+                score = self._score_multihop_path(
+                    path,
+                    message_tokens=message_tokens,
+                    mentioned_entities=mentioned_entities,
+                    anchor_index=anchor_index,
+                )
+                if score is None:
+                    continue
+                if score > best_score:
+                    best_score = score
+                    best_path = {"subject": subject, "path": path, "score": score}
         return best_path
 
     def _graph_paths_from(self, subject: str, *, max_hops: int) -> list[list[Any]]:
         adjacency: dict[str, list[Any]] = {}
+        reverse_adjacency: dict[str, list[Any]] = {}
         for edge in self.graph.edges():
             adjacency.setdefault(edge.source, []).append(edge)
+            reverse_adjacency.setdefault(edge.target, []).append(edge)
 
         paths: list[list[Any]] = []
 
@@ -663,10 +643,18 @@ class HHRWebState:
                 if edge.target in seen:
                     continue
                 seen.add(edge.target)
-                current_path.append(edge)
+                current_path.append({"edge": edge, "direction": "forward", "from": current, "to": edge.target})
                 walk(edge.target, current_path, seen)
                 current_path.pop()
                 seen.remove(edge.target)
+            for edge in reverse_adjacency.get(current, []):
+                if edge.source in seen:
+                    continue
+                seen.add(edge.source)
+                current_path.append({"edge": edge, "direction": "reverse", "from": current, "to": edge.source})
+                walk(edge.source, current_path, seen)
+                current_path.pop()
+                seen.remove(edge.source)
 
         walk(subject, [], {subject})
         return paths
@@ -694,16 +682,208 @@ class HHRWebState:
         return ", ".join(clauses[:-1]) + f", and {clauses[-1]}."
 
     def _normalized_tokens(self, value: str) -> list[str]:
-        return [self._stem_token(token) for token in re.findall(r"[a-z0-9]+", value.lower())]
+        tokens: list[str] = []
+        for token in self._question_tokens(value):
+            tokens.extend(sorted(self._token_forms(token)))
+        return tokens
+
+    def _path_anchors(self, message: str) -> list[str]:
+        anchors = self._mentioned_entities_with_positions(message)
+        lowered = message.lower()
+        if re.search(r"\b(she|her|he|him|they|them)\b", lowered) and self.chat_subject:
+            anchors = [self.chat_subject, *anchors]
+        ordered: list[str] = []
+        seen: set[str] = set()
+        for anchor in anchors:
+            key = anchor.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            ordered.append(anchor)
+        return ordered
+
+    def _mentioned_entities_with_positions(self, message: str) -> list[str]:
+        lowered = message.lower()
+        entities = sorted(
+            {edge.source for edge in self.graph.edges()} | {edge.target for edge in self.graph.edges()},
+            key=len,
+            reverse=True,
+        )
+        hits: list[tuple[int, int, str]] = []
+        for entity in entities:
+            position = lowered.find(entity.lower())
+            if position != -1:
+                hits.append((position, -len(entity), entity))
+        hits.sort()
+        ordered: list[str] = []
+        seen: set[str] = set()
+        for _position, _neg_len, entity in hits:
+            key = entity.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            ordered.append(entity)
+        return ordered
 
     @staticmethod
-    def _stem_token(token: str) -> str:
+    def _question_tokens(value: str) -> list[str]:
+        return re.findall(r"[a-z0-9]+", value.lower())
+
+    def _relation_overlap(self, relation: str, message_tokens: list[str]) -> int:
+        relation_tokens = self._question_tokens(relation.replace("_", " "))
+        return sum(
+            1
+            for relation_token in relation_tokens
+            if any(self._token_matches(relation_token, message_token) for message_token in message_tokens)
+        )
+
+    def _score_multihop_path(
+        self,
+        path: list[dict[str, Any]],
+        *,
+        message_tokens: list[str],
+        mentioned_entities: set[str],
+        anchor_index: int,
+    ) -> float | None:
+        relation_hits = 0
+        relation_score = 0
+        entity_score = 0
+        reverse_steps = 0
+        for step in path:
+            edge = step["edge"]
+            overlap = self._relation_overlap(edge.relation, message_tokens)
+            if overlap > 0:
+                relation_hits += 1
+                relation_score += overlap
+            if step["direction"] == "reverse":
+                reverse_steps += 1
+            if edge.source.lower() in mentioned_entities or edge.target.lower() in mentioned_entities:
+                entity_score += 1
+        if len(path) == 1:
+            if path[0]["direction"] == "forward" or relation_hits == 0:
+                return None
+        elif relation_hits < 2:
+            return None
+        extra_steps = max(0, len(path) - relation_hits)
+        return (
+            relation_hits * 20
+            + relation_score * 5
+            + entity_score * 4
+            - extra_steps * 15
+            - reverse_steps * 2
+            - len(path)
+            - anchor_index * 5
+        )
+
+    def _probe_relational_path(self, message: str, match: dict[str, Any]) -> dict[str, Any] | None:
+        subject = str(match["subject"])
+        path = list(match["path"])
+        if not path:
+            return None
+        current = subject
+        chain_path = [subject]
+        actual_steps: list[dict[str, Any]] = []
+        confidence = self.query._dimension_hop_budget(len(path))
+        for hop, traversal in enumerate(path, start=1):
+            edge = traversal["edge"]
+            probe = self.query.ask_svo(edge.source, edge.relation, edge.target)
+            if not probe["found"]:
+                return None
+            current = str(traversal["to"])
+            chain_path.append(current)
+            step_confidence = float(probe["confidence"])
+            confidence *= max(step_confidence * self.query.hop_decay, 1e-6)
+            actual_steps.append(
+                {
+                    "hop": hop,
+                    "subject": edge.source,
+                    "relation": edge.relation,
+                    "target": edge.target,
+                    "direction": traversal["direction"],
+                    "confidence": step_confidence,
+                    "chunk_id": probe.get("chunk_id"),
+                }
+            )
+        if confidence < self.query.min_confidence:
+            return {
+                "text": f"I found a possible chain start for {subject}, but I could not complete a reliable multi-hop trace.",
+                "route": "multi_hop_miss",
+                "confidence": confidence,
+            }
+        answer_node = self._answer_node_for_path(message, chain_path)
+        text = self._relational_answer_text(actual_steps, answer_node, confidence)
+        route = "fact_query" if len(actual_steps) == 1 else "multi_hop_query"
+        evidence = [
+            {
+                "subject": step["subject"],
+                "relation": step["relation"],
+                "object": step["target"],
+                "score": float(step["confidence"]),
+                "chunk_id": step.get("chunk_id"),
+            }
+            for step in actual_steps
+        ]
+        payload = {
+            "text": text,
+            "route": route,
+            "confidence": confidence,
+            "graph_target": answer_node,
+            "evidence": evidence,
+        }
+        if len(actual_steps) > 1 or actual_steps[0]["direction"] == "reverse":
+            payload["chain_path"] = chain_path
+        return payload
+
+    @staticmethod
+    def _answer_node_for_path(message: str, chain_path: list[str]) -> str:
+        lowered = message.lower()
+        if len(chain_path) >= 3 and re.match(r"\s*who\s+does\b", lowered) and re.search(r"\bwho\b", lowered[8:]):
+            return chain_path[1]
+        return chain_path[-1]
+
+    def _relational_answer_text(self, steps: list[dict[str, Any]], answer_node: str, confidence: float) -> str:
+        explanation = self._chain_sentence(steps)
+        if len(steps) == 1 and answer_node == steps[0]["subject"]:
+            return f"{explanation} Confidence: {confidence:.3f}."
+        if len(steps) == 1 and answer_node == steps[0]["target"]:
+            return f"{explanation} Confidence: {confidence:.3f}."
+        return f"{explanation} So the answer is {answer_node}. Confidence: {confidence:.3f}."
+
+    def _token_matches(self, left: str, right: str) -> bool:
+        left_forms = self._token_forms(left)
+        right_forms = self._token_forms(right)
+        for left_form in left_forms:
+            for right_form in right_forms:
+                if left_form == right_form:
+                    return True
+                if min(len(left_form), len(right_form)) >= 3 and (
+                    left_form.startswith(right_form) or right_form.startswith(left_form)
+                ):
+                    return True
+        return False
+
+    @staticmethod
+    def _token_forms(token: str) -> set[str]:
+        forms = {token}
         if token.endswith("ies") and len(token) > 4:
-            return token[:-3] + "y"
-        for suffix in ("ing", "ed", "es", "s"):
-            if token.endswith(suffix) and len(token) > len(suffix) + 2:
-                return token[: -len(suffix)]
-        return token
+            forms.add(token[:-3] + "y")
+        if token.endswith("ing") and len(token) > 5:
+            base = token[:-3]
+            forms.add(base)
+            forms.add(base + "e")
+        if token.endswith("ed") and len(token) > 4:
+            base = token[:-2]
+            forms.add(base)
+            if not base.endswith("e"):
+                forms.add(base + "e")
+        if token.endswith("es") and len(token) > 4:
+            base = token[:-2]
+            forms.add(base)
+            if not base.endswith("e"):
+                forms.add(base + "e")
+        if token.endswith("s") and len(token) > 3:
+            forms.add(token[:-1])
+        return {form for form in forms if form}
 
     @staticmethod
     def _sentence(subject: str, relation: str, object_: str) -> str:

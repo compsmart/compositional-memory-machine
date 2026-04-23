@@ -134,6 +134,9 @@ The repo currently implements:
   cross-domain chain retrieval over chunked HRR memory.
 - A temporal state benchmark that validates latest-state lookup, state history,
   and historical retrieval over the episodic memory path.
+- Claim-validation mirrors for temporal role binding, pragmatic roles,
+  chunked narrative memory, multi-step generation failure, recursive syntax,
+  adversarial failure boundaries, and PerKey-reset language revision.
 - A browser UI demo in `web.py` + `web_static/` that mirrors the `nexus-16`
   dashboard style and 3D fact visualization while using HHR-native structured
   query, chain query, chunk inspection, and ingestion flows.
@@ -144,7 +147,7 @@ Verified locally:
 
 ```text
 python -m pytest
-36 passed
+44 passed
 ```
 
 The important caveat: this repo's AMM is full-vector nearest-neighbor memory,
@@ -155,6 +158,17 @@ multi-hop features should therefore be read as improvements to the full-vector
 PoC, not as evidence that projected-address CI has been solved. The same caveat
 applies to the D-2858 capacity-law adaptation here: it is being used as a
 conservative full-vector chunk budget, not as a proven SDM portability claim.
+
+See [reports/lab_claim_validation.md](../reports/lab_claim_validation.md) for the
+current claim ledger and the repo-vs-lab crosswalk. The short version:
+
+- probabilistic next-token and clean revision are now directly covered in-repo
+- temporal role binding, pragmatic roles, long-context chunking, recursive
+  syntax, failure boundaries, and the generation boundary now have local mirror
+  benchmarks
+- the positive `D-2846` SDM `n_locs` result is still lab-only because the repo
+  does not yet implement the full SDM gate stack required for a fair local
+  reproduction
 
 ## Priority Research Tracks
 

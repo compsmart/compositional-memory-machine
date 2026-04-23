@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -111,3 +112,60 @@ class NGramLanguageMemory:
     def _continuation_vector(self, weights: dict[str, float]) -> np.ndarray:
         vectors = [float(weight) * self.store.get(f"tok:{token}") for token, weight in weights.items()]
         return normalize(np.sum(vectors, axis=0))
+
+    def generate(
+        self,
+        prefix: list[str],
+        *,
+        steps: int,
+        strategy: str = "greedy_nn",
+        top_k: int = 5,
+        beam_width: int = 3,
+        min_confidence: float = 0.0,
+        rng: np.random.Generator | None = None,
+    ) -> list[str]:
+        if len(prefix) < 2:
+            raise ValueError("prefix must contain at least two tokens")
+        rng = rng or np.random.default_rng()
+        if steps <= 0:
+            return []
+
+        if strategy == "greedy_nn":
+            tokens = prefix[:]
+            for _step in range(steps):
+                prediction = self.predict(tokens[-2], tokens[-1], min_confidence=min_confidence, top_k=top_k)
+                if prediction.token is None:
+                    break
+                tokens.append(prediction.token)
+            return tokens[len(prefix) :]
+
+        if strategy == "top_k_sample":
+            tokens = prefix[:]
+            for _step in range(steps):
+                prediction = self.predict(tokens[-2], tokens[-1], min_confidence=min_confidence, top_k=top_k)
+                if not prediction.alternatives:
+                    break
+                candidates = prediction.alternatives[:top_k]
+                probs = np.asarray([candidate.probability for candidate in candidates], dtype=float)
+                probs = probs / probs.sum()
+                tokens.append(candidates[int(rng.choice(len(candidates), p=probs))].token)
+            return tokens[len(prefix) :]
+
+        if strategy == "beam":
+            beams: list[tuple[list[str], float]] = [(prefix[:], 0.0)]
+            for _step in range(steps):
+                expanded: list[tuple[list[str], float]] = []
+                for tokens, score in beams:
+                    prediction = self.predict(tokens[-2], tokens[-1], min_confidence=min_confidence, top_k=max(top_k, beam_width))
+                    if not prediction.alternatives:
+                        expanded.append((tokens, score - 1e6))
+                        continue
+                    for candidate in prediction.alternatives[:beam_width]:
+                        expanded.append((tokens + [candidate.token], score + math.log(max(candidate.probability, 1e-9))))
+                expanded.sort(key=lambda item: item[1], reverse=True)
+                beams = expanded[:beam_width]
+                if not beams:
+                    break
+            return beams[0][0][len(prefix) :] if beams else []
+
+        raise ValueError(f"unknown generation strategy: {strategy}")

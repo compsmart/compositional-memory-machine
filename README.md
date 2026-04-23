@@ -83,8 +83,18 @@ The design is grounded in Compsmart AI Research Lab findings:
 - D-2839: chained HRR sequence prefixes show a hard disambiguation threshold:
   1-2 tokens are ambiguous, while 3 tokens are sufficient for perfect rule
   identification in the tested setup.
+- D-2847/D-2857: clean belief revision is supported both by pure HRR subtract
+  and by PerKey reset in the CI-style language-memory setting.
 - D-2849: HRR weighted superposition can represent probabilistic multi-modal
   continuations, not just a single retrieved next token.
+- D-2850/D-2851/D-2852: temporal role binding, pragmatic roles, and chunked
+  long-context narrative memory are all strong lab signals for HRR as a richer
+  language-memory substrate.
+- D-2854: multi-step autoregressive generation fails even when single-step
+  retrieval succeeds, which defines the repo's retrieval-vs-generation boundary.
+- D-2855/D-2856: recursive syntax and explicit failure-boundary / aliasing
+  measurements are now part of the repo validation story rather than only lab
+  motivation.
 - D-2858: HRR chunk capacity scales linearly with dimension, giving a concrete
   `n*` budget for bounded chunk design.
 - D-2869: multi-hop accuracy follows a k-hop factorization law, which supports
@@ -101,7 +111,9 @@ The design is grounded in Compsmart AI Research Lab findings:
 
 See [docs/research-roadmap.md](docs/research-roadmap.md) for the detailed lab
 mapping, external VSA/HDC literature context, risk register, and next research
-tracks.
+tracks. See [reports/lab_claim_validation.md](reports/lab_claim_validation.md)
+for the repo-vs-lab claim ledger and the validation status for the current
+scorecard.
 
 ## Current Results
 
@@ -109,7 +121,7 @@ Verified locally:
 
 ```text
 python -m pytest
-36 passed
+44 passed
 ```
 
 Representative outcomes:
@@ -136,6 +148,22 @@ Representative outcomes:
   weak multi-hop paths refuse instead of over-claiming a result.
 - Temporal state tracking benchmark: current state, state history, and
   historical lookup all reach 1.0 EM in the repo smoke test.
+- D-2850 mirror: flat 4-role temporal binding stays clean through `n=50`, then
+  falls sharply by `n=200`, reproducing the same qualitative capacity wall as
+  the lab.
+- D-2851 mirror: pragmatic roles stay stronger than core roles at `n=50`
+  (`nuanced_acc=1.0` vs `core_acc=0.98` in the repo-local mirror).
+- D-2852 mirror: chunked narrative storage reaches `recall=1.0` and
+  `latest_state=1.0` at `n=200`, while flat storage degrades materially.
+- D-2854 mirror: multi-step generation remains below `seq_em=0.2` for all
+  tested decoding strategies, preserving the retrieval-only architectural
+  boundary.
+- D-2855 mirror: recursive syntax remains usable through depth 3 at `n=25`
+  (`main_acc=0.92` in the repo-local mirror).
+- D-2856 mirror: near-duplicate failure appears only at very high similarity
+  (`sim=0.95`), while overwrite without reset collapses toward a `50/50` blend.
+- D-2857 mirror: `perkey_reset` restores `revised_em=1.0` and
+  `retained_em=1.0`, while no-reset revision stays far lower.
 - The demo now includes a compositional value answer generated from a retrieved
   HRR value vector: `entity_demo has property silver signal.`
 - The web UI now mirrors the `nexus-16` dashboard style while exposing HHR
@@ -193,6 +221,13 @@ python experiments/exp_revision_chain3.py
 python experiments/exp_projected_address_sweep.py
 python experiments/exp_d2836_episodic_memory.py
 python experiments/exp_temporal_state_tracking.py
+python experiments/exp_d2850_temporal_role_binding.py
+python experiments/exp_d2851_pragmatic_roles.py
+python experiments/exp_d2852_narrative_chunking.py
+python experiments/exp_d2854_generation_boundary.py
+python experiments/exp_d2855_hierarchical_syntax.py
+python experiments/exp_d2856_failure_boundary.py
+python experiments/exp_d2857_language_revision.py
 ```
 
 Run the full projected-address roadmap sweep and write an aggregate report:
@@ -260,3 +295,6 @@ docs/             research roadmap and design notes
   chunk design; it should not be read as a solved projected-address or SDM law.
 - Full SDM projected-address CI remains an open engineering target for HRR and
   continuous embedding keys; one-hot key results should be tracked separately.
+- Several new claim-validation mirrors are intentionally synthetic local
+  reproductions of the lab tasks; they validate the repo's qualitative
+  behavior, but they are not one-to-one replacements for the full lab protocol.

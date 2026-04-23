@@ -35,6 +35,14 @@ class AMM:
     def get(self, key: str) -> MemoryRecord | None:
         return self.records.get(key)
 
+    def delete(self, key: str) -> None:
+        self.records.pop(key, None)
+
+    def reset_by_prefix(self, prefix: str) -> None:
+        for key in list(self.records):
+            if key.startswith(prefix):
+                self.delete(key)
+
     def nearest(self, vector: np.ndarray, top_k: int = 1) -> list[tuple[MemoryRecord, float]]:
         scored = [(record, cosine(vector, record.vector)) for record in self.records.values()]
         scored.sort(key=lambda item: item[1], reverse=True)
