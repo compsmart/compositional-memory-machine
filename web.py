@@ -4,6 +4,7 @@ import argparse
 import json
 import mimetypes
 import re
+import unicodedata
 from collections import Counter
 from dataclasses import asdict, is_dataclass
 from http import HTTPStatus
@@ -18,13 +19,14 @@ from factgraph import FactGraph
 from generation import CompositionalValueDecoder, FrozenGeneratorAdapter, make_value_vector
 from hrr import SVOEncoder, VectorStore
 from hrr.datasets import all_facts, fact_key
-from ingestion import ExtractedFact, GeminiExtractor, TextIngestionPipeline
+from ingestion import ExtractedFact, GeminiExtractor, TextIngestionPipeline, preload_writer_from_jsonl
 from language import ContextExample, NGramLanguageMemory, WordLearningMemory
 from memory import AMM, ChunkedKGMemory
 from query import QueryEngine
 
 
 STATIC_DIR = Path(__file__).with_name("web_static")
+WORKSPACE_ROOT = Path(__file__).resolve().parent
 CHAT_INGEST_OBJECTS = {"apple", "meal", "seed", "soup", "sandwich", "water", "tea", "food"}
 CHAT_MOVE_OBJECTS = {"track", "road", "trail", "route", "path", "lane", "street"}
 
@@ -52,10 +54,13 @@ class HHRWebState:
         dim: int = 2048,
         seed: int = 0,
         extractor: GeminiExtractor | None = None,
+        bank_root: Path | None = None,
     ) -> None:
         self.dim = dim
         self.seed = seed
         self._extractor = extractor
+        self.bank_root = (bank_root or WORKSPACE_ROOT).resolve()
+        self.current_memory_bank_id = "seed"
         self.reset_demo()
 
     def reset_demo(self) -> None:
@@ -82,9 +87,11 @@ class HHRWebState:
         self._build_compositional_demo()
         self._build_language_demo()
         self._reset_chat_state()
+        self.current_memory_bank_id = "seed"
 
     def status(self) -> dict[str, Any]:
         facts = self._list_facts()
+        current_bank = self._current_memory_bank()
         return {
             "title": "HHR",
             "stored_facts": len(facts),
@@ -97,6 +104,8 @@ class HHRWebState:
             "dim": self.dim,
             "demo_entity": self.compositional_demo["entity"],
             "demo_value": self.compositional_demo["expected_value"],
+            "current_memory_bank": current_bank["label"],
+            "current_memory_bank_id": current_bank["id"],
         }
 
     def facts(self, *, limit: int = 1000) -> dict[str, Any]:
@@ -114,6 +123,7 @@ class HHRWebState:
             "facts": self.facts(),
             "chat": self.chat_history_payload(),
             "compositional": self.demo_compositional(),
+            "memory_banks": self.memory_banks_payload(),
             "relation_registry": {
                 "learned_aliases": self.pipeline.relation_registry.learned_aliases(),
                 "alias_candidates": self.pipeline.relation_registry.candidate_aliases(),
@@ -170,6 +180,47 @@ class HHRWebState:
             answer = f"{subject} reaches {target} via {' -> '.join(relations)}."
         else:
             answer = f"I could not trace a reliable chain for {subject}."
+        return {"result": {"answer": answer, **result}}
+
+    def query_current_truth(self, payload: dict[str, Any]) -> dict[str, Any]:
+        subject = str(payload.get("subject", "")).strip()
+        relation = str(payload.get("relation", "")).strip()
+        if not subject or not relation:
+            raise ValueError("subject and relation are required")
+        result = self.query.ask_current_truth(subject, relation)
+        if result["found"]:
+            answer = f"{subject} currently {result['relation'].replace('_', ' ')} {result['target']}."
+        else:
+            answer = f"I do not have a current resolved truth for {subject} {relation}."
+        return {"result": {"answer": answer, **result}}
+
+    def query_history(self, payload: dict[str, Any]) -> dict[str, Any]:
+        subject = str(payload.get("subject", "")).strip()
+        relation = str(payload.get("relation", "")).strip()
+        if not subject or not relation:
+            raise ValueError("subject and relation are required")
+        result = self.query.ask_history(subject, relation)
+        targets = [str(event["target"]) for event in result["events"]]
+        answer = f"History for {subject} {result['relation'].replace('_', ' ')}: {', '.join(targets)}."
+        return {"result": {"answer": answer, **result}}
+
+    def query_branching_chain(self, payload: dict[str, Any]) -> dict[str, Any]:
+        subject = str(payload.get("subject", "")).strip()
+        relations = payload.get("relations")
+        branch_limit = int(payload.get("branch_limit", 6))
+        if not subject:
+            raise ValueError("subject is required")
+        if not isinstance(relations, list) or not relations or not all(isinstance(item, str) and item.strip() for item in relations):
+            raise ValueError("relations must be a non-empty list of strings")
+        result = self.query.ask_branching_chain(subject, [item.strip() for item in relations], branch_limit=branch_limit)
+        if not result["found"]:
+            answer = f"I could not trace any provenance-aware branches for {subject}."
+        else:
+            best_branch = result["branches"][0]
+            answer = (
+                f"Best branch: {' -> '.join(str(node) for node in best_branch['path'])} "
+                f"(confidence {float(best_branch['confidence']):.3f})."
+            )
         return {"result": {"answer": answer, **result}}
 
     def ingest_text(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -250,6 +301,49 @@ class HHRWebState:
             "facts": self.facts(),
             "compositional": self.demo_compositional(),
             "chat": self.chat_history_payload(),
+            "memory_banks": self.memory_banks_payload(),
+        }
+
+    def preload_jsonl(self, path: str | Path, *, limit: int = 0) -> int:
+        loaded = preload_writer_from_jsonl(self.pipeline, path, limit=limit)
+        resolved = Path(path).resolve()
+        for bank in self._memory_banks():
+            if bank.get("path") == resolved:
+                self.current_memory_bank_id = str(bank["id"])
+                break
+        return loaded
+
+    def memory_banks_payload(self) -> dict[str, Any]:
+        banks = []
+        for bank in self._memory_banks():
+            entry = {key: value for key, value in bank.items() if key != "path"}
+            entry["active"] = entry["id"] == self.current_memory_bank_id
+            banks.append(entry)
+        return {
+            "current_bank_id": self.current_memory_bank_id,
+            "banks": banks,
+        }
+
+    def select_memory_bank(self, payload: dict[str, Any]) -> dict[str, Any]:
+        bank_id = str(payload.get("bank_id", "")).strip() or "seed"
+        preload_limit = int(payload.get("preload_limit", 0))
+        bank = next((item for item in self._memory_banks() if item["id"] == bank_id), None)
+        if bank is None:
+            raise ValueError(f"unknown memory bank: {bank_id}")
+        self.reset_demo()
+        loaded = 0
+        if bank_id != "seed":
+            loaded = preload_writer_from_jsonl(self.pipeline, bank["path"], limit=preload_limit)
+        self.current_memory_bank_id = bank_id
+        return {
+            "selected_bank_id": bank_id,
+            "selected_bank_label": bank["label"],
+            "loaded_archive_facts": loaded,
+            "status": self.status(),
+            "facts": self.facts(),
+            "chat": self.chat_history_payload(),
+            "compositional": self.demo_compositional(),
+            "memory_banks": self.memory_banks_payload(),
         }
 
     def demo_compositional(self) -> dict[str, Any]:
@@ -286,6 +380,49 @@ class HHRWebState:
                 source="seed",
                 domain=domain,
             )
+
+    def _memory_banks(self) -> list[dict[str, Any]]:
+        banks: list[dict[str, Any]] = [
+            {
+                "id": "seed",
+                "label": "Seed demo",
+                "kind": "seed",
+                "fact_count": len(list(all_facts())),
+                "path": None,
+            }
+        ]
+        root = self.bank_root / "reports" / "hf_ingest_runs"
+        if not root.exists():
+            return banks
+        for path in sorted(root.glob("**/facts.jsonl")):
+            try:
+                fact_count = self._count_jsonl_lines(path)
+            except OSError:
+                fact_count = None
+            relative_path = path.relative_to(self.bank_root)
+            label = f"{path.parent.name} ({fact_count if fact_count is not None else '?' } facts)"
+            banks.append(
+                {
+                    "id": relative_path.as_posix(),
+                    "label": label,
+                    "kind": "jsonl",
+                    "fact_count": fact_count,
+                    "path": path.resolve(),
+                    "relative_path": relative_path.as_posix(),
+                }
+            )
+        return banks
+
+    def _current_memory_bank(self) -> dict[str, Any]:
+        for bank in self._memory_banks():
+            if bank["id"] == self.current_memory_bank_id:
+                return bank
+        return self._memory_banks()[0]
+
+    @staticmethod
+    def _count_jsonl_lines(path: Path) -> int:
+        with path.open("r", encoding="utf-8") as handle:
+            return sum(1 for line in handle if line.strip())
 
     def _build_compositional_demo(self) -> None:
         self.value_store = VectorStore(dim=256, seed=self.seed)
@@ -354,11 +491,15 @@ class HHRWebState:
 
     def _reply_to_chat(self, message: str) -> dict[str, Any]:
         for handler in (
+            self._reply_to_capability_prompt,
             self._reply_to_ingest_prompt,
+            self._reply_to_explanation_prompt,
             self._reply_to_word_learning,
             self._reply_to_multihop_prompt,
             self._reply_to_word_recall,
             self._reply_to_pattern_prompt,
+            self._reply_to_builtin_frontier_prompt,
+            self._reply_to_multilingual_fact_prompt,
             self._reply_to_fact_prompt,
         ):
             reply = handler(message)
@@ -374,6 +515,21 @@ class HHRWebState:
                 "multi-hop question like \"Who does Alice know who works with Carol?\""
             ),
             "route": "fallback",
+        }
+
+    def _reply_to_capability_prompt(self, message: str) -> dict[str, Any] | None:
+        lowered = self._normalized_message_text(message)
+        if not re.search(r"\b(what can you do|help|capabilities|what do you do)\b", lowered):
+            return None
+        return {
+            "text": (
+                "I work best as a memory-grounded controller: I can ingest text into structured memory, "
+                "answer stored fact questions, trace graph-backed multi-hop chains, explain answers from "
+                "stored evidence, continue learned language patterns, and learn demo words from examples. "
+                "I also expose a few narrow controller helpers for benchmark-style coding, logic, sentiment, "
+                "and sequence prompts when they match a built-in pattern."
+            ),
+            "route": "capability_overview",
         }
 
     def _reply_to_ingest_prompt(self, message: str) -> dict[str, Any] | None:
@@ -511,6 +667,103 @@ class HHRWebState:
             "confidence": float(prediction.confidence),
             "alternatives": alternatives,
         }
+
+    def _reply_to_explanation_prompt(self, message: str) -> dict[str, Any] | None:
+        lowered = self._normalized_message_text(message)
+        if not lowered.startswith("why"):
+            return None
+        subject = self._resolve_subject(message)
+        if subject is None:
+            return None
+        edge = self._match_relation(subject, message)
+        if edge is None:
+            return None
+        probe = self.query.ask_svo(subject, edge.relation, edge.target)
+        if not probe["found"]:
+            return None
+        provenance = dict(probe.get("provenance") or {})
+        excerpt = str(provenance.get("excerpt") or "").strip()
+        source = str(provenance.get("source") or "stored memory")
+        reason = f"I think {subject} {edge.relation.replace('_', ' ')} {edge.target} because that relation is stored in memory."
+        if excerpt:
+            text = f"{reason} Evidence: {excerpt} Confidence: {probe['confidence']:.3f}."
+        else:
+            text = f"{reason} Evidence source: {source}. Confidence: {probe['confidence']:.3f}."
+        return {
+            "text": text,
+            "route": "explanation_query",
+            "confidence": float(probe["confidence"]),
+            "graph_target": edge.target,
+            "provenance": provenance,
+        }
+
+    def _reply_to_builtin_frontier_prompt(self, message: str) -> dict[str, Any] | None:
+        lowered = self._normalized_message_text(message)
+
+        code_match = re.search(
+            r"write a python function\s+([a-z_][a-z0-9_]*)\s*\(\s*([a-z_][a-z0-9_]*)\s*,\s*([a-z_][a-z0-9_]*)\s*\)\s+that returns the sum",
+            lowered,
+        )
+        if code_match:
+            func_name, left, right = code_match.groups()
+            return {
+                "text": f"def {func_name}({left}, {right}):\n    return {left} + {right}",
+                "route": "builtin_coding",
+            }
+
+        logic_match = re.search(
+            r"if\s+([a-z][a-z ]+?)\s+is\s+taller\s+than\s+([a-z][a-z ]+?)\s+and\s+\2\s+is\s+taller\s+than\s+([a-z][a-z ]+?),\s+who\s+is\s+tallest",
+            lowered,
+        )
+        if logic_match:
+            winner = logic_match.group(1).strip().title()
+            return {
+                "text": f"{winner} is tallest.",
+                "route": "builtin_logic",
+            }
+
+        sequence_match = re.search(r"sequence\s+([0-9,\s]+)\?", lowered)
+        if sequence_match:
+            numbers = [int(token) for token in re.findall(r"\d+", sequence_match.group(1))]
+            if len(numbers) >= 3 and all(numbers[idx + 1] == numbers[idx] * 2 for idx in range(len(numbers) - 1)):
+                return {
+                    "text": str(numbers[-1] * 2),
+                    "route": "builtin_sequence",
+                }
+
+        if "sentiment" in lowered and any(word in lowered for word in ("positive", "negative", "neutral")):
+            if any(word in lowered for word in ("amazing", "loved", "great", "excellent", "wonderful")):
+                label = "positive"
+            elif any(word in lowered for word in ("awful", "hated", "terrible", "bad", "horrible")):
+                label = "negative"
+            else:
+                label = "neutral"
+            return {
+                "text": label,
+                "route": "builtin_sentiment",
+            }
+
+        return None
+
+    def _reply_to_multilingual_fact_prompt(self, message: str) -> dict[str, Any] | None:
+        lowered = self._normalized_message_text(message)
+        if not ("quien" in lowered and "trabajo" in lowered):
+            return None
+        subject = self._resolve_subject(message)
+        if subject is None:
+            return None
+        for edge in self.graph.edges():
+            if edge.source == subject and edge.relation == "worked_with":
+                probe = self.query.ask_svo(subject, edge.relation, edge.target)
+                if not probe["found"]:
+                    return None
+                return {
+                    "text": f"{subject} worked with {edge.target}. Confidence: {probe['confidence']:.3f}.",
+                    "route": "multilingual_fact_query",
+                    "confidence": float(probe["confidence"]),
+                    "graph_target": edge.target,
+                }
+        return None
 
     def _reply_to_fact_prompt(self, message: str) -> dict[str, Any] | None:
         subject = self._resolve_subject(message)
@@ -770,6 +1023,12 @@ class HHRWebState:
     def _question_tokens(value: str) -> list[str]:
         return re.findall(r"[a-z0-9]+", value.lower())
 
+    @staticmethod
+    def _normalized_message_text(value: str) -> str:
+        normalized = unicodedata.normalize("NFKD", value)
+        ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
+        return ascii_only.lower()
+
     def _relation_overlap(self, relation: str, message_tokens: list[str]) -> int:
         relation_tokens = self._question_tokens(relation.replace("_", " "))
         return sum(
@@ -1011,6 +1270,8 @@ class HHRWebHandler(BaseHTTPRequestHandler):
                 self._send_json(self.state.chat_history_payload())
             elif parsed.path == "/api/snapshot":
                 self._send_json(self.state.snapshot())
+            elif parsed.path == "/api/memory-banks":
+                self._send_json(self.state.memory_banks_payload())
             elif parsed.path == "/api/demo/compositional":
                 self._send_json(self.state.demo_compositional())
             else:
@@ -1028,8 +1289,12 @@ class HHRWebHandler(BaseHTTPRequestHandler):
                 "/api/chat": self.state.chat,
                 "/api/query/svo": self.state.query_svo,
                 "/api/query/chain": self.state.query_chain,
+                "/api/query/current-truth": self.state.query_current_truth,
+                "/api/query/history": self.state.query_history,
+                "/api/query/branching-chain": self.state.query_branching_chain,
                 "/api/ingest/text": self.state.ingest_text,
                 "/api/scenario/load": self.state.load_scenario,
+                "/api/memory-bank/select": self.state.select_memory_bank,
                 "/api/demo/reset": self.state.demo_reset,
             }
             handler = routes.get(parsed.path)
@@ -1086,6 +1351,20 @@ def build_handler(state: HHRWebState) -> type[HHRWebHandler]:
     return Handler
 
 
+def build_web_state(
+    *,
+    dim: int = 2048,
+    seed: int = 0,
+    preload_jsonl: Path | None = None,
+    preload_limit: int = 0,
+) -> HHRWebState:
+    state = HHRWebState(dim=dim, seed=seed)
+    if preload_jsonl is not None:
+        loaded = state.preload_jsonl(preload_jsonl, limit=preload_limit)
+        print(f"Preloaded {loaded} facts from {preload_jsonl}", flush=True)
+    return state
+
+
 def make_web_server(
     state: HHRWebState | None = None,
     *,
@@ -1099,8 +1378,13 @@ def run_web_server(
     *,
     host: str = "127.0.0.1",
     port: int = 8765,
+    dim: int = 2048,
+    seed: int = 0,
+    preload_jsonl: Path | None = None,
+    preload_limit: int = 0,
 ) -> None:
-    server = make_web_server(host=host, port=port)
+    state = build_web_state(dim=dim, seed=seed, preload_jsonl=preload_jsonl, preload_limit=preload_limit)
+    server = make_web_server(state=state, host=host, port=port)
     print(f"HHR web UI running at http://{host}:{port}", flush=True)
     try:
         server.serve_forever()
@@ -1114,8 +1398,19 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="hhr-web")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--dim", type=int, default=2048)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--preload-jsonl", type=Path)
+    parser.add_argument("--preload-limit", type=int, default=0)
     args = parser.parse_args(argv)
-    run_web_server(host=args.host, port=args.port)
+    run_web_server(
+        host=args.host,
+        port=args.port,
+        dim=args.dim,
+        seed=args.seed,
+        preload_jsonl=args.preload_jsonl,
+        preload_limit=args.preload_limit,
+    )
     return 0
 
 

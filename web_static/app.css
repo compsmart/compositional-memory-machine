@@ -142,7 +142,13 @@ h2 {
 .pane-actions {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.bank-select {
+  min-width: 220px;
+  max-width: 320px;
 }
 
 .stack {

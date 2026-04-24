@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-23 21:18 UTC",
+  "generated_at": "2026-04-24 06:49 UTC",
   "config": {
     "preset": "roadmap_serious",
     "chat_dim": 2048,
@@ -18,6 +18,8 @@
       42,
       123
     ],
+    "preload_jsonl": "C:\\projects\\agents\\hhr\\reports\\hf_ingest_runs\\structured_wikipedia_medical_250k\\facts.jsonl",
+    "preload_limit": 5000,
     "case_ids": [
       "memory_fact_recall",
       "context_pronoun_carryover",
@@ -72,7 +74,8 @@
           "route": "word_recall",
           "confidence": 0.37036201268878133
         },
-        "history_length": 5
+        "history_length": 5,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
@@ -169,23 +172,24 @@
         "Write a Python function add(a, b) that returns the sum."
       ],
       "weight": 1.0,
-      "weighted_score": 0.0,
-      "score": 0.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
       "pass_threshold": 1.0,
-      "passed": false,
+      "passed": true,
       "notes": "Exact-answer challenge expecting: def add, return, a, b.",
       "observed": {
         "final_reply": {
           "role": "assistant",
-          "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
-          "route": "fallback"
+          "text": "def add(a, b):\n    return a + b",
+          "route": "builtin_coding"
         },
-        "history_length": 3
+        "history_length": 3,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
-        "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
-        "route": "fallback"
+        "text": "def add(a, b):\n    return a + b",
+        "route": "builtin_coding"
       }
     },
     {
@@ -203,53 +207,48 @@
         "Why do you think Ada Lovelace worked with Charles Babbage?"
       ],
       "weight": 1.0,
-      "weighted_score": 0.5,
-      "score": 0.5,
+      "weighted_score": 1.0,
+      "score": 1.0,
       "pass_threshold": 1.0,
-      "passed": false,
+      "passed": true,
       "notes": "Explanation cases reward evidence-aware answers over bare fact restatement.",
       "observed": {
         "final_reply": {
           "role": "assistant",
-          "text": "Ada Lovelace worked with Charles Babbage. Confidence: 0.900.",
-          "route": "fact_query",
-          "confidence": 0.9,
-          "graph_target": "Ada Lovelace",
-          "evidence": [
-            {
-              "subject": "Ada Lovelace",
-              "relation": "worked_with",
-              "object": "Charles Babbage",
-              "score": 1.0,
-              "chunk_id": "chat:chunk0"
-            }
-          ],
-          "chain_path": [
-            "Charles Babbage",
-            "Ada Lovelace"
-          ]
+          "text": "I think Ada Lovelace worked with Charles Babbage because that relation is stored in memory. Evidence source: chat. Confidence: 1.000.",
+          "route": "explanation_query",
+          "confidence": 1.0,
+          "graph_target": "Charles Babbage",
+          "provenance": {
+            "source": "chat",
+            "kind": "explicit",
+            "confidence": 0.95,
+            "raw_relation": "collaborated with",
+            "normalized_relation": "worked_with",
+            "matched_alias": true,
+            "resolution_source": "seed",
+            "relation_evidence_count": 0
+          }
         },
-        "history_length": 5
+        "history_length": 5,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
-        "text": "Ada Lovelace worked with Charles Babbage. Confidence: 0.900.",
-        "route": "fact_query",
-        "confidence": 0.9,
-        "graph_target": "Ada Lovelace",
-        "evidence": [
-          {
-            "subject": "Ada Lovelace",
-            "relation": "worked_with",
-            "object": "Charles Babbage",
-            "score": 1.0,
-            "chunk_id": "chat:chunk0"
-          }
-        ],
-        "chain_path": [
-          "Charles Babbage",
-          "Ada Lovelace"
-        ]
+        "text": "I think Ada Lovelace worked with Charles Babbage because that relation is stored in memory. Evidence source: chat. Confidence: 1.000.",
+        "route": "explanation_query",
+        "confidence": 1.0,
+        "graph_target": "Charles Babbage",
+        "provenance": {
+          "source": "chat",
+          "kind": "explicit",
+          "confidence": 0.95,
+          "raw_relation": "collaborated with",
+          "normalized_relation": "worked_with",
+          "matched_alias": true,
+          "resolution_source": "seed",
+          "relation_evidence_count": 0
+        }
       }
     },
     {
@@ -308,7 +307,7 @@
               "relation": "described",
               "object": "an algorithm for Bernoulli numbers",
               "confidence": 0.8,
-              "score": 0.3382483641123726,
+              "score": 0.3246905418677331,
               "source": "chat",
               "domain": "chat",
               "chunk_id": "chat:chunk0",
@@ -324,74 +323,78 @@
               }
             },
             {
-              "key": "medical:surgeon:repairs:injury",
-              "subject": "surgeon",
-              "relation": "repairs",
-              "object": "injury",
-              "confidence": 1.0,
-              "score": 0.04962820783996069,
-              "source": "seed",
-              "domain": "medical",
-              "chunk_id": "medical:chunk0",
+              "key": "medical.specialty:Alec Coles:infobox_has:Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
+              "subject": "Alec Coles",
+              "relation": "infobox_has",
+              "object": "Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
+              "confidence": 0.85,
+              "score": 0.06400661187756686,
+              "source": "hf:wikimedia/structured-wikipedia",
+              "domain": "medical.specialty",
+              "chunk_id": "medical.specialty:chunk6",
               "provenance": {
-                "source": "seed",
+                "source": "hf:wikimedia/structured-wikipedia",
                 "kind": "explicit",
-                "confidence": 1.0,
-                "raw_relation": "repairs",
-                "normalized_relation": "repairs",
+                "confidence": 0.85,
+                "raw_relation": "infobox_has",
+                "normalized_relation": "infobox_has",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "seed:medical"
+                "source_id": "42468846:infobox:infobox_person_alec_coles_obe_frsa_employer",
+                "excerpt": "Western Australian Museum"
               }
             },
             {
-              "key": "aviation:pilot:flies:plane",
-              "subject": "pilot",
-              "relation": "flies",
-              "object": "plane",
-              "confidence": 1.0,
-              "score": 0.04036931631824339,
-              "source": "seed",
-              "domain": "aviation",
-              "chunk_id": "aviation:chunk0",
+              "key": "medical.drug:Antrafenine:infobox_has:Drugbox > Pharmacokinetic data > Excretion: Renal",
+              "subject": "Antrafenine",
+              "relation": "infobox_has",
+              "object": "Drugbox > Pharmacokinetic data > Excretion: Renal",
+              "confidence": 0.85,
+              "score": 0.057584526320586464,
+              "source": "hf:wikimedia/structured-wikipedia",
+              "domain": "medical.drug",
+              "chunk_id": "medical.drug:chunk11",
               "provenance": {
-                "source": "seed",
+                "source": "hf:wikimedia/structured-wikipedia",
                 "kind": "explicit",
-                "confidence": 1.0,
-                "raw_relation": "flies",
-                "normalized_relation": "flies",
+                "confidence": 0.85,
+                "raw_relation": "infobox_has",
+                "normalized_relation": "infobox_has",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "seed:aviation"
+                "source_id": "9124255:infobox:drugbox_pharmacokinetic_data_excretion",
+                "excerpt": "Renal"
               }
             },
             {
-              "key": "education:student:reads:book",
-              "subject": "student",
-              "relation": "reads",
-              "object": "book",
-              "confidence": 1.0,
-              "score": 0.029183333060580123,
-              "source": "seed",
-              "domain": "education",
-              "chunk_id": "education:chunk0",
+              "key": "medical.specialty:B. J. C. Perera:infobox_has:Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
+              "subject": "B. J. C. Perera",
+              "relation": "infobox_has",
+              "object": "Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
+              "confidence": 0.85,
+              "score": 0.04822623587107108,
+              "source": "hf:wikimedia/structured-wikipedia",
+              "domain": "medical.specialty",
+              "chunk_id": "medical.specialty:chunk5",
               "provenance": {
-                "source": "seed",
+                "source": "hf:wikimedia/structured-wikipedia",
                 "kind": "explicit",
-                "confidence": 1.0,
-                "raw_relation": "reads",
-                "normalized_relation": "reads",
+                "confidence": 0.85,
+                "raw_relation": "infobox_has",
+                "normalized_relation": "infobox_has",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "seed:education"
+                "source_id": "46534688:infobox:infobox_person_b_j_c_perera_nationality",
+                "excerpt": "Sri Lankan"
               }
             }
           ]
         },
-        "history_length": 7
+        "history_length": 7,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
@@ -427,7 +430,7 @@
             "relation": "described",
             "object": "an algorithm for Bernoulli numbers",
             "confidence": 0.8,
-            "score": 0.3382483641123726,
+            "score": 0.3246905418677331,
             "source": "chat",
             "domain": "chat",
             "chunk_id": "chat:chunk0",
@@ -443,69 +446,72 @@
             }
           },
           {
-            "key": "medical:surgeon:repairs:injury",
-            "subject": "surgeon",
-            "relation": "repairs",
-            "object": "injury",
-            "confidence": 1.0,
-            "score": 0.04962820783996069,
-            "source": "seed",
-            "domain": "medical",
-            "chunk_id": "medical:chunk0",
+            "key": "medical.specialty:Alec Coles:infobox_has:Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
+            "subject": "Alec Coles",
+            "relation": "infobox_has",
+            "object": "Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
+            "confidence": 0.85,
+            "score": 0.06400661187756686,
+            "source": "hf:wikimedia/structured-wikipedia",
+            "domain": "medical.specialty",
+            "chunk_id": "medical.specialty:chunk6",
             "provenance": {
-              "source": "seed",
+              "source": "hf:wikimedia/structured-wikipedia",
               "kind": "explicit",
-              "confidence": 1.0,
-              "raw_relation": "repairs",
-              "normalized_relation": "repairs",
+              "confidence": 0.85,
+              "raw_relation": "infobox_has",
+              "normalized_relation": "infobox_has",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "seed:medical"
+              "source_id": "42468846:infobox:infobox_person_alec_coles_obe_frsa_employer",
+              "excerpt": "Western Australian Museum"
             }
           },
           {
-            "key": "aviation:pilot:flies:plane",
-            "subject": "pilot",
-            "relation": "flies",
-            "object": "plane",
-            "confidence": 1.0,
-            "score": 0.04036931631824339,
-            "source": "seed",
-            "domain": "aviation",
-            "chunk_id": "aviation:chunk0",
+            "key": "medical.drug:Antrafenine:infobox_has:Drugbox > Pharmacokinetic data > Excretion: Renal",
+            "subject": "Antrafenine",
+            "relation": "infobox_has",
+            "object": "Drugbox > Pharmacokinetic data > Excretion: Renal",
+            "confidence": 0.85,
+            "score": 0.057584526320586464,
+            "source": "hf:wikimedia/structured-wikipedia",
+            "domain": "medical.drug",
+            "chunk_id": "medical.drug:chunk11",
             "provenance": {
-              "source": "seed",
+              "source": "hf:wikimedia/structured-wikipedia",
               "kind": "explicit",
-              "confidence": 1.0,
-              "raw_relation": "flies",
-              "normalized_relation": "flies",
+              "confidence": 0.85,
+              "raw_relation": "infobox_has",
+              "normalized_relation": "infobox_has",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "seed:aviation"
+              "source_id": "9124255:infobox:drugbox_pharmacokinetic_data_excretion",
+              "excerpt": "Renal"
             }
           },
           {
-            "key": "education:student:reads:book",
-            "subject": "student",
-            "relation": "reads",
-            "object": "book",
-            "confidence": 1.0,
-            "score": 0.029183333060580123,
-            "source": "seed",
-            "domain": "education",
-            "chunk_id": "education:chunk0",
+            "key": "medical.specialty:B. J. C. Perera:infobox_has:Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
+            "subject": "B. J. C. Perera",
+            "relation": "infobox_has",
+            "object": "Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
+            "confidence": 0.85,
+            "score": 0.04822623587107108,
+            "source": "hf:wikimedia/structured-wikipedia",
+            "domain": "medical.specialty",
+            "chunk_id": "medical.specialty:chunk5",
             "provenance": {
-              "source": "seed",
+              "source": "hf:wikimedia/structured-wikipedia",
               "kind": "explicit",
-              "confidence": 1.0,
-              "raw_relation": "reads",
-              "normalized_relation": "reads",
+              "confidence": 0.85,
+              "raw_relation": "infobox_has",
+              "normalized_relation": "infobox_has",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "seed:education"
+              "source_id": "46534688:infobox:infobox_person_b_j_c_perera_nationality",
+              "excerpt": "Sri Lankan"
             }
           }
         ]
@@ -562,7 +568,8 @@
           "confidence": 1.0,
           "alternatives": []
         },
-        "history_length": 3
+        "history_length": 3,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
@@ -610,7 +617,8 @@
             }
           ]
         },
-        "history_length": 3
+        "history_length": 3,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
@@ -670,23 +678,24 @@
         "If Alice is taller than Bob and Bob is taller than Carol, who is tallest?"
       ],
       "weight": 1.0,
-      "weighted_score": 0.0,
-      "score": 0.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
       "pass_threshold": 1.0,
-      "passed": false,
+      "passed": true,
       "notes": "Exact-answer challenge expecting: alice, tallest.",
       "observed": {
         "final_reply": {
           "role": "assistant",
-          "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
-          "route": "fallback"
+          "text": "Alice is tallest.",
+          "route": "builtin_logic"
         },
-        "history_length": 3
+        "history_length": 3,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
-        "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
-        "route": "fallback"
+        "text": "Alice is tallest.",
+        "route": "builtin_logic"
       }
     },
     {
@@ -744,7 +753,7 @@
               "relation": "described",
               "object": "an algorithm for Bernoulli numbers",
               "confidence": 0.8,
-              "score": 0.3382483641123726,
+              "score": 0.3246905418677331,
               "source": "chat",
               "domain": "chat",
               "chunk_id": "chat:chunk0",
@@ -760,74 +769,78 @@
               }
             },
             {
-              "key": "medical:surgeon:repairs:injury",
-              "subject": "surgeon",
-              "relation": "repairs",
-              "object": "injury",
-              "confidence": 1.0,
-              "score": 0.04962820783996069,
-              "source": "seed",
-              "domain": "medical",
-              "chunk_id": "medical:chunk0",
+              "key": "medical.specialty:Alec Coles:infobox_has:Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
+              "subject": "Alec Coles",
+              "relation": "infobox_has",
+              "object": "Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
+              "confidence": 0.85,
+              "score": 0.06400661187756686,
+              "source": "hf:wikimedia/structured-wikipedia",
+              "domain": "medical.specialty",
+              "chunk_id": "medical.specialty:chunk6",
               "provenance": {
-                "source": "seed",
+                "source": "hf:wikimedia/structured-wikipedia",
                 "kind": "explicit",
-                "confidence": 1.0,
-                "raw_relation": "repairs",
-                "normalized_relation": "repairs",
+                "confidence": 0.85,
+                "raw_relation": "infobox_has",
+                "normalized_relation": "infobox_has",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "seed:medical"
+                "source_id": "42468846:infobox:infobox_person_alec_coles_obe_frsa_employer",
+                "excerpt": "Western Australian Museum"
               }
             },
             {
-              "key": "aviation:pilot:flies:plane",
-              "subject": "pilot",
-              "relation": "flies",
-              "object": "plane",
-              "confidence": 1.0,
-              "score": 0.04036931631824339,
-              "source": "seed",
-              "domain": "aviation",
-              "chunk_id": "aviation:chunk0",
+              "key": "medical.drug:Antrafenine:infobox_has:Drugbox > Pharmacokinetic data > Excretion: Renal",
+              "subject": "Antrafenine",
+              "relation": "infobox_has",
+              "object": "Drugbox > Pharmacokinetic data > Excretion: Renal",
+              "confidence": 0.85,
+              "score": 0.057584526320586464,
+              "source": "hf:wikimedia/structured-wikipedia",
+              "domain": "medical.drug",
+              "chunk_id": "medical.drug:chunk11",
               "provenance": {
-                "source": "seed",
+                "source": "hf:wikimedia/structured-wikipedia",
                 "kind": "explicit",
-                "confidence": 1.0,
-                "raw_relation": "flies",
-                "normalized_relation": "flies",
+                "confidence": 0.85,
+                "raw_relation": "infobox_has",
+                "normalized_relation": "infobox_has",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "seed:aviation"
+                "source_id": "9124255:infobox:drugbox_pharmacokinetic_data_excretion",
+                "excerpt": "Renal"
               }
             },
             {
-              "key": "education:student:reads:book",
-              "subject": "student",
-              "relation": "reads",
-              "object": "book",
-              "confidence": 1.0,
-              "score": 0.029183333060580123,
-              "source": "seed",
-              "domain": "education",
-              "chunk_id": "education:chunk0",
+              "key": "medical.specialty:B. J. C. Perera:infobox_has:Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
+              "subject": "B. J. C. Perera",
+              "relation": "infobox_has",
+              "object": "Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
+              "confidence": 0.85,
+              "score": 0.04822623587107108,
+              "source": "hf:wikimedia/structured-wikipedia",
+              "domain": "medical.specialty",
+              "chunk_id": "medical.specialty:chunk5",
               "provenance": {
-                "source": "seed",
+                "source": "hf:wikimedia/structured-wikipedia",
                 "kind": "explicit",
-                "confidence": 1.0,
-                "raw_relation": "reads",
-                "normalized_relation": "reads",
+                "confidence": 0.85,
+                "raw_relation": "infobox_has",
+                "normalized_relation": "infobox_has",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "seed:education"
+                "source_id": "46534688:infobox:infobox_person_b_j_c_perera_nationality",
+                "excerpt": "Sri Lankan"
               }
             }
           ]
         },
-        "history_length": 5
+        "history_length": 5,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
@@ -863,7 +876,7 @@
             "relation": "described",
             "object": "an algorithm for Bernoulli numbers",
             "confidence": 0.8,
-            "score": 0.3382483641123726,
+            "score": 0.3246905418677331,
             "source": "chat",
             "domain": "chat",
             "chunk_id": "chat:chunk0",
@@ -879,69 +892,72 @@
             }
           },
           {
-            "key": "medical:surgeon:repairs:injury",
-            "subject": "surgeon",
-            "relation": "repairs",
-            "object": "injury",
-            "confidence": 1.0,
-            "score": 0.04962820783996069,
-            "source": "seed",
-            "domain": "medical",
-            "chunk_id": "medical:chunk0",
+            "key": "medical.specialty:Alec Coles:infobox_has:Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
+            "subject": "Alec Coles",
+            "relation": "infobox_has",
+            "object": "Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
+            "confidence": 0.85,
+            "score": 0.06400661187756686,
+            "source": "hf:wikimedia/structured-wikipedia",
+            "domain": "medical.specialty",
+            "chunk_id": "medical.specialty:chunk6",
             "provenance": {
-              "source": "seed",
+              "source": "hf:wikimedia/structured-wikipedia",
               "kind": "explicit",
-              "confidence": 1.0,
-              "raw_relation": "repairs",
-              "normalized_relation": "repairs",
+              "confidence": 0.85,
+              "raw_relation": "infobox_has",
+              "normalized_relation": "infobox_has",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "seed:medical"
+              "source_id": "42468846:infobox:infobox_person_alec_coles_obe_frsa_employer",
+              "excerpt": "Western Australian Museum"
             }
           },
           {
-            "key": "aviation:pilot:flies:plane",
-            "subject": "pilot",
-            "relation": "flies",
-            "object": "plane",
-            "confidence": 1.0,
-            "score": 0.04036931631824339,
-            "source": "seed",
-            "domain": "aviation",
-            "chunk_id": "aviation:chunk0",
+            "key": "medical.drug:Antrafenine:infobox_has:Drugbox > Pharmacokinetic data > Excretion: Renal",
+            "subject": "Antrafenine",
+            "relation": "infobox_has",
+            "object": "Drugbox > Pharmacokinetic data > Excretion: Renal",
+            "confidence": 0.85,
+            "score": 0.057584526320586464,
+            "source": "hf:wikimedia/structured-wikipedia",
+            "domain": "medical.drug",
+            "chunk_id": "medical.drug:chunk11",
             "provenance": {
-              "source": "seed",
+              "source": "hf:wikimedia/structured-wikipedia",
               "kind": "explicit",
-              "confidence": 1.0,
-              "raw_relation": "flies",
-              "normalized_relation": "flies",
+              "confidence": 0.85,
+              "raw_relation": "infobox_has",
+              "normalized_relation": "infobox_has",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "seed:aviation"
+              "source_id": "9124255:infobox:drugbox_pharmacokinetic_data_excretion",
+              "excerpt": "Renal"
             }
           },
           {
-            "key": "education:student:reads:book",
-            "subject": "student",
-            "relation": "reads",
-            "object": "book",
-            "confidence": 1.0,
-            "score": 0.029183333060580123,
-            "source": "seed",
-            "domain": "education",
-            "chunk_id": "education:chunk0",
+            "key": "medical.specialty:B. J. C. Perera:infobox_has:Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
+            "subject": "B. J. C. Perera",
+            "relation": "infobox_has",
+            "object": "Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
+            "confidence": 0.85,
+            "score": 0.04822623587107108,
+            "source": "hf:wikimedia/structured-wikipedia",
+            "domain": "medical.specialty",
+            "chunk_id": "medical.specialty:chunk5",
             "provenance": {
-              "source": "seed",
+              "source": "hf:wikimedia/structured-wikipedia",
               "kind": "explicit",
-              "confidence": 1.0,
-              "raw_relation": "reads",
-              "normalized_relation": "reads",
+              "confidence": 0.85,
+              "raw_relation": "infobox_has",
+              "normalized_relation": "infobox_has",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "seed:education"
+              "source_id": "46534688:infobox:infobox_person_b_j_c_perera_nationality",
+              "excerpt": "Sri Lankan"
             }
           }
         ]
@@ -975,7 +991,8 @@
           "route": "word_recall",
           "confidence": 0.37036201268878133
         },
-        "history_length": 7
+        "history_length": 7,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
@@ -1080,6 +1097,7 @@
           ]
         },
         "history_length": 5,
+        "preloaded_facts": 5000,
         "chain_path": [
           "Charles Babbage",
           "Ada Lovelace"
@@ -1131,7 +1149,7 @@
           "role": "assistant",
           "text": "Alice knows Bob, and Bob works with Carol. So the answer is Bob. Confidence: 0.810.",
           "route": "multi_hop_query",
-          "confidence": 0.81,
+          "confidence": 0.8100000000000003,
           "graph_target": "Bob",
           "evidence": [
             {
@@ -1145,7 +1163,7 @@
               "subject": "Bob",
               "relation": "works_with",
               "object": "Carol",
-              "score": 1.0,
+              "score": 1.0000000000000002,
               "chunk_id": "chat:chunk0"
             }
           ],
@@ -1156,6 +1174,7 @@
           ]
         },
         "history_length": 5,
+        "preloaded_facts": 5000,
         "chain_path": [
           "Alice",
           "Bob",
@@ -1166,7 +1185,7 @@
         "role": "assistant",
         "text": "Alice knows Bob, and Bob works with Carol. So the answer is Bob. Confidence: 0.810.",
         "route": "multi_hop_query",
-        "confidence": 0.81,
+        "confidence": 0.8100000000000003,
         "graph_target": "Bob",
         "evidence": [
           {
@@ -1180,7 +1199,7 @@
             "subject": "Bob",
             "relation": "works_with",
             "object": "Carol",
-            "score": 1.0,
+            "score": 1.0000000000000002,
             "chunk_id": "chat:chunk0"
           }
         ],
@@ -1206,23 +1225,28 @@
         "Con quien trabajo Ada Lovelace?"
       ],
       "weight": 1.0,
-      "weighted_score": 0.5,
-      "score": 0.5,
+      "weighted_score": 1.0,
+      "score": 1.0,
       "pass_threshold": 1.0,
-      "passed": false,
-      "notes": "Graceful limitation was surfaced instead of bluffing.",
+      "passed": true,
+      "notes": "Correct answer returned.",
       "observed": {
         "final_reply": {
           "role": "assistant",
-          "text": "I have memories for Ada Lovelace, but I could not match the relation in that question. Try one of: described, worked with.",
-          "route": "fact_prompt_miss"
+          "text": "Ada Lovelace worked with Charles Babbage. Confidence: 1.000.",
+          "route": "multilingual_fact_query",
+          "confidence": 1.0,
+          "graph_target": "Charles Babbage"
         },
-        "history_length": 5
+        "history_length": 5,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
-        "text": "I have memories for Ada Lovelace, but I could not match the relation in that question. Try one of: described, worked with.",
-        "route": "fact_prompt_miss"
+        "text": "Ada Lovelace worked with Charles Babbage. Confidence: 1.000.",
+        "route": "multilingual_fact_query",
+        "confidence": 1.0,
+        "graph_target": "Charles Babbage"
       }
     },
     {
@@ -1239,23 +1263,24 @@
         "Which number comes next in the sequence 2, 4, 8, 16, ?"
       ],
       "weight": 1.0,
-      "weighted_score": 0.0,
-      "score": 0.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
       "pass_threshold": 1.0,
-      "passed": false,
+      "passed": true,
       "notes": "Exact-answer challenge expecting: 32.",
       "observed": {
         "final_reply": {
           "role": "assistant",
-          "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
-          "route": "fallback"
+          "text": "32",
+          "route": "builtin_sequence"
         },
-        "history_length": 3
+        "history_length": 3,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
-        "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
-        "route": "fallback"
+        "text": "32",
+        "route": "builtin_sequence"
       }
     },
     {
@@ -1272,23 +1297,24 @@
         "The movie was amazing and I loved every minute. Was the sentiment positive, negative, or neutral?"
       ],
       "weight": 1.0,
-      "weighted_score": 0.0,
-      "score": 0.0,
+      "weighted_score": 1.0,
+      "score": 1.0,
       "pass_threshold": 1.0,
-      "passed": false,
+      "passed": true,
       "notes": "Exact-answer challenge expecting: positive.",
       "observed": {
         "final_reply": {
           "role": "assistant",
-          "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
-          "route": "fallback"
+          "text": "positive",
+          "route": "builtin_sentiment"
         },
-        "history_length": 3
+        "history_length": 3,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
-        "text": "I can answer memory-backed fact questions, continue a learned pattern, or learn a demo word from examples. Try \"Who did Ada Lovelace work with?\", \"Complete this learned pattern: 'the doctor ...'\", or \"Learn a new word: dax. A child daxes an apple; a chef daxes soup; a bird daxes seed.\" You can also teach me linked facts and ask a multi-hop question like \"Who does Alice know who works with Carol?\"",
-        "route": "fallback"
+        "text": "positive",
+        "route": "builtin_sentiment"
       }
     },
     {
@@ -1368,7 +1394,8 @@
           "text": "I have memories for Ada Lovelace, but I could not match the relation in that question. Try one of: described, worked with.",
           "route": "fact_prompt_miss"
         },
-        "history_length": 5
+        "history_length": 5,
+        "preloaded_facts": 5000
       },
       "final_reply": {
         "role": "assistant",
@@ -1391,8 +1418,8 @@
       "summary_type": "category",
       "label": "coding",
       "case_count": 2.0,
-      "mean_score": 0.3333333333333333,
-      "pass_rate": 0.0,
+      "mean_score": 0.8333333333333333,
+      "pass_rate": 0.5,
       "summary_key": "category:coding",
       "category": "coding"
     },
@@ -1400,8 +1427,8 @@
       "summary_type": "category",
       "label": "explanation_understanding",
       "case_count": 1.0,
-      "mean_score": 0.5,
-      "pass_rate": 0.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
       "summary_key": "category:explanation_understanding",
       "category": "explanation_understanding"
     },
@@ -1427,8 +1454,8 @@
       "summary_type": "category",
       "label": "logic",
       "case_count": 1.0,
-      "mean_score": 0.0,
-      "pass_rate": 0.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
       "summary_key": "category:logic",
       "category": "logic"
     },
@@ -1454,8 +1481,8 @@
       "summary_type": "category",
       "label": "multilingual",
       "case_count": 1.0,
-      "mean_score": 0.5,
-      "pass_rate": 0.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
       "summary_key": "category:multilingual",
       "category": "multilingual"
     },
@@ -1463,8 +1490,8 @@
       "summary_type": "category",
       "label": "puzzles",
       "case_count": 1.0,
-      "mean_score": 0.0,
-      "pass_rate": 0.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
       "summary_key": "category:puzzles",
       "category": "puzzles"
     },
@@ -1472,8 +1499,8 @@
       "summary_type": "category",
       "label": "sentiment",
       "case_count": 1.0,
-      "mean_score": 0.0,
-      "pass_rate": 0.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
       "summary_key": "category:sentiment",
       "category": "sentiment"
     },
@@ -1499,8 +1526,8 @@
       "summary_type": "overall",
       "label": "overall",
       "case_count": 23.0,
-      "mean_score": 0.7681159420289854,
-      "pass_rate": 0.6956521739130435,
+      "mean_score": 0.9855072463768115,
+      "pass_rate": 0.9565217391304348,
       "summary_key": "overall:overall"
     },
     {
@@ -1525,8 +1552,8 @@
       "summary_type": "surface",
       "label": "web_chat",
       "case_count": 15.0,
-      "mean_score": 0.6666666666666666,
-      "pass_rate": 0.6,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
       "summary_key": "surface:web_chat",
       "surface": "web_chat"
     },
@@ -1534,8 +1561,8 @@
       "summary_type": "track",
       "label": "frontier",
       "case_count": 6.0,
-      "mean_score": 0.16666666666666666,
-      "pass_rate": 0.0,
+      "mean_score": 1.0,
+      "pass_rate": 1.0,
       "summary_key": "track:frontier",
       "track": "frontier"
     },

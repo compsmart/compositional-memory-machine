@@ -3,7 +3,7 @@ from __future__ import annotations
 from factgraph import FactGraph
 from hrr.encoder import SVOEncoder, SVOFact
 from ingestion import ExtractedFact, TextIngestionPipeline
-from memory import AMM, ChunkedKGMemory
+from memory import AMM, ChunkedKGMemory, capacity_budget
 from query import QueryEngine
 
 
@@ -104,3 +104,40 @@ def test_query_engine_chain_refuses_when_dimension_budget_is_too_low() -> None:
 
     assert result["found"] is False
     assert result["budget_exceeded"] is True
+
+
+def test_query_engine_branching_chain_surfaces_current_and_competing_paths() -> None:
+    encoder = SVOEncoder(dim=2048, seed=0)
+    memory = AMM()
+    graph = FactGraph()
+    chunk_memory = ChunkedKGMemory(dim=2048, role_count=4)
+    pipeline = TextIngestionPipeline(encoder, memory, graph, chunk_memory=chunk_memory)
+    query = QueryEngine(
+        encoder=encoder,
+        memory=memory,
+        graph=graph,
+        chunk_memory=chunk_memory,
+        relation_registry=pipeline.relation_registry,
+    )
+
+    _write(pipeline, "alpha", SVOFact("alice", "knows", "bob"))
+    _write(pipeline, "alpha", SVOFact("bob", "works_with", "carol"))
+    _write(pipeline, "alpha", SVOFact("bob", "works_with", "dana"))
+    _write(pipeline, "alpha", SVOFact("carol", "guides", "delta"))
+    _write(pipeline, "alpha", SVOFact("dana", "guides", "echo"))
+
+    result = query.ask_branching_chain("alice", ["knows", "works_with", "guides"])
+
+    assert result["found"] is True
+    assert len(result["branches"]) >= 2
+    best_branch = result["branches"][0]
+    assert best_branch["path"] == ["alice", "bob", "dana", "echo"]
+    branch_targets = {tuple(branch["path"]) for branch in result["branches"]}
+    assert ("alice", "bob", "carol", "delta") in branch_targets
+    assert ("alice", "bob", "dana", "echo") in branch_targets
+
+
+def test_capacity_budget_uses_large_dimension_revision_for_role4() -> None:
+    assert capacity_budget(4096, role_count=4) == 49
+    assert capacity_budget(8192, role_count=4) == 50
+    assert capacity_budget(16384, role_count=4) == 100

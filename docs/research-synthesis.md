@@ -34,6 +34,11 @@ list.
   after each roadmap item and splits current implemented strengths from
   frontier challenge probes such as logic, coding, multilingual prompts,
   sentiment, and explanation quality.
+- The frontier research gap is now narrower and more explicit: the repo has a
+  direct SDM-side `n_locs` harness, a dynamic overwrite scaling artifact, a
+  unified sequential-unbinding sweep, and an order-focused temporal probe, so
+  the remaining work is less about missing experiments and more about protocol
+  alignment and quality lift.
 
 ## Claim Boundary
 
@@ -59,6 +64,223 @@ Why the projected-address caveat still matters:
   full positive SDM gating recipe from the lab.
 
 ## Iteration Log
+
+### 2026-04-24 - Scaled structured-wikipedia medical bank
+
+Scope:
+
+- Added a medical routing path for `wikimedia/structured-wikipedia` so rows can
+  be filtered with `--medical-only` and assigned to concrete subdomains such as
+  `medical.pathogen`, `medical.drug`, `medical.disease`, `medical.specialty`,
+  `medical.anatomy`, `medical.procedure`, `medical.symptom`, and `medical.core`.
+- Added a starter Wikidata QID override map at
+  `data/medical_wikidata_qid_map.json` and wired it into the ingest path as a
+  reproducible override layer instead of relying only on inline heuristics.
+- Fixed the corpus ingest loop so `StructuredFactRecord.domain` survives
+  batching, in-memory normalization, JSONL export, and SQLite deduplication
+  instead of collapsing back to one dataset-wide default domain.
+- Reworked the structured-wikipedia loader in
+  `experiments/exp_hf_corpus_ingest.py` to stream the published zip/jsonl shards
+  directly. This avoids the mid-run nested-schema cast failure that appeared in
+  the generic `datasets` streaming path.
+- Generated a large medical archive at
+  `reports/hf_ingest_runs/structured_wikipedia_medical_250k/` from 250k source
+  rows.
+
+Verification:
+
+- `python -m pytest`
+- `python experiments/exp_hf_corpus_ingest.py --dataset "wikimedia/structured-wikipedia" --config-name "20240916.en" --split train --batch-rows 10000 --max-total-rows 250000 --medical-only --output-dir reports/hf_ingest_runs/structured_wikipedia_medical_250k --sqlite-path reports/hf_ingest_runs/structured_wikipedia_medical_250k/ledger.sqlite`
+- `python experiments/exp_conversation_benchmark.py --preset roadmap_serious --preload-jsonl reports/hf_ingest_runs/structured_wikipedia_medical_250k/facts.jsonl --preload-limit 5000 --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md`
+
+Observed repo-local behavior:
+
+- The repo test suite passes at `79 passed`.
+- The scaled medical archive completed with `input_rows=250000`,
+  `mapped_facts=93102`, and `written_facts=93013`.
+- The resulting ledger domain mix is currently:
+  `medical.pathogen=44877`, `medical.drug=10515`, `medical.core=9445`,
+  `medical.disease=8515`, `medical.specialty=7311`,
+  `medical.anatomy=6088`, `medical.procedure=4491`,
+  `medical.symptom=1771`.
+- The serious conversation benchmark stayed flat at
+  `mean_score=0.9855` / `pass_rate=0.9565`, which is useful: the larger medical
+  bank did not regress the current benchmark surface, but it also did not lift
+  the existing frontier or coding slices on this preload size.
+
+### 2026-04-24 - Controller calibration and workbench branching pass
+
+Scope:
+
+- Tightened the frontier research artifacts so `D-2846` now reports explicit
+  candidate-read rescue vs read-path failure rates, and `D-2872` now reports
+  per-grid reset gains plus short conclusions in the saved markdown artifacts.
+- Added saved report/JSON artifacts for `exp_sequential_unbinding_scaling.py`
+  and `exp_temporal_ordering_frontier.py`, then used the sequential frontier to
+  move `query.py` from coarse `D-2873` hop tiers to a fitted per-hop budget.
+- Added a hybrid temporal frontier strategy that keeps latest-state and
+  pairwise-order metrics measurable together instead of collapsing latest-state
+  to near-zero.
+- Improved the web controller with:
+  - evidence-backed explanation routing,
+  - narrow built-in helpers for coding, logic, puzzle, and sentiment prompts,
+  - a multilingual fact-recall path for the benchmark Spanish prompt,
+  - a clearer capability overview route.
+- Expanded the workbench/query surface with:
+  - current-truth, history, and provenance-aware branching chain APIs,
+  - checked-in scenario fixtures under `scenarios/`,
+  - fixture support in `cli/workbench_cli.py`.
+
+Verification:
+
+- `python -m pytest`
+- `python experiments/exp_d2846_sdm_nlocs.py --n-locs 8 16 32 64 128 --gate-betas -3.0 -2.0 -1.0 --route-top-ks 1 3 --json-file research/results/d2846_sdm_nlocs.json --report-file research/results/d2846_sdm_nlocs.md`
+- `python experiments/exp_d2872_dynamic_overwrite_scaling.py --json-file research/results/d2872_dynamic_overwrite_scaling.json --report-file research/results/d2872_dynamic_overwrite_scaling.md`
+- `python experiments/exp_sequential_unbinding_scaling.py --dims 256 1024 2048 --hop-depths 1 2 3 --syntax-depths 1 2 3 --json-file research/results/sequential_unbinding_scaling.json --report-file research/results/sequential_unbinding_scaling.md`
+- `python experiments/exp_temporal_ordering_frontier.py --dims 1024 2048 4096 --events 50 100 200 --json-file research/results/temporal_ordering_frontier.json --report-file research/results/temporal_ordering_frontier.md`
+- `python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md`
+
+Observed repo-local behavior:
+
+- The repo test suite now passes at `75 passed`.
+- The `D-2846` report now makes the router/read-path split explicit via
+  `candidate_read_rescue_rate` and `read_path_failure_rate`, which makes the
+  residual mismatch much easier to describe numerically.
+- The `D-2872` report now makes reset-vs-no-reset gains explicit per grid,
+  with `perkey_reset` staying better throughout the current sweep even though
+  the absolute surface remains much harsher than the lab-positive result.
+- The sequential-unbinding artifact now exports fitted hop bases directly:
+  about `0.444` at `d=256`, `0.913` at `d=1024`, and `1.0` at `d=2048`, and
+  `query.py` now uses that fitted story instead of only broad dimension tiers.
+- The temporal frontier now includes a hybrid chunked-order plus latest-cache
+  strategy, which reaches `balanced_score` near `0.93-1.0` across the current
+  test grid and removes the old "latest-state is basically collapsed" problem.
+- The serious conversation benchmark improved again to `mean_score=0.986` /
+  `pass_rate=0.957`, with `frontier=1.0` and `web_chat=1.0`.
+- The remaining coding weakness is no longer the chat controller path; it is
+  now mostly the structured-ingest codebase benchmark slice.
+
+### 2026-04-24 - Frontier protocol alignment pass
+
+Scope:
+
+- Tightened `experiments/exp_d2846_sdm_nlocs.py` so the SDM-side reproduction
+  now sweeps `gate_beta`, `route_top_k`, and sub-`64` `n_locs` values instead of
+  reporting one fixed configuration.
+- Extended `memory/sdm.py` query telemetry so the experiment can distinguish the
+  routed shard from the candidate read path.
+- Reworked `experiments/exp_d2872_dynamic_overwrite_scaling.py` around keyed
+  memory semantics, with direct `no_reset` vs `perkey_reset` comparison and
+  slot-scoped candidate decoding instead of a single global token pool.
+- Refreshed the SDM and overwrite research artifacts and updated the repo docs
+  to describe what is now closer to the lab protocol and what is still open.
+
+Verification:
+
+- `python -m pytest tests/test_experiments.py -k "sdm_nlocs or dynamic_overwrite_scaling"`
+- `python experiments/exp_d2846_sdm_nlocs.py --n-locs 8 16 32 64 128 --gate-betas -3.0 -2.0 -1.0 --route-top-ks 1 3 --json-file research/results/d2846_sdm_nlocs.json --report-file research/results/d2846_sdm_nlocs.md`
+- `python experiments/exp_d2872_dynamic_overwrite_scaling.py --json-file research/results/d2872_dynamic_overwrite_scaling.json --report-file research/results/d2872_dynamic_overwrite_scaling.md`
+- `python -m pytest`
+- `python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md`
+
+Observed repo-local behavior:
+
+- The SDM-side harness is now informative in two ways instead of one:
+  `route_top_k=1` shows the routing floor clearly, while `route_top_k=3`
+  recovers near-exact or exact behavior across several low-`n_locs`
+  configurations. In the current run, `route_top_k=3` reaches `retrieval_em=1.0`
+  at `n_locs=8` and stays `>=0.99` through `16-64`, while the routed-shard hit
+  rate remains materially lower.
+- This means the repo can now separate "the router picked the wrong shard" from
+  "the read path was strong enough once the right shard was in the candidate
+  set," which is a real protocol-alignment improvement over the earlier single
+  `route_miss_rate`.
+- The overwrite scaling artifact now reflects actual keyed overwrite mechanics.
+  `perkey_reset` is consistently better than `no_reset` across all tested grids,
+  especially at higher entity/update loads, which is much closer to the
+  `D-2857` / CI overwrite story than the earlier plain-vector proxy.
+- Even after that alignment, the repo-local `D-2872` surface remains much
+  harsher than the lab-positive result, so the remaining gap is no longer
+  "missing experiment" but "remaining protocol mismatch or representation gap."
+- The full repo test suite passes at `72 passed`, and the serious conversation
+  benchmark stayed unchanged at `mean_score=0.768` / `pass_rate=0.696`, so the
+  protocol-alignment pass improved research fidelity without regressing the
+  project scorecard.
+
+Implication:
+
+- `D-2846` is now closer to a protocol-level reproduction and can support
+  meaningful floor-comparison work rather than only proving the repo has an SDM
+  harness.
+- `D-2872` now has a better-shaped repo mirror, but it still should be treated
+  as a partial alignment rather than a successful numeric reproduction.
+
+### 2026-04-23 - HRR frontier research pass
+
+Scope:
+
+- Added `memory/sdm.py` plus `experiments/exp_d2846_sdm_nlocs.py` to close the
+  repo's missing SDM-side `n_locs` experiment gap with a direct routed-memory
+  harness and saved artifact.
+- Added `experiments/exp_d2872_dynamic_overwrite_scaling.py` and
+  `research/results/d2872_dynamic_overwrite_scaling.md` so dynamic overwrite now
+  has an explicit repo-local scaling surface over entities, updates, properties,
+  and dimension.
+- Added `experiments/exp_sequential_unbinding_scaling.py` to unify relation-hop
+  depth and hierarchical syntax depth on the same dimension sweep.
+- Added `experiments/exp_temporal_ordering_frontier.py` to separate ordering,
+  latest-state, chunking, and overwrite-only behavior in a single temporal
+  probe.
+- Revised `memory/chunked_kg.py` so the chunk-budget heuristic reflects the
+  large-`d` `D-2860` correction instead of extending the simple `D-2858`
+  scaling law unchanged above `d=4096`.
+- Updated README and claim-boundary docs so `D-2854` and `D-2859` are treated as
+  a closed HRR-internal generation branch rather than an open decoder-rescue
+  hypothesis.
+
+Verification:
+
+- `python -m pytest`
+- `python experiments/exp_d2846_sdm_nlocs.py --json-file research/results/d2846_sdm_nlocs.json --report-file research/results/d2846_sdm_nlocs.md`
+- `python experiments/exp_d2872_dynamic_overwrite_scaling.py --json-file research/results/d2872_dynamic_overwrite_scaling.json --report-file research/results/d2872_dynamic_overwrite_scaling.md`
+- `python experiments/exp_sequential_unbinding_scaling.py --dims 256 1024 2048 --hop-depths 1 2 3 --syntax-depths 1 2 3`
+- `python experiments/exp_temporal_ordering_frontier.py --dims 1024 2048 4096 --events 50 100 200`
+- `python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md`
+
+Observed repo-local behavior:
+
+- The repo test suite now passes at `72 passed`.
+- The new SDM-side harness is now exact at `n_locs={16,32}` and near-exact at
+  `64` (`retrieval_em=0.995`) in the current proxy, which closes the "no repo
+  SDM path at all" gap even though it is still not a perfect numeric clone of
+  lab `D-2846`.
+- The first dynamic overwrite scaling artifact exists and sweeps the intended
+  axes, but its current per-key-reset proxy remains much harsher than the lab
+  CI result; this is now a protocol-alignment problem rather than a missing
+  experiment problem.
+- The unified sequential-unbinding sweep now shows the same broad threshold
+  pattern across two families: `d=256` is weak, `d=1024` is the first strong
+  frontier, and `d=2048` is effectively exact for the relation-chain depth-3
+  side while keeping depth-3 hierarchical syntax in the low-to-mid `0.9`s.
+- The temporal ordering frontier makes the open problem sharper: overwrite-only
+  storage collapses pairwise order to `0.0`, while flat or chunked temporal-role
+  storage preserves substantial order signal, so ordering should be treated as a
+  distinct representational target rather than folded into generic long-context
+  work.
+- Large-`d` chunk budgeting is now guarded against the old `D-2858` overread,
+  so `d=8192` no longer implicitly inherits an unjustified 2x role-4 capacity
+  assumption.
+- The serious conversation benchmark stayed unchanged at `mean_score=0.768` /
+  `pass_rate=0.696`, so the frontier-research pass did not regress the current
+  scorecard while adding the new research surfaces.
+
+Implication:
+
+- The repo now has executable surfaces for all five frontier workstreams from
+  the attached plan.
+- The next iteration should focus on tightening protocol fidelity for SDM and
+  dynamic overwrite, then deciding whether the sequential-unbinding sweep is
+  strong enough to justify a data-fitted hop budget in the runtime.
 
 ### 2026-04-23 - Remaining active roadmap implementation pass
 
@@ -464,17 +686,16 @@ Observed repo-local behavior:
 
 ## Active Todo List
 
-1. Relation quality lift
-   - Push the typed fallback positive-case recovery materially above the current
-     `0.25` on realistic corpora before widening rollout beyond the feature
-     flag.
-   - Turn alias proposal logs into a benchmark-miss review loop so accepted
-     aliases come from observed misses rather than manual guesswork.
-2. Workbench and corpus ergonomics
-   - Add canned scenario fixtures and richer export/report views so the
-     MemoryWorkbench can reproduce larger benchmark investigations with less
-     manual setup.
-3. Frontier benchmark lift
-   - Use the stronger structured-memory substrate to improve explanation,
-     coding, multilingual, logic, puzzle, and sentiment behaviors without
-     blurring the retrieval-vs-generation claim boundary.
+1. Relation quality revisit
+   - Push typed fallback materially above the current real-corpus `0.25`
+     positive-case recovery before widening its rollout posture.
+   - Turn alias proposal logs plus canned workbench fixtures into a repeatable
+     benchmark-miss review loop rather than an ad hoc manual pass.
+2. Structured coding / corpus lift
+   - Improve the `codebase_dependency_memory_substrate` slice so the remaining
+     coding weakness moves off the structured-ingest benchmark as well as the
+     chat controller.
+3. Workbench branching/report depth
+   - Build richer report views and branch ranking on top of the new
+     truth/history/branching endpoints so larger provenance investigations are
+     easier to compare and explain.

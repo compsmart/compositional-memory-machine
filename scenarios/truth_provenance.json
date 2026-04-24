@@ -1,0 +1,23 @@
+{
+  "reset": true,
+  "facts": [
+    {
+      "subject": "Robot Atlas",
+      "relation": "location",
+      "object": "hangar",
+      "domain": "scenario",
+      "source": "fixture",
+      "source_id": "truth-1",
+      "excerpt": "Robot Atlas was initially stationed in the hangar."
+    },
+    {
+      "subject": "Robot Atlas",
+      "relation": "location",
+      "object": "field",
+      "domain": "scenario",
+      "source": "fixture",
+      "source_id": "truth-2",
+      "excerpt": "A later report corrected Robot Atlas's location to the field."
+    }
+  ]
+}

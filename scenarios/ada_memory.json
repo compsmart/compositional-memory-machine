@@ -1,0 +1,18 @@
+{
+  "reset": true,
+  "texts": [
+    {
+      "text": "Ada text",
+      "domain": "history",
+      "source": "fixture"
+    }
+  ],
+  "messages": [
+    {
+      "message": "Who did Ada Lovelace work with?"
+    },
+    {
+      "message": "Why do you think Ada Lovelace worked with Charles Babbage?"
+    }
+  ]
+}

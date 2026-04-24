@@ -12,17 +12,26 @@ from hrr.encoder import SVOFact
 from .amm import AMM
 
 
-def capacity_ratio_for_roles(role_count: int) -> float:
-    """Finding-backed HRR capacity ratio from D-2858."""
+def capacity_ratio_for_roles(role_count: int, *, dim: int | None = None) -> float:
+    """Finding-backed HRR capacity ratio from D-2858 and large-d D-2860 revisions."""
     if role_count <= 1:
+        if dim is not None and dim > 4096:
+            return 0.026
         return 0.049
     if role_count <= 4:
+        if dim is not None and dim > 4096:
+            return 0.006
         return 0.012
     return 0.006
 
 
 def capacity_budget(dim: int, role_count: int = 4) -> int:
-    return max(1, int(round(capacity_ratio_for_roles(role_count) * dim)))
+    if role_count <= 4 and dim > 4096:
+        if dim <= 8192:
+            return 50
+        if dim <= 16384:
+            return 100
+    return max(1, int(round(capacity_ratio_for_roles(role_count, dim=dim) * dim)))
 
 
 def perfect_chain_budget(dim: int, role_count: int = 4) -> int:

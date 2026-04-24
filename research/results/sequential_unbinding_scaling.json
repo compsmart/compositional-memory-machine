@@ -1,0 +1,548 @@
+{
+  "config": {
+    "dims": [
+      256,
+      1024,
+      2048
+    ],
+    "hop_depths": [
+      1,
+      2,
+      3
+    ],
+    "syntax_depths": [
+      1,
+      2,
+      3
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "n_chains": 20,
+    "n_sentences": 25
+  },
+  "rows": [
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "seed": 0.0,
+      "depth": 1.0,
+      "em": 0.35
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "seed": 0.0,
+      "depth": 2.0,
+      "em": 0.15
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "seed": 0.0,
+      "depth": 3.0,
+      "em": 0.1
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "seed": 0.0,
+      "depth": 1.0,
+      "em": 0.8
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "seed": 0.0,
+      "depth": 2.0,
+      "em": 0.56
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "seed": 0.0,
+      "depth": 3.0,
+      "em": 0.32
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "seed": 1.0,
+      "depth": 1.0,
+      "em": 0.45
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "seed": 1.0,
+      "depth": 2.0,
+      "em": 0.15
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "seed": 1.0,
+      "depth": 3.0,
+      "em": 0.1
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "seed": 1.0,
+      "depth": 1.0,
+      "em": 0.76
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "seed": 1.0,
+      "depth": 2.0,
+      "em": 0.52
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "seed": 1.0,
+      "depth": 3.0,
+      "em": 0.28
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "seed": 2.0,
+      "depth": 1.0,
+      "em": 0.6
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "seed": 2.0,
+      "depth": 2.0,
+      "em": 0.25
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "seed": 2.0,
+      "depth": 3.0,
+      "em": 0.05
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "seed": 2.0,
+      "depth": 1.0,
+      "em": 0.84
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "seed": 2.0,
+      "depth": 2.0,
+      "em": 0.68
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "seed": 2.0,
+      "depth": 3.0,
+      "em": 0.52
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "depth": 2.0,
+      "em": 0.9
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "depth": 3.0,
+      "em": 0.85
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "depth": 2.0,
+      "em": 0.96
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "depth": 3.0,
+      "em": 0.84
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "depth": 1.0,
+      "em": 0.85
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "depth": 2.0,
+      "em": 0.85
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "depth": 3.0,
+      "em": 0.65
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "depth": 2.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "depth": 3.0,
+      "em": 0.92
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "depth": 1.0,
+      "em": 0.85
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "depth": 2.0,
+      "em": 0.85
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "depth": 3.0,
+      "em": 0.75
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "depth": 2.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "depth": 3.0,
+      "em": 0.96
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "depth": 2.0,
+      "em": 1.0
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "depth": 3.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "depth": 2.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "depth": 3.0,
+      "em": 0.92
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "depth": 2.0,
+      "em": 1.0
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "depth": 3.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "depth": 2.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "depth": 3.0,
+      "em": 0.96
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "depth": 2.0,
+      "em": 1.0
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "depth": 3.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "depth": 1.0,
+      "em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "depth": 2.0,
+      "em": 0.96
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "depth": 3.0,
+      "em": 0.92
+    }
+  ],
+  "summary": [
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "depth": 1.0,
+      "runs": 3.0,
+      "mean_em": 0.7999999999999999
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "depth": 2.0,
+      "runs": 3.0,
+      "mean_em": 0.5866666666666668
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 256.0,
+      "depth": 3.0,
+      "runs": 3.0,
+      "mean_em": 0.37333333333333335
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "depth": 1.0,
+      "runs": 3.0,
+      "mean_em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "depth": 2.0,
+      "runs": 3.0,
+      "mean_em": 0.9866666666666667
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 1024.0,
+      "depth": 3.0,
+      "runs": 3.0,
+      "mean_em": 0.9066666666666666
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "depth": 1.0,
+      "runs": 3.0,
+      "mean_em": 1.0
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "depth": 2.0,
+      "runs": 3.0,
+      "mean_em": 0.9866666666666667
+    },
+    {
+      "task": "hierarchical_syntax",
+      "dim": 2048.0,
+      "depth": 3.0,
+      "runs": 3.0,
+      "mean_em": 0.9333333333333332
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "depth": 1.0,
+      "runs": 3.0,
+      "mean_em": 0.4666666666666666
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "depth": 2.0,
+      "runs": 3.0,
+      "mean_em": 0.18333333333333335
+    },
+    {
+      "task": "relation_chain",
+      "dim": 256.0,
+      "depth": 3.0,
+      "runs": 3.0,
+      "mean_em": 0.08333333333333333
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "depth": 1.0,
+      "runs": 3.0,
+      "mean_em": 0.9
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "depth": 2.0,
+      "runs": 3.0,
+      "mean_em": 0.8666666666666667
+    },
+    {
+      "task": "relation_chain",
+      "dim": 1024.0,
+      "depth": 3.0,
+      "runs": 3.0,
+      "mean_em": 0.75
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "depth": 1.0,
+      "runs": 3.0,
+      "mean_em": 1.0
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "depth": 2.0,
+      "runs": 3.0,
+      "mean_em": 1.0
+    },
+    {
+      "task": "relation_chain",
+      "dim": 2048.0,
+      "depth": 3.0,
+      "runs": 3.0,
+      "mean_em": 1.0
+    }
+  ],
+  "recommended_hop_bases": [
+    {
+      "dim": 256.0,
+      "fitted_hop_base": 0.44387710610788456
+    },
+    {
+      "dim": 1024.0,
+      "fitted_hop_base": 0.9131698775557776
+    },
+    {
+      "dim": 2048.0,
+      "fitted_hop_base": 1.0
+    }
+  ]
+}

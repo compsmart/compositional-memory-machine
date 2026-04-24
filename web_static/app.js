@@ -13,6 +13,8 @@ const els = {
   ingestDomain: $("#ingestDomain"),
   ingestSource: $("#ingestSource"),
   ingestResult: $("#ingestResult"),
+  memoryBankSelect: $("#memoryBankSelect"),
+  loadBankButton: $("#loadBankButton"),
   refreshButton: $("#refreshButton"),
   resetDemoButton: $("#resetDemoButton"),
   spinButton: $("#spinButton"),
@@ -29,6 +31,7 @@ let latestFacts = [];
 let filteredFacts = [];
 let memoryGraph = null;
 let chatHistory = [];
+let memoryBanks = [];
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -55,6 +58,7 @@ function renderStatus(status) {
     ["Records", status.memory_records],
     ["Chunk budget", status.chunk_budget],
     ["Dimension", status.dim],
+    ["Bank", status.current_memory_bank || "Seed demo"],
     ["Demo", status.demo_value],
     ["Key", keyState],
   ]
@@ -67,9 +71,26 @@ function renderStatus(status) {
     ["Records", status.memory_records],
     ["Chunk budget", status.chunk_budget],
     ["D", status.dim],
+    ["Bank", status.current_memory_bank || "Seed demo"],
   ]
     .map(([label, value]) => `<div class="metric"><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label)}</span></div>`)
     .join("");
+}
+
+function renderMemoryBanks(payload) {
+  memoryBanks = Array.isArray(payload?.banks) ? payload.banks : [];
+  const current = payload?.current_bank_id || "seed";
+  const previous = els.memoryBankSelect.value;
+  els.memoryBankSelect.innerHTML = memoryBanks
+    .map((bank) => {
+      const countSuffix = Number.isFinite(bank.fact_count) ? ` (${bank.fact_count} facts)` : "";
+      return `<option value="${escapeHtml(bank.id)}">${escapeHtml(bank.label || `${bank.id}${countSuffix}`)}</option>`;
+    })
+    .join("");
+  const preferred = memoryBanks.some((bank) => bank.id === previous) ? previous : current;
+  if (preferred) {
+    els.memoryBankSelect.value = preferred;
+  }
 }
 
 function renderFacts(facts) {
@@ -699,16 +720,18 @@ async function initMemoryGraph() {
 }
 
 async function refresh() {
-  const [status, facts, compositional, chat] = await Promise.all([
+  const [status, facts, compositional, chat, banks] = await Promise.all([
     api("/api/status"),
     api("/api/facts"),
     api("/api/demo/compositional"),
     api("/api/chat/history"),
+    api("/api/memory-banks"),
   ]);
   renderStatus(status);
   renderFacts(facts.facts || []);
   renderCompositional(compositional);
   renderChatHistory(chat.history || []);
+  renderMemoryBanks(banks);
 }
 
 els.chatForm.addEventListener("submit", async (event) => {
@@ -764,10 +787,35 @@ els.resetDemoButton.addEventListener("click", async () => {
     renderFacts(payload.facts?.facts || []);
     renderCompositional(payload.compositional);
     renderChatHistory(payload.chat?.history || []);
+    renderMemoryBanks(payload.memory_banks);
   } catch (error) {
     renderError(els.ingestResult, error);
   } finally {
     setBusy(els.resetDemoButton, false);
+  }
+});
+
+els.loadBankButton.addEventListener("click", async () => {
+  setBusy(els.loadBankButton, true);
+  try {
+    const payload = await api("/api/memory-bank/select", {
+      method: "POST",
+      body: JSON.stringify({ bank_id: els.memoryBankSelect.value }),
+    });
+    renderIngestResult({
+      bank: payload.selected_bank_label,
+      loaded_archive_facts: payload.loaded_archive_facts,
+      status: payload.status,
+    });
+    renderStatus(payload.status);
+    renderFacts(payload.facts?.facts || []);
+    renderCompositional(payload.compositional);
+    renderChatHistory(payload.chat?.history || []);
+    renderMemoryBanks(payload.memory_banks);
+  } catch (error) {
+    renderError(els.ingestResult, error);
+  } finally {
+    setBusy(els.loadBankButton, false);
   }
 });
 

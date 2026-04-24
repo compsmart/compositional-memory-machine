@@ -1,0 +1,1509 @@
+{
+  "config": {
+    "dims": [
+      1024,
+      2048,
+      4096
+    ],
+    "event_counts": [
+      50,
+      100,
+      200
+    ],
+    "chunk_size": 25,
+    "seeds": [
+      0,
+      1,
+      2
+    ]
+  },
+  "rows": [
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.8636363636363636
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9772727272727273
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5918367346938775
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.9772727272727273
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.574468085106383
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.8936170212765957
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.48484848484848486
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.8936170212765957
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.8505154639175257
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.2914572864321608
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.8505154639175257
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.8636363636363636
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9772727272727273
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5306122448979592
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.9772727272727273
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5531914893617021
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.925531914893617
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.4444444444444444
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.925531914893617
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.520618556701031
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.8711340206185567
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.22110552763819097
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.8711340206185567
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.8409090909090909
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9318181818181818
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5102040816326531
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.9318181818181818
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.6170212765957447
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9042553191489362
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.46464646464646464
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.9042553191489362
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5103092783505154
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.8505154639175257
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.2562814070351759
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.8505154639175257
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9545454545454546
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.4897959183673469
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.7446808510638298
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5252525252525253
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5154639175257731
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.4321608040201005
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9545454545454546
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5306122448979592
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.7446808510638298
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9893617021276596
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5252525252525253
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.9893617021276596
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5257731958762887
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9845360824742269
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.40703517587939697
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.9845360824742269
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9545454545454546
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5102040816326531
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.7021276595744681
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.47474747474747475
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5360824742268041
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.9948453608247423
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.3768844221105528
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.9948453608247423
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5102040816326531
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 50.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.925531914893617
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5252525252525253
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 100.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.6855670103092784
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5477386934673367
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "seed": 0.0,
+      "n_events": 200.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.4489795918367347
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 50.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.9042553191489362
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.4444444444444444
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 100.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.6082474226804123
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5226130653266332
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "seed": 1.0,
+      "n_events": 200.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5306122448979592
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 50.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.9361702127659575
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5656565656565656
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 100.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.6958762886597938
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.16666666666666666,
+      "pairwise_order_em": 0.0
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5226130653266332
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "seed": 2.0,
+      "n_events": 200.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0
+    }
+  ],
+  "summary": [
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.962121212121212,
+      "balanced_score": 0.481060606060606
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9078014184397163,
+      "balanced_score": 0.45390070921985815
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 1024.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.8573883161512028,
+      "balanced_score": 0.4286941580756014
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.05555555555555555,
+      "pairwise_order_em": 1.0,
+      "balanced_score": 0.5277777777777778
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9964539007092199,
+      "balanced_score": 0.49822695035460995
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 2048.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.05555555555555555,
+      "pairwise_order_em": 0.993127147766323,
+      "balanced_score": 0.5243413516609393
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0,
+      "balanced_score": 0.5
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0,
+      "balanced_score": 0.5
+    },
+    {
+      "strategy": "chunked_temporal_roles",
+      "dim": 4096.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0,
+      "balanced_score": 0.5
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.54421768707483,
+      "balanced_score": 0.272108843537415
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.4646464646464647,
+      "balanced_score": 0.23232323232323235
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 1024.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.2562814070351759,
+      "balanced_score": 0.12814070351758794
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5102040816326531,
+      "balanced_score": 0.25510204081632654
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5084175084175084,
+      "balanced_score": 0.2542087542087542
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 2048.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.4053601340033501,
+      "balanced_score": 0.20268006700167504
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.49659863945578236,
+      "balanced_score": 0.24829931972789118
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5117845117845118,
+      "balanced_score": 0.2558922558922559
+    },
+    {
+      "strategy": "explicit_pair_links",
+      "dim": 4096.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5309882747068677,
+      "balanced_score": 0.26549413735343386
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.05555555555555555,
+      "pairwise_order_em": 0.8560606060606061,
+      "balanced_score": 0.45580808080808083
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5815602836879433,
+      "balanced_score": 0.29078014184397166
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 1024.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5103092783505154,
+      "balanced_score": 0.2551546391752577
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.9545454545454546,
+      "balanced_score": 0.4772727272727273
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.7304964539007092,
+      "balanced_score": 0.3652482269503546
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 2048.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.5257731958762886,
+      "balanced_score": 0.2628865979381443
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 1.0,
+      "balanced_score": 0.5
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.1111111111111111,
+      "pairwise_order_em": 0.9219858156028368,
+      "balanced_score": 0.5165484633569739
+    },
+    {
+      "strategy": "flat_temporal_roles",
+      "dim": 4096.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.6632302405498282,
+      "balanced_score": 0.3316151202749141
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.962121212121212,
+      "balanced_score": 0.981060606060606
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.9078014184397163,
+      "balanced_score": 0.9539007092198581
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 1024.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.8573883161512028,
+      "balanced_score": 0.9286941580756014
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0,
+      "balanced_score": 1.0
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.9964539007092199,
+      "balanced_score": 0.99822695035461
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 2048.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 0.993127147766323,
+      "balanced_score": 0.9965635738831615
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0,
+      "balanced_score": 1.0
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0,
+      "balanced_score": 1.0
+    },
+    {
+      "strategy": "hybrid_chunked_plus_latest_cache",
+      "dim": 4096.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 1.0,
+      "pairwise_order_em": 1.0,
+      "balanced_score": 1.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.05555555555555555,
+      "pairwise_order_em": 0.0,
+      "balanced_score": 0.027777777777777776
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.1111111111111111,
+      "pairwise_order_em": 0.0,
+      "balanced_score": 0.05555555555555555
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 1024.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0,
+      "balanced_score": 0.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0,
+      "balanced_score": 0.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0,
+      "balanced_score": 0.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 2048.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.0,
+      "pairwise_order_em": 0.0,
+      "balanced_score": 0.0
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "n_events": 50.0,
+      "runs": 3.0,
+      "latest_state_em": 0.1111111111111111,
+      "pairwise_order_em": 0.0,
+      "balanced_score": 0.05555555555555555
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "n_events": 100.0,
+      "runs": 3.0,
+      "latest_state_em": 0.1111111111111111,
+      "pairwise_order_em": 0.0,
+      "balanced_score": 0.05555555555555555
+    },
+    {
+      "strategy": "overwrite_only",
+      "dim": 4096.0,
+      "n_events": 200.0,
+      "runs": 3.0,
+      "latest_state_em": 0.05555555555555555,
+      "pairwise_order_em": 0.0,
+      "balanced_score": 0.027777777777777776
+    }
+  ]
+}

@@ -10,6 +10,7 @@ from .chunked_kg import (
 from .episodic import ConversationFact, ConversationTurn, EpisodicMemory
 from .metrics import exact_match_rate, forgetting_rate, top1_accuracy
 from .projected import ProjectedAddressIndex, ProjectedQueryResult
+from .sdm import EntropyGatedSDM, SDMQueryResult, SDMRoute
 
 __all__ = [
     "AMM",
@@ -25,6 +26,9 @@ __all__ = [
     "perfect_chain_budget",
     "ProjectedAddressIndex",
     "ProjectedQueryResult",
+    "EntropyGatedSDM",
+    "SDMQueryResult",
+    "SDMRoute",
     "exact_match_rate",
     "forgetting_rate",
     "top1_accuracy",

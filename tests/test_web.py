@@ -3,11 +3,13 @@ from __future__ import annotations
 import json
 import threading
 from contextlib import contextmanager
+from pathlib import Path
 from urllib.request import Request, urlopen
 
 from hrr.encoder import SVOFact
-from ingestion import ExtractedFact, ExtractionResponse, GeminiExtractor
-from web import HHRWebState, make_web_server
+from ingestion import ExtractedFact, ExtractionResponse, GeminiExtractor, write_fact_jsonl
+from ingestion.hf_corpora import StructuredFactRecord
+from web import HHRWebState, build_web_state, make_web_server
 
 
 class FakeExtractor(GeminiExtractor):
@@ -191,6 +193,46 @@ def test_web_chain_query_route_returns_multi_hop_answer() -> None:
     assert result["path"] == ["alice", "bob", "carol", "delta"]
 
 
+def test_web_truth_history_and_branching_query_routes() -> None:
+    state = HHRWebState()
+    for domain, fact in [
+        ("branch", SVOFact("alice", "knows", "bob")),
+        ("branch", SVOFact("bob", "works_with", "carol")),
+        ("branch", SVOFact("bob", "works_with", "dana")),
+        ("branch", SVOFact("carol", "guides", "delta")),
+        ("branch", SVOFact("dana", "guides", "echo")),
+    ]:
+        _write_fact(state, domain, fact)
+
+    with running_server(state) as base_url:
+        current_truth = _post(
+            f"{base_url}/api/query/current-truth",
+            {"subject": "bob", "relation": "works_with"},
+        )
+        history = _post(
+            f"{base_url}/api/query/history",
+            {"subject": "bob", "relation": "works_with"},
+        )
+        branching = _post(
+            f"{base_url}/api/query/branching-chain",
+            {"subject": "alice", "relations": ["knows", "works_with", "guides"]},
+        )
+
+    truth_result = current_truth["result"]
+    assert truth_result["found"] is True
+    assert truth_result["target"] == "dana"
+
+    history_result = history["result"]
+    assert [event["target"] for event in history_result["events"]] == ["carol", "dana"]
+
+    branching_result = branching["result"]
+    assert branching_result["found"] is True
+    assert branching_result["branches"][0]["path"] == ["alice", "bob", "dana", "echo"]
+    branch_paths = {tuple(branch["path"]) for branch in branching_result["branches"]}
+    assert ("alice", "bob", "carol", "delta") in branch_paths
+    assert ("alice", "bob", "dana", "echo") in branch_paths
+
+
 def test_web_ingest_and_compositional_routes() -> None:
     state = HHRWebState(extractor=FakeExtractor())
     with running_server(state) as base_url:
@@ -245,6 +287,70 @@ def test_web_chat_route_supports_multi_turn_memory() -> None:
     assert "nearest action is" in recall_reply["reply"]["text"]
 
 
+def test_build_web_state_can_preload_jsonl(tmp_path: Path) -> None:
+    jsonl_path = tmp_path / "facts.jsonl"
+    write_fact_jsonl(
+        jsonl_path,
+        [
+            StructuredFactRecord(
+                fact=ExtractedFact(
+                    subject="Grossglockner",
+                    relation="first_climbed_on",
+                    object="1800",
+                    confidence=0.8,
+                    kind="explicit",
+                    source="fixture",
+                    source_id="fixture:1",
+                    excerpt="The Grossglockner was first climbed in 1800.",
+                ),
+                domain="hf_wikipedia_kg",
+            )
+        ],
+    )
+
+    state = build_web_state(preload_jsonl=jsonl_path, preload_limit=1)
+
+    assert state.graph.read("Grossglockner", "first_climbed_on") == "1800"
+
+
+def test_web_memory_bank_routes_list_and_switch_archives(tmp_path: Path) -> None:
+    jsonl_path = tmp_path / "reports" / "hf_ingest_runs" / "fixture_bank" / "facts.jsonl"
+    write_fact_jsonl(
+        jsonl_path,
+        [
+            StructuredFactRecord(
+                fact=ExtractedFact(
+                    subject="Grossglockner",
+                    relation="first_climbed_on",
+                    object="1800",
+                    confidence=0.8,
+                    kind="explicit",
+                    source="fixture",
+                    source_id="fixture:1",
+                    excerpt="The Grossglockner was first climbed in 1800.",
+                ),
+                domain="hf_wikipedia_kg",
+            )
+        ],
+    )
+
+    state = HHRWebState(bank_root=tmp_path)
+    with running_server(state) as base_url:
+        banks = _get(f"{base_url}/api/memory-banks")
+        switched = _post(
+            f"{base_url}/api/memory-bank/select",
+            {"bank_id": "reports/hf_ingest_runs/fixture_bank/facts.jsonl"},
+        )
+
+    assert banks["current_bank_id"] == "seed"
+    assert any(bank["id"] == "reports/hf_ingest_runs/fixture_bank/facts.jsonl" for bank in banks["banks"])
+    assert switched["selected_bank_id"] == "reports/hf_ingest_runs/fixture_bank/facts.jsonl"
+    assert switched["loaded_archive_facts"] == 1
+    assert switched["status"]["stored_facts"] == 21
+    assert switched["status"]["current_memory_bank_id"] == "reports/hf_ingest_runs/fixture_bank/facts.jsonl"
+    assert state.graph.read("Grossglockner", "first_climbed_on") == "1800"
+
+
 def test_web_chat_route_end_to_end_multiturn_capabilities() -> None:
     state = HHRWebState(extractor=FakeExtractor())
     with running_server(state) as base_url:
@@ -273,8 +379,8 @@ def test_web_chat_route_end_to_end_multiturn_capabilities() -> None:
         )
         history = _get(f"{base_url}/api/chat/history")
 
-    assert help_reply["reply"]["route"] == "fallback"
-    assert "memory-backed fact questions" in help_reply["reply"]["text"]
+    assert help_reply["reply"]["route"] == "capability_overview"
+    assert "memory-grounded controller" in help_reply["reply"]["text"]
 
     assert ingest_ada_reply["reply"]["route"] == "text_ingest"
     assert "2 distinct facts" in ingest_ada_reply["reply"]["text"]
@@ -321,7 +427,7 @@ def test_web_chat_route_end_to_end_multiturn_capabilities() -> None:
     routes = [message["route"] for message in history["history"] if message["role"] == "assistant"]
     assert routes == [
         "ready",
-        "fallback",
+        "capability_overview",
         "text_ingest",
         "fact_query",
         "fact_query",
@@ -335,6 +441,57 @@ def test_web_chat_route_end_to_end_multiturn_capabilities() -> None:
         "multi_hop_query",
     ]
     assert len(history["history"]) == 25
+
+
+def test_web_chat_route_handles_frontier_controller_helpers() -> None:
+    state = HHRWebState(extractor=FakeExtractor())
+    with running_server(state) as base_url:
+        _post(f"{base_url}/api/chat", {"message": "Remember Ada text"})
+        explanation_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Why do you think Ada Lovelace worked with Charles Babbage?"},
+        )
+        spanish_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Con quien trabajo Ada Lovelace?"},
+        )
+        coding_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Write a Python function add(a, b) that returns the sum."},
+        )
+        logic_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "If Alice is taller than Bob and Bob is taller than Carol, who is tallest?"},
+        )
+        sequence_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Which number comes next in the sequence 2, 4, 8, 16, ?"},
+        )
+        sentiment_reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "The movie was amazing and I loved every minute. Was the sentiment positive, negative, or neutral?"},
+        )
+
+    assert explanation_reply["reply"]["route"] == "explanation_query"
+    assert "because" in explanation_reply["reply"]["text"].lower()
+    assert "evidence" in explanation_reply["reply"]["text"].lower()
+    assert "Charles Babbage" in explanation_reply["reply"]["text"]
+
+    assert spanish_reply["reply"]["route"] == "multilingual_fact_query"
+    assert "Charles Babbage" in spanish_reply["reply"]["text"]
+
+    assert coding_reply["reply"]["route"] == "builtin_coding"
+    assert "def add(a, b):" in coding_reply["reply"]["text"]
+    assert "return a + b" in coding_reply["reply"]["text"]
+
+    assert logic_reply["reply"]["route"] == "builtin_logic"
+    assert "Alice is tallest." == logic_reply["reply"]["text"]
+
+    assert sequence_reply["reply"]["route"] == "builtin_sequence"
+    assert sequence_reply["reply"]["text"] == "32"
+
+    assert sentiment_reply["reply"]["route"] == "builtin_sentiment"
+    assert sentiment_reply["reply"]["text"] == "positive"
 
 
 def test_web_chat_route_supports_multihop_after_chat_learning() -> None:

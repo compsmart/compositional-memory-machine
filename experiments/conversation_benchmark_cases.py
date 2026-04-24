@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from statistics import mean
 from typing import Any, Callable
 
@@ -82,6 +83,8 @@ class BenchmarkConfig:
     episodic_facts_per_turn: int = 3
     temporal_dim: int = 2048
     temporal_seeds: tuple[int, ...] = (42, 123)
+    preload_jsonl: Path | None = None
+    preload_limit: int = 0
 
 
 @dataclass(frozen=True)
@@ -194,6 +197,9 @@ def build_chat_state(config: BenchmarkConfig) -> HHRWebState:
 
 def run_chat_case(case: BenchmarkCase, config: BenchmarkConfig) -> CaseVerdict:
     state = build_chat_state(config)
+    preloaded_facts = 0
+    if config.preload_jsonl is not None:
+        preloaded_facts = state.preload_jsonl(config.preload_jsonl, limit=config.preload_limit)
     replies: list[dict[str, Any]] = []
     for prompt in case.prompts:
         payload = state.chat({"message": prompt})
@@ -205,6 +211,7 @@ def run_chat_case(case: BenchmarkCase, config: BenchmarkConfig) -> CaseVerdict:
         observed={
             "final_reply": replies[-1] if replies else {},
             "history_length": len(state.chat_history),
+            "preloaded_facts": preloaded_facts,
         },
     )
     if case.validator is None:

@@ -93,6 +93,8 @@ def run(
     episodic_facts_per_turn: int = 3,
     temporal_dim: int = 2048,
     temporal_seeds: tuple[int, ...] = (42, 123),
+    preload_jsonl: Path | None = None,
+    preload_limit: int = 0,
 ) -> list[MetricRow]:
     selected_case_ids = _selected_case_ids(preset, case_ids)
     config = BenchmarkConfig(
@@ -105,6 +107,8 @@ def run(
         episodic_facts_per_turn=episodic_facts_per_turn,
         temporal_dim=temporal_dim,
         temporal_seeds=temporal_seeds,
+        preload_jsonl=preload_jsonl,
+        preload_limit=preload_limit,
     )
     rows: list[MetricRow] = []
     for case_id in selected_case_ids:
@@ -232,6 +236,8 @@ def render_markdown_report(
         f"- `episodic_seeds={{{','.join(str(seed) for seed in config['episodic_seeds'])}}}`",
         f"- `temporal_dim={config['temporal_dim']}`",
         f"- `temporal_seeds={{{','.join(str(seed) for seed in config['temporal_seeds'])}}}`",
+        f"- `preload_jsonl={config.get('preload_jsonl') or 'none'}`",
+        f"- `preload_limit={config.get('preload_limit', 0)}`",
         "",
         "## Overall Score",
         "",
@@ -343,6 +349,8 @@ def main() -> None:
     parser.add_argument("--episodic-facts-per-turn", type=int, default=3)
     parser.add_argument("--temporal-dim", type=int, default=2048)
     parser.add_argument("--temporal-seeds", type=int, nargs="+", default=[42, 123])
+    parser.add_argument("--preload-jsonl", type=Path)
+    parser.add_argument("--preload-limit", type=int, default=0)
     parser.add_argument("--output", choices=["raw", "summary", "both"], default="summary")
     parser.add_argument("--results-file", type=Path)
     parser.add_argument("--report-file", type=Path)
@@ -361,6 +369,8 @@ def main() -> None:
         episodic_facts_per_turn=args.episodic_facts_per_turn,
         temporal_dim=args.temporal_dim,
         temporal_seeds=tuple(args.temporal_seeds),
+        preload_jsonl=args.preload_jsonl,
+        preload_limit=args.preload_limit,
     )
     summary_rows = summarize(rows)
 
@@ -389,6 +399,8 @@ def main() -> None:
         "episodic_facts_per_turn": args.episodic_facts_per_turn,
         "temporal_dim": args.temporal_dim,
         "temporal_seeds": tuple(args.temporal_seeds),
+        "preload_jsonl": str(args.preload_jsonl) if args.preload_jsonl is not None else None,
+        "preload_limit": args.preload_limit,
         "case_ids": _selected_case_ids(args.preset, tuple(args.case_ids) if args.case_ids else None),
     }
     payload = build_results_payload(rows=rows, summary_rows=summary_rows, config=config)

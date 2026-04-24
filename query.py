@@ -30,12 +30,14 @@ class QueryEngine:
     hop_decay: float = 0.9
 
     def _dimension_hop_base(self) -> float:
-        """D-2873: D>=2048 is exact for 2-hop, D>=1024 is near-exact, D<1024 is unreliable."""
+        """Data-fitted per-hop base from the sequential-unbinding frontier sweep."""
         if self.encoder.dim >= 2048:
             return 1.0
         if self.encoder.dim >= 1024:
-            return 0.983  # sqrt(0.967)
-        return 0.577  # sqrt(0.333)
+            return 0.90
+        if self.encoder.dim >= 256:
+            return 0.45
+        return 0.25
 
     def _dimension_hop_budget(self, hops: int) -> float:
         return self._dimension_hop_base() ** max(hops, 1)
@@ -195,6 +197,74 @@ class QueryEngine:
             "dimension_budget": self._dimension_hop_budget(len(canonical_relations)),
         }
 
+    def ask_branching_chain(
+        self,
+        subject: str,
+        relations: list[str],
+        *,
+        branch_limit: int = 6,
+    ) -> dict[str, object]:
+        if self.graph is None:
+            raise ValueError("graph is required for chain queries")
+        canonical_relations = [self._canonical_relation(relation) for relation in relations]
+        branches: list[dict[str, object]] = [
+            {
+                "path": [subject],
+                "steps": [],
+                "confidence": 1.0,
+            }
+        ]
+        for hop, relation in enumerate(canonical_relations, start=1):
+            next_branches: list[dict[str, object]] = []
+            for branch in branches:
+                current = str(branch["path"][-1])
+                candidates = self._branch_candidates(current, relation)
+                for event in candidates:
+                    fact = SVOFact(current, relation, event.target)
+                    vector = self.encoder.encode_fact(fact)
+                    evidence = self._step_evidence(fact, vector)
+                    step_confidence = float(evidence["confidence"])
+                    status_penalty = 1.0 if event.status == "current" else 0.8
+                    next_branches.append(
+                        {
+                            "path": [*branch["path"], event.target],
+                            "steps": [
+                                *branch["steps"],
+                                {
+                                    "hop": hop,
+                                    "subject": current,
+                                    "relation": relation,
+                                    "target": event.target,
+                                    "status": event.status,
+                                    "revision": event.revision,
+                                    "provenance": event.provenance,
+                                    **evidence,
+                                },
+                            ],
+                            "confidence": float(branch["confidence"]) * max(step_confidence * status_penalty, 1e-6),
+                        }
+                    )
+            if not next_branches:
+                return {
+                    "found": False,
+                    "subject": subject,
+                    "relations": canonical_relations,
+                    "branches": [],
+                    "failed_hop": hop,
+                    "source": "factgraph+chunk",
+                    "dimension_budget": self._dimension_hop_budget(len(canonical_relations)),
+                }
+            next_branches.sort(key=lambda row: float(row["confidence"]), reverse=True)
+            branches = next_branches[:branch_limit]
+        return {
+            "found": True,
+            "subject": subject,
+            "relations": canonical_relations,
+            "branches": branches,
+            "source": "factgraph+chunk",
+            "dimension_budget": self._dimension_hop_budget(len(canonical_relations)),
+        }
+
     def ask_relational(
         self,
         subject: str,
@@ -208,6 +278,20 @@ class QueryEngine:
             response["constraint_mismatch"] = True
         response["constraints"] = constraints
         return response
+
+    def _branch_candidates(self, subject: str, relation: str) -> list[object]:
+        assert self.graph is not None
+        candidates: list[object] = []
+        current = self.graph.current_claim(subject, relation)
+        if current is not None:
+            candidates.append(current)
+        seen_targets = {current.target} if current is not None else set()
+        for event in self.graph.history(subject, relation):
+            if event.status == "current" or event.target in seen_targets:
+                continue
+            seen_targets.add(event.target)
+            candidates.append(event)
+        return candidates
 
     def _step_evidence(self, fact: SVOFact, vector) -> dict[str, object]:
         if self.chunk_memory is None:

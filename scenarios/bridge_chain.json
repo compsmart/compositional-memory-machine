@@ -1,0 +1,34 @@
+{
+  "reset": true,
+  "facts": [
+    {
+      "subject": "Alice",
+      "relation": "knows",
+      "object": "Bob",
+      "domain": "scenario",
+      "source": "fixture",
+      "source_id": "bridge-1"
+    },
+    {
+      "subject": "Bob",
+      "relation": "works_with",
+      "object": "Carol",
+      "domain": "scenario",
+      "source": "fixture",
+      "source_id": "bridge-2"
+    },
+    {
+      "subject": "Carol",
+      "relation": "guides",
+      "object": "Delta",
+      "domain": "scenario",
+      "source": "fixture",
+      "source_id": "bridge-3"
+    }
+  ],
+  "messages": [
+    {
+      "message": "Who does Alice know who works with Carol?"
+    }
+  ]
+}
