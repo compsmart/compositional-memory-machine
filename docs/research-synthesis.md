@@ -65,6 +65,50 @@ Why the projected-address caveat still matters:
 
 ## Iteration Log
 
+### 2026-04-24 - Reverse structured-attribute lookup
+
+Scope:
+
+- Added a deterministic reverse lookup path for structured `infobox_has` facts
+  in the web controller so questions like `Which chemical compound has ATC code
+  J01EE03?` can return the owning subject instead of falling through generic
+  graph-path routing.
+- Added a shared helper module `reverse_lookup.py` that:
+  - parses structured `infobox_has` objects into field/value components,
+  - extracts identifier-like tokens such as `J01EE03` and `39831-55-5`,
+  - supports both a baseline controller scan and an indexed reverse lookup.
+- Chose the indexed approach for the controller path after running a focused
+  comparison harness in `experiments/exp_reverse_attribute_lookup.py`.
+- Added regression coverage for:
+  - exact reverse identifier lookup,
+  - ambiguous reverse attribute matches,
+  - clean reverse-attribute abstention,
+  - existing fact/multihop chat routes so the new detector does not steal
+    ordinary `works with` or chain queries.
+
+Verification:
+
+- `python -m pytest`
+- `python experiments/exp_reverse_attribute_lookup.py --noise-facts 50000`
+- `python experiments/exp_conversation_benchmark.py --preset roadmap_serious --output summary --results-file reports/conversation_benchmark_latest.json --report-file reports/conversation_benchmark_latest.md`
+
+Observed repo-local behavior:
+
+- The repo test suite now passes at `87 passed`.
+- On the focused reverse-attribute fixture set, both the baseline controller
+  scan and the reverse index reached `accuracy=1.0`, but the indexed approach
+  was dramatically faster at scale:
+  `controller_scan mean_latency_ms=754.28` vs
+  `reverse_index mean_latency_ms=0.59` on a `50k`-noise-fact run.
+- The chosen controller route is therefore the reverse index, not the
+  controller-only scan and not a schema migration.
+- A schema-aware infobox ingest redesign still looks attractive for longer-term
+  structured search, but it remains a larger migration surface than needed for
+  this immediate product bug.
+- The serious conversation benchmark stayed flat at
+  `mean_score=0.9855` / `pass_rate=0.9565`, so the reverse lookup fix did not
+  regress the current benchmark surface.
+
 ### 2026-04-24 - Scaled structured-wikipedia medical bank
 
 Scope:

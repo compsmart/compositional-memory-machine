@@ -23,6 +23,8 @@ GRACEFUL_FAILURE_ROUTES = {
     "multi_hop_miss",
     "no_reliable_match",
     "pattern_miss",
+    "reverse_attribute_ambiguous",
+    "reverse_attribute_miss",
     "word_learning_prompt",
     "word_recall_miss",
 }

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24 06:49 UTC",
+  "generated_at": "2026-04-24 08:14 UTC",
   "config": {
     "preset": "roadmap_serious",
     "chat_dim": 2048,
@@ -18,8 +18,8 @@
       42,
       123
     ],
-    "preload_jsonl": "C:\\projects\\agents\\hhr\\reports\\hf_ingest_runs\\structured_wikipedia_medical_250k\\facts.jsonl",
-    "preload_limit": 5000,
+    "preload_jsonl": null,
+    "preload_limit": 0,
     "case_ids": [
       "memory_fact_recall",
       "context_pronoun_carryover",
@@ -75,7 +75,7 @@
           "confidence": 0.37036201268878133
         },
         "history_length": 5,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -184,7 +184,7 @@
           "route": "builtin_coding"
         },
         "history_length": 3,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -231,7 +231,7 @@
           }
         },
         "history_length": 5,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -307,7 +307,7 @@
               "relation": "described",
               "object": "an algorithm for Bernoulli numbers",
               "confidence": 0.8,
-              "score": 0.3246905418677331,
+              "score": 0.3382483641123726,
               "source": "chat",
               "domain": "chat",
               "chunk_id": "chat:chunk0",
@@ -323,78 +323,75 @@
               }
             },
             {
-              "key": "medical.specialty:Alec Coles:infobox_has:Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
-              "subject": "Alec Coles",
-              "relation": "infobox_has",
-              "object": "Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
-              "confidence": 0.85,
-              "score": 0.06400661187756686,
-              "source": "hf:wikimedia/structured-wikipedia",
-              "domain": "medical.specialty",
-              "chunk_id": "medical.specialty:chunk6",
+              "key": "medical:surgeon:repairs:injury",
+              "subject": "surgeon",
+              "relation": "repairs",
+              "object": "injury",
+              "confidence": 1.0,
+              "score": 0.04962820783996069,
+              "source": "seed",
+              "domain": "medical",
+              "chunk_id": "medical:chunk0",
               "provenance": {
-                "source": "hf:wikimedia/structured-wikipedia",
+                "source": "seed",
                 "kind": "explicit",
-                "confidence": 0.85,
-                "raw_relation": "infobox_has",
-                "normalized_relation": "infobox_has",
+                "confidence": 1.0,
+                "raw_relation": "repairs",
+                "normalized_relation": "repairs",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "42468846:infobox:infobox_person_alec_coles_obe_frsa_employer",
-                "excerpt": "Western Australian Museum"
+                "source_id": "seed:medical"
               }
             },
             {
-              "key": "medical.drug:Antrafenine:infobox_has:Drugbox > Pharmacokinetic data > Excretion: Renal",
-              "subject": "Antrafenine",
-              "relation": "infobox_has",
-              "object": "Drugbox > Pharmacokinetic data > Excretion: Renal",
-              "confidence": 0.85,
-              "score": 0.057584526320586464,
-              "source": "hf:wikimedia/structured-wikipedia",
-              "domain": "medical.drug",
-              "chunk_id": "medical.drug:chunk11",
+              "key": "aviation:pilot:flies:plane",
+              "subject": "pilot",
+              "relation": "flies",
+              "object": "plane",
+              "confidence": 1.0,
+              "score": 0.04036931631824339,
+              "source": "seed",
+              "domain": "aviation",
+              "chunk_id": "aviation:chunk0",
               "provenance": {
-                "source": "hf:wikimedia/structured-wikipedia",
+                "source": "seed",
                 "kind": "explicit",
-                "confidence": 0.85,
-                "raw_relation": "infobox_has",
-                "normalized_relation": "infobox_has",
+                "confidence": 1.0,
+                "raw_relation": "flies",
+                "normalized_relation": "flies",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "9124255:infobox:drugbox_pharmacokinetic_data_excretion",
-                "excerpt": "Renal"
+                "source_id": "seed:aviation"
               }
             },
             {
-              "key": "medical.specialty:B. J. C. Perera:infobox_has:Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
-              "subject": "B. J. C. Perera",
-              "relation": "infobox_has",
-              "object": "Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
-              "confidence": 0.85,
-              "score": 0.04822623587107108,
-              "source": "hf:wikimedia/structured-wikipedia",
-              "domain": "medical.specialty",
-              "chunk_id": "medical.specialty:chunk5",
+              "key": "education:student:reads:book",
+              "subject": "student",
+              "relation": "reads",
+              "object": "book",
+              "confidence": 1.0,
+              "score": 0.029183333060580123,
+              "source": "seed",
+              "domain": "education",
+              "chunk_id": "education:chunk0",
               "provenance": {
-                "source": "hf:wikimedia/structured-wikipedia",
+                "source": "seed",
                 "kind": "explicit",
-                "confidence": 0.85,
-                "raw_relation": "infobox_has",
-                "normalized_relation": "infobox_has",
+                "confidence": 1.0,
+                "raw_relation": "reads",
+                "normalized_relation": "reads",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "46534688:infobox:infobox_person_b_j_c_perera_nationality",
-                "excerpt": "Sri Lankan"
+                "source_id": "seed:education"
               }
             }
           ]
         },
         "history_length": 7,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -430,7 +427,7 @@
             "relation": "described",
             "object": "an algorithm for Bernoulli numbers",
             "confidence": 0.8,
-            "score": 0.3246905418677331,
+            "score": 0.3382483641123726,
             "source": "chat",
             "domain": "chat",
             "chunk_id": "chat:chunk0",
@@ -446,72 +443,69 @@
             }
           },
           {
-            "key": "medical.specialty:Alec Coles:infobox_has:Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
-            "subject": "Alec Coles",
-            "relation": "infobox_has",
-            "object": "Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
-            "confidence": 0.85,
-            "score": 0.06400661187756686,
-            "source": "hf:wikimedia/structured-wikipedia",
-            "domain": "medical.specialty",
-            "chunk_id": "medical.specialty:chunk6",
+            "key": "medical:surgeon:repairs:injury",
+            "subject": "surgeon",
+            "relation": "repairs",
+            "object": "injury",
+            "confidence": 1.0,
+            "score": 0.04962820783996069,
+            "source": "seed",
+            "domain": "medical",
+            "chunk_id": "medical:chunk0",
             "provenance": {
-              "source": "hf:wikimedia/structured-wikipedia",
+              "source": "seed",
               "kind": "explicit",
-              "confidence": 0.85,
-              "raw_relation": "infobox_has",
-              "normalized_relation": "infobox_has",
+              "confidence": 1.0,
+              "raw_relation": "repairs",
+              "normalized_relation": "repairs",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "42468846:infobox:infobox_person_alec_coles_obe_frsa_employer",
-              "excerpt": "Western Australian Museum"
+              "source_id": "seed:medical"
             }
           },
           {
-            "key": "medical.drug:Antrafenine:infobox_has:Drugbox > Pharmacokinetic data > Excretion: Renal",
-            "subject": "Antrafenine",
-            "relation": "infobox_has",
-            "object": "Drugbox > Pharmacokinetic data > Excretion: Renal",
-            "confidence": 0.85,
-            "score": 0.057584526320586464,
-            "source": "hf:wikimedia/structured-wikipedia",
-            "domain": "medical.drug",
-            "chunk_id": "medical.drug:chunk11",
+            "key": "aviation:pilot:flies:plane",
+            "subject": "pilot",
+            "relation": "flies",
+            "object": "plane",
+            "confidence": 1.0,
+            "score": 0.04036931631824339,
+            "source": "seed",
+            "domain": "aviation",
+            "chunk_id": "aviation:chunk0",
             "provenance": {
-              "source": "hf:wikimedia/structured-wikipedia",
+              "source": "seed",
               "kind": "explicit",
-              "confidence": 0.85,
-              "raw_relation": "infobox_has",
-              "normalized_relation": "infobox_has",
+              "confidence": 1.0,
+              "raw_relation": "flies",
+              "normalized_relation": "flies",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "9124255:infobox:drugbox_pharmacokinetic_data_excretion",
-              "excerpt": "Renal"
+              "source_id": "seed:aviation"
             }
           },
           {
-            "key": "medical.specialty:B. J. C. Perera:infobox_has:Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
-            "subject": "B. J. C. Perera",
-            "relation": "infobox_has",
-            "object": "Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
-            "confidence": 0.85,
-            "score": 0.04822623587107108,
-            "source": "hf:wikimedia/structured-wikipedia",
-            "domain": "medical.specialty",
-            "chunk_id": "medical.specialty:chunk5",
+            "key": "education:student:reads:book",
+            "subject": "student",
+            "relation": "reads",
+            "object": "book",
+            "confidence": 1.0,
+            "score": 0.029183333060580123,
+            "source": "seed",
+            "domain": "education",
+            "chunk_id": "education:chunk0",
             "provenance": {
-              "source": "hf:wikimedia/structured-wikipedia",
+              "source": "seed",
               "kind": "explicit",
-              "confidence": 0.85,
-              "raw_relation": "infobox_has",
-              "normalized_relation": "infobox_has",
+              "confidence": 1.0,
+              "raw_relation": "reads",
+              "normalized_relation": "reads",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "46534688:infobox:infobox_person_b_j_c_perera_nationality",
-              "excerpt": "Sri Lankan"
+              "source_id": "seed:education"
             }
           }
         ]
@@ -569,7 +563,7 @@
           "alternatives": []
         },
         "history_length": 3,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -618,7 +612,7 @@
           ]
         },
         "history_length": 3,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -690,7 +684,7 @@
           "route": "builtin_logic"
         },
         "history_length": 3,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -753,7 +747,7 @@
               "relation": "described",
               "object": "an algorithm for Bernoulli numbers",
               "confidence": 0.8,
-              "score": 0.3246905418677331,
+              "score": 0.3382483641123726,
               "source": "chat",
               "domain": "chat",
               "chunk_id": "chat:chunk0",
@@ -769,78 +763,75 @@
               }
             },
             {
-              "key": "medical.specialty:Alec Coles:infobox_has:Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
-              "subject": "Alec Coles",
-              "relation": "infobox_has",
-              "object": "Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
-              "confidence": 0.85,
-              "score": 0.06400661187756686,
-              "source": "hf:wikimedia/structured-wikipedia",
-              "domain": "medical.specialty",
-              "chunk_id": "medical.specialty:chunk6",
+              "key": "medical:surgeon:repairs:injury",
+              "subject": "surgeon",
+              "relation": "repairs",
+              "object": "injury",
+              "confidence": 1.0,
+              "score": 0.04962820783996069,
+              "source": "seed",
+              "domain": "medical",
+              "chunk_id": "medical:chunk0",
               "provenance": {
-                "source": "hf:wikimedia/structured-wikipedia",
+                "source": "seed",
                 "kind": "explicit",
-                "confidence": 0.85,
-                "raw_relation": "infobox_has",
-                "normalized_relation": "infobox_has",
+                "confidence": 1.0,
+                "raw_relation": "repairs",
+                "normalized_relation": "repairs",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "42468846:infobox:infobox_person_alec_coles_obe_frsa_employer",
-                "excerpt": "Western Australian Museum"
+                "source_id": "seed:medical"
               }
             },
             {
-              "key": "medical.drug:Antrafenine:infobox_has:Drugbox > Pharmacokinetic data > Excretion: Renal",
-              "subject": "Antrafenine",
-              "relation": "infobox_has",
-              "object": "Drugbox > Pharmacokinetic data > Excretion: Renal",
-              "confidence": 0.85,
-              "score": 0.057584526320586464,
-              "source": "hf:wikimedia/structured-wikipedia",
-              "domain": "medical.drug",
-              "chunk_id": "medical.drug:chunk11",
+              "key": "aviation:pilot:flies:plane",
+              "subject": "pilot",
+              "relation": "flies",
+              "object": "plane",
+              "confidence": 1.0,
+              "score": 0.04036931631824339,
+              "source": "seed",
+              "domain": "aviation",
+              "chunk_id": "aviation:chunk0",
               "provenance": {
-                "source": "hf:wikimedia/structured-wikipedia",
+                "source": "seed",
                 "kind": "explicit",
-                "confidence": 0.85,
-                "raw_relation": "infobox_has",
-                "normalized_relation": "infobox_has",
+                "confidence": 1.0,
+                "raw_relation": "flies",
+                "normalized_relation": "flies",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "9124255:infobox:drugbox_pharmacokinetic_data_excretion",
-                "excerpt": "Renal"
+                "source_id": "seed:aviation"
               }
             },
             {
-              "key": "medical.specialty:B. J. C. Perera:infobox_has:Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
-              "subject": "B. J. C. Perera",
-              "relation": "infobox_has",
-              "object": "Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
-              "confidence": 0.85,
-              "score": 0.04822623587107108,
-              "source": "hf:wikimedia/structured-wikipedia",
-              "domain": "medical.specialty",
-              "chunk_id": "medical.specialty:chunk5",
+              "key": "education:student:reads:book",
+              "subject": "student",
+              "relation": "reads",
+              "object": "book",
+              "confidence": 1.0,
+              "score": 0.029183333060580123,
+              "source": "seed",
+              "domain": "education",
+              "chunk_id": "education:chunk0",
               "provenance": {
-                "source": "hf:wikimedia/structured-wikipedia",
+                "source": "seed",
                 "kind": "explicit",
-                "confidence": 0.85,
-                "raw_relation": "infobox_has",
-                "normalized_relation": "infobox_has",
+                "confidence": 1.0,
+                "raw_relation": "reads",
+                "normalized_relation": "reads",
                 "matched_alias": false,
                 "resolution_source": "self",
                 "relation_evidence_count": 0,
-                "source_id": "46534688:infobox:infobox_person_b_j_c_perera_nationality",
-                "excerpt": "Sri Lankan"
+                "source_id": "seed:education"
               }
             }
           ]
         },
         "history_length": 5,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -876,7 +867,7 @@
             "relation": "described",
             "object": "an algorithm for Bernoulli numbers",
             "confidence": 0.8,
-            "score": 0.3246905418677331,
+            "score": 0.3382483641123726,
             "source": "chat",
             "domain": "chat",
             "chunk_id": "chat:chunk0",
@@ -892,72 +883,69 @@
             }
           },
           {
-            "key": "medical.specialty:Alec Coles:infobox_has:Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
-            "subject": "Alec Coles",
-            "relation": "infobox_has",
-            "object": "Infobox person > Alec Coles OBE FRSA > Employer: Western Australian Museum",
-            "confidence": 0.85,
-            "score": 0.06400661187756686,
-            "source": "hf:wikimedia/structured-wikipedia",
-            "domain": "medical.specialty",
-            "chunk_id": "medical.specialty:chunk6",
+            "key": "medical:surgeon:repairs:injury",
+            "subject": "surgeon",
+            "relation": "repairs",
+            "object": "injury",
+            "confidence": 1.0,
+            "score": 0.04962820783996069,
+            "source": "seed",
+            "domain": "medical",
+            "chunk_id": "medical:chunk0",
             "provenance": {
-              "source": "hf:wikimedia/structured-wikipedia",
+              "source": "seed",
               "kind": "explicit",
-              "confidence": 0.85,
-              "raw_relation": "infobox_has",
-              "normalized_relation": "infobox_has",
+              "confidence": 1.0,
+              "raw_relation": "repairs",
+              "normalized_relation": "repairs",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "42468846:infobox:infobox_person_alec_coles_obe_frsa_employer",
-              "excerpt": "Western Australian Museum"
+              "source_id": "seed:medical"
             }
           },
           {
-            "key": "medical.drug:Antrafenine:infobox_has:Drugbox > Pharmacokinetic data > Excretion: Renal",
-            "subject": "Antrafenine",
-            "relation": "infobox_has",
-            "object": "Drugbox > Pharmacokinetic data > Excretion: Renal",
-            "confidence": 0.85,
-            "score": 0.057584526320586464,
-            "source": "hf:wikimedia/structured-wikipedia",
-            "domain": "medical.drug",
-            "chunk_id": "medical.drug:chunk11",
+            "key": "aviation:pilot:flies:plane",
+            "subject": "pilot",
+            "relation": "flies",
+            "object": "plane",
+            "confidence": 1.0,
+            "score": 0.04036931631824339,
+            "source": "seed",
+            "domain": "aviation",
+            "chunk_id": "aviation:chunk0",
             "provenance": {
-              "source": "hf:wikimedia/structured-wikipedia",
+              "source": "seed",
               "kind": "explicit",
-              "confidence": 0.85,
-              "raw_relation": "infobox_has",
-              "normalized_relation": "infobox_has",
+              "confidence": 1.0,
+              "raw_relation": "flies",
+              "normalized_relation": "flies",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "9124255:infobox:drugbox_pharmacokinetic_data_excretion",
-              "excerpt": "Renal"
+              "source_id": "seed:aviation"
             }
           },
           {
-            "key": "medical.specialty:B. J. C. Perera:infobox_has:Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
-            "subject": "B. J. C. Perera",
-            "relation": "infobox_has",
-            "object": "Infobox person > B. J. C. Perera > Nationality: Sri Lankan",
-            "confidence": 0.85,
-            "score": 0.04822623587107108,
-            "source": "hf:wikimedia/structured-wikipedia",
-            "domain": "medical.specialty",
-            "chunk_id": "medical.specialty:chunk5",
+            "key": "education:student:reads:book",
+            "subject": "student",
+            "relation": "reads",
+            "object": "book",
+            "confidence": 1.0,
+            "score": 0.029183333060580123,
+            "source": "seed",
+            "domain": "education",
+            "chunk_id": "education:chunk0",
             "provenance": {
-              "source": "hf:wikimedia/structured-wikipedia",
+              "source": "seed",
               "kind": "explicit",
-              "confidence": 0.85,
-              "raw_relation": "infobox_has",
-              "normalized_relation": "infobox_has",
+              "confidence": 1.0,
+              "raw_relation": "reads",
+              "normalized_relation": "reads",
               "matched_alias": false,
               "resolution_source": "self",
               "relation_evidence_count": 0,
-              "source_id": "46534688:infobox:infobox_person_b_j_c_perera_nationality",
-              "excerpt": "Sri Lankan"
+              "source_id": "seed:education"
             }
           }
         ]
@@ -992,7 +980,7 @@
           "confidence": 0.37036201268878133
         },
         "history_length": 7,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -1097,7 +1085,7 @@
           ]
         },
         "history_length": 5,
-        "preloaded_facts": 5000,
+        "preloaded_facts": 0,
         "chain_path": [
           "Charles Babbage",
           "Ada Lovelace"
@@ -1149,7 +1137,7 @@
           "role": "assistant",
           "text": "Alice knows Bob, and Bob works with Carol. So the answer is Bob. Confidence: 0.810.",
           "route": "multi_hop_query",
-          "confidence": 0.8100000000000003,
+          "confidence": 0.81,
           "graph_target": "Bob",
           "evidence": [
             {
@@ -1163,7 +1151,7 @@
               "subject": "Bob",
               "relation": "works_with",
               "object": "Carol",
-              "score": 1.0000000000000002,
+              "score": 1.0,
               "chunk_id": "chat:chunk0"
             }
           ],
@@ -1174,7 +1162,7 @@
           ]
         },
         "history_length": 5,
-        "preloaded_facts": 5000,
+        "preloaded_facts": 0,
         "chain_path": [
           "Alice",
           "Bob",
@@ -1185,7 +1173,7 @@
         "role": "assistant",
         "text": "Alice knows Bob, and Bob works with Carol. So the answer is Bob. Confidence: 0.810.",
         "route": "multi_hop_query",
-        "confidence": 0.8100000000000003,
+        "confidence": 0.81,
         "graph_target": "Bob",
         "evidence": [
           {
@@ -1199,7 +1187,7 @@
             "subject": "Bob",
             "relation": "works_with",
             "object": "Carol",
-            "score": 1.0000000000000002,
+            "score": 1.0,
             "chunk_id": "chat:chunk0"
           }
         ],
@@ -1239,7 +1227,7 @@
           "graph_target": "Charles Babbage"
         },
         "history_length": 5,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -1275,7 +1263,7 @@
           "route": "builtin_sequence"
         },
         "history_length": 3,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -1309,7 +1297,7 @@
           "route": "builtin_sentiment"
         },
         "history_length": 3,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",
@@ -1395,7 +1383,7 @@
           "route": "fact_prompt_miss"
         },
         "history_length": 5,
-        "preloaded_facts": 5000
+        "preloaded_facts": 0
       },
       "final_reply": {
         "role": "assistant",

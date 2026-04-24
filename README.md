@@ -435,6 +435,18 @@ python web.py `
   --preload-limit 5000
 ```
 
+The web controller now supports reverse structured-attribute lookups over
+`infobox_has` facts for loaded banks. Examples:
+
+- `What is Sulfametrole?`
+- `Which chemical compound has ATC code J01EE03?`
+- `Which drug has CAS Number 39831-55-5?`
+
+The current implementation uses an in-memory reverse index over loaded
+structured facts, so exact identifier lookups and field/value lookups can
+return a subject deterministically and abstain cleanly on misses or ambiguous
+matches.
+
 Or run the conversation benchmark against the same fact archive:
 
 ```powershell

@@ -24,6 +24,11 @@ from ingestion import ExtractedFact, GeminiExtractor, TextIngestionPipeline, pre
 from language import ContextExample, NGramLanguageMemory, WordLearningMemory
 from memory import AMM, ChunkedKGMemory
 from query import QueryEngine
+from reverse_lookup import (
+    ReverseAttributeIndex,
+    ReverseLookupHit,
+    parse_reverse_attribute_query,
+)
 
 
 STATIC_DIR = Path(__file__).with_name("web_static")
@@ -76,6 +81,8 @@ class HHRWebState:
         self.bank_root = (bank_root or WORKSPACE_ROOT).resolve()
         self._bank_runtime_cache: OrderedDict[str, BankRuntimeCacheEntry] = OrderedDict()
         self._bank_fact_count_cache: dict[str, tuple[tuple[int, int], int]] = {}
+        self._reverse_attribute_index: ReverseAttributeIndex | None = None
+        self._reverse_attribute_index_size = -1
         self.current_memory_bank_id = "seed"
         self.reset_demo()
 
@@ -103,6 +110,7 @@ class HHRWebState:
         self._build_compositional_demo()
         self._build_language_demo()
         self._reset_chat_state()
+        self._invalidate_reverse_attribute_index()
         self.current_memory_bank_id = "seed"
         self._store_bank_runtime_cache(bank_id="seed", path=None, loaded_archive_facts=0)
 
@@ -256,6 +264,7 @@ class HHRWebState:
         domain = str(payload.get("domain") or "web").strip() or "web"
         source = str(payload.get("source") or "web-ui").strip() or "web-ui"
         result = self.pipeline.ingest_text(text, source=source, domain=domain)
+        self._invalidate_reverse_attribute_index()
         return {
             "ingestion": {
                 "written_facts": result.written_facts,
@@ -295,6 +304,7 @@ class HHRWebState:
             )
             domain = str(item.get("domain", "scenario")).strip() or "scenario"
             self.pipeline.write_structured_fact(fact, source=fact.source or "scenario", domain=domain)
+        self._invalidate_reverse_attribute_index()
 
         for item in payload.get("messages", []):
             if not isinstance(item, dict):
@@ -329,6 +339,7 @@ class HHRWebState:
 
     def preload_jsonl(self, path: str | Path, *, limit: int = 0) -> int:
         loaded = preload_writer_from_jsonl(self.pipeline, path, limit=limit)
+        self._invalidate_reverse_attribute_index()
         resolved = Path(path).resolve()
         for bank in self._memory_banks():
             if bank.get("path") == resolved:
@@ -520,6 +531,7 @@ class HHRWebState:
             chunk_memory=self.chunk_memory,
             relation_registry=self.pipeline.relation_registry,
         )
+        self._invalidate_reverse_attribute_index()
         return True
 
     def _build_compositional_demo(self) -> None:
@@ -593,6 +605,7 @@ class HHRWebState:
             self._reply_to_ingest_prompt,
             self._reply_to_explanation_prompt,
             self._reply_to_word_learning,
+            self._reply_to_reverse_attribute_prompt,
             self._reply_to_multihop_prompt,
             self._reply_to_word_recall,
             self._reply_to_pattern_prompt,
@@ -648,6 +661,7 @@ class HHRWebState:
                 "route": "ingest_unavailable",
             }
         result = self.pipeline.ingest_text(text, source="chat", domain="chat")
+        self._invalidate_reverse_attribute_index()
         if result.facts:
             self.chat_subject = result.facts[0].subject
         return {
@@ -863,6 +877,38 @@ class HHRWebState:
                 }
         return None
 
+    def _reply_to_reverse_attribute_prompt(self, message: str) -> dict[str, Any] | None:
+        query = parse_reverse_attribute_query(message)
+        if query is None:
+            return None
+        hits = self._reverse_attribute_hits(message)
+        if not hits:
+            return {
+                "text": "I could not find a stored structured attribute match for that question.",
+                "route": "reverse_attribute_miss",
+            }
+        if len(hits) > 1 and hits[0].score == hits[1].score:
+            subjects = ", ".join(hit.subject for hit in hits[:4])
+            return {
+                "text": f"I found multiple structured matches for that attribute: {subjects}. Please be more specific.",
+                "route": "reverse_attribute_ambiguous",
+                "evidence": [self._reverse_hit_evidence(hit) for hit in hits[:4]],
+            }
+        best_hit = hits[0]
+        probe = self.query.ask_svo(best_hit.subject, best_hit.relation, best_hit.object_text)
+        self.chat_subject = best_hit.subject
+        evidence = self._candidate_facts(self.encoder.encode(best_hit.subject, best_hit.relation, best_hit.object_text), top_k=5)
+        return {
+            "text": (
+                f"{best_hit.subject} {best_hit.relation.replace('_', ' ')} {best_hit.object_text}. "
+                f"Confidence: {float(probe.get('confidence') or 0.0):.3f}."
+            ),
+            "route": "reverse_attribute_query",
+            "confidence": float(probe.get("confidence") or 0.0),
+            "graph_target": best_hit.subject,
+            "evidence": evidence or [self._reverse_hit_evidence(best_hit)],
+        }
+
     def _reply_to_fact_prompt(self, message: str) -> dict[str, Any] | None:
         subject = self._resolve_subject(message)
         if subject is None:
@@ -949,23 +995,33 @@ class HHRWebState:
         return None
 
     def _resolve_subject(self, message: str) -> str | None:
-        lowered = message.lower()
+        lowered = self._normalized_message_text(message)
         if re.search(r"\b(she|her|he|him|they|them)\b", lowered) and self.chat_subject:
             return self.chat_subject
         subjects = list({fact["subject"] for fact in self._list_facts()})
         exact_hits = []
         for subject in subjects:
-            position = lowered.find(subject.lower())
+            normalized_subject = self._normalized_message_text(subject)
+            position = lowered.find(normalized_subject)
             if position != -1:
                 exact_hits.append((position, -len(subject), subject))
         if exact_hits:
             exact_hits.sort()
             return exact_hits[0][2]
-        subjects = sorted(subjects, key=len, reverse=True)
-        for subject in subjects:
-            parts = subject.lower().split()
-            if len(parts) > 1 and lowered.find(parts[-1]) != -1:
-                return subject
+        message_tokens = set(self._question_tokens(lowered))
+        fallback_matches: list[str] = []
+        for subject in sorted(subjects, key=len, reverse=True):
+            parts = self._question_tokens(self._normalized_message_text(subject))
+            if len(parts) <= 1:
+                continue
+            last_token = parts[-1]
+            # Only allow surname/last-token fallback when it is distinctive enough
+            # to avoid matching arbitrary long titles on very common short words.
+            if len(last_token) < 4 or last_token not in message_tokens:
+                continue
+            fallback_matches.append(subject)
+        if len(fallback_matches) == 1:
+            return fallback_matches[0]
         return None
 
     def _match_relation(self, subject: str, message: str) -> Any | None:
@@ -983,6 +1039,10 @@ class HHRWebState:
                 best_score = overlap
         if best_edge is not None:
             return best_edge
+        if self._is_simple_definition_prompt(subject, message):
+            definition_edge = next((edge for edge in edges if edge.relation == "described_by"), None)
+            if definition_edge is not None:
+                return definition_edge
         for edge in edges:
             overlap = self._relation_overlap(edge.relation, message_tokens)
             if overlap > best_score:
@@ -1120,6 +1180,46 @@ class HHRWebState:
     @staticmethod
     def _question_tokens(value: str) -> list[str]:
         return re.findall(r"[a-z0-9]+", value.lower())
+
+    def _is_simple_definition_prompt(self, subject: str, message: str) -> bool:
+        normalized_message = self._normalized_message_text(message).strip()
+        normalized_subject = re.escape(self._normalized_message_text(subject).strip())
+        patterns = (
+            rf"(?:what|who)\s+(?:is|are|was|were)\s+{normalized_subject}\??",
+            rf"what'?s\s+{normalized_subject}\??",
+            rf"tell\s+me\s+about\s+{normalized_subject}\??",
+            rf"describe\s+{normalized_subject}\??",
+        )
+        return any(re.fullmatch(pattern, normalized_message) is not None for pattern in patterns)
+
+    def _reverse_attribute_hits(self, message: str) -> list[ReverseLookupHit]:
+        query = parse_reverse_attribute_query(message)
+        if query is None:
+            return []
+        self._ensure_reverse_attribute_index()
+        if self._reverse_attribute_index is None:
+            return []
+        return self._reverse_attribute_index.lookup(query)
+
+    def _invalidate_reverse_attribute_index(self) -> None:
+        self._reverse_attribute_index = None
+        self._reverse_attribute_index_size = -1
+
+    def _ensure_reverse_attribute_index(self) -> None:
+        current_size = len(self.memory.records)
+        if self._reverse_attribute_index is not None and self._reverse_attribute_index_size == current_size:
+            return
+        self._reverse_attribute_index = ReverseAttributeIndex.from_facts(self._list_facts())
+        self._reverse_attribute_index_size = current_size
+
+    @staticmethod
+    def _reverse_hit_evidence(hit: ReverseLookupHit) -> dict[str, Any]:
+        return {
+            "subject": hit.subject,
+            "relation": hit.relation,
+            "object": hit.object_text,
+            "score": float(hit.score),
+        }
 
     @staticmethod
     def _normalized_message_text(value: str) -> str:

@@ -1,6 +1,6 @@
 # Longitudinal Conversation Benchmark
 
-Generated on 2026-04-24 06:49 UTC.
+Generated on 2026-04-24 08:14 UTC.
 
 ## Configuration
 
@@ -11,8 +11,8 @@ Generated on 2026-04-24 06:49 UTC.
 - `episodic_seeds={42,123,7}`
 - `temporal_dim=2048`
 - `temporal_seeds={42,123}`
-- `preload_jsonl=C:\projects\agents\hhr\reports\hf_ingest_runs\structured_wikipedia_medical_250k\facts.jsonl`
-- `preload_limit=5000`
+- `preload_jsonl=none`
+- `preload_limit=0`
 
 ## Overall Score
 

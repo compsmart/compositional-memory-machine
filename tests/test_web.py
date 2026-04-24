@@ -561,6 +561,106 @@ def test_web_chat_route_handles_inverse_and_natural_relational_questions() -> No
     assert "So the answer is Iris" in reverse_chain_reply["reply"]["text"]
 
 
+def test_web_chat_route_answers_simple_definition_questions_from_described_by() -> None:
+    state = HHRWebState()
+    _write_fact(state, "medical.drug", SVOFact("Sulfametrole", "described_by", "Chemical compound"))
+    _write_fact(
+        state,
+        "medical.drug",
+        SVOFact("Sulfametrole", "infobox_has", "Drugbox > Clinical data > Routes of administration: Oral"),
+    )
+
+    with running_server(state) as base_url:
+        what_is_reply = _post(f"{base_url}/api/chat", {"message": "What is Sulfametrole?"})
+        tell_me_reply = _post(f"{base_url}/api/chat", {"message": "Tell me about Sulfametrole"})
+
+    assert what_is_reply["reply"]["route"] == "fact_query"
+    assert "Sulfametrole described by Chemical compound." in what_is_reply["reply"]["text"]
+    assert what_is_reply["reply"]["graph_target"] == "Chemical compound"
+
+    assert tell_me_reply["reply"]["route"] == "fact_query"
+    assert "Sulfametrole described by Chemical compound." in tell_me_reply["reply"]["text"]
+    assert tell_me_reply["reply"]["graph_target"] == "Chemical compound"
+
+
+def test_web_chat_route_abstains_instead_of_matching_unrelated_title_suffix() -> None:
+    state = HHRWebState()
+    _write_fact(
+        state,
+        "media",
+        SVOFact("List of accolades received by Kal Ho Naa Ho", "described_by", "Awards list article"),
+    )
+
+    with running_server(state) as base_url:
+        reply = _post(f"{base_url}/api/chat", {"message": "What is Sulfametrole?"})
+
+    assert reply["reply"]["route"] == "fallback"
+    assert "Kal Ho Naa Ho" not in reply["reply"]["text"]
+    assert "memory-backed fact questions" in reply["reply"]["text"]
+
+
+def test_web_chat_route_handles_reverse_attribute_lookup_with_exact_identifier() -> None:
+    state = HHRWebState()
+    _write_fact(state, "medical.drug", SVOFact("Sulfametrole", "described_by", "Chemical compound"))
+    _write_fact(
+        state,
+        "medical.drug",
+        SVOFact("Sulfametrole", "infobox_has", "Drugbox > Clinical data > ATC code: - J01EE03 (WHO) (with trimethoprim)"),
+    )
+
+    with running_server(state) as base_url:
+        reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Which chemical compound has HTC code of J01EE03?"},
+        )
+
+    assert reply["reply"]["route"] == "reverse_attribute_query"
+    assert "Sulfametrole infobox has Drugbox > Clinical data > ATC code" in reply["reply"]["text"]
+    assert reply["reply"]["graph_target"] == "Sulfametrole"
+
+
+def test_web_chat_route_handles_reverse_attribute_ambiguity() -> None:
+    state = HHRWebState()
+    _write_fact(
+        state,
+        "medical.drug",
+        SVOFact("Sulfametrole", "infobox_has", "Drugbox > Clinical data > Routes of administration: Oral"),
+    )
+    _write_fact(
+        state,
+        "medical.drug",
+        SVOFact("Sulfamethazine", "infobox_has", "Drugbox > Clinical data > Routes of administration: Oral"),
+    )
+
+    with running_server(state) as base_url:
+        reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Which drug has route of administration oral?"},
+        )
+
+    assert reply["reply"]["route"] == "reverse_attribute_ambiguous"
+    assert "Sulfametrole" in reply["reply"]["text"]
+    assert "Sulfamethazine" in reply["reply"]["text"]
+
+
+def test_web_chat_route_handles_reverse_attribute_miss() -> None:
+    state = HHRWebState()
+    _write_fact(
+        state,
+        "medical.drug",
+        SVOFact("Sulfametrole", "infobox_has", "Drugbox > Clinical data > ATC code: - J01EE03 (WHO) (with trimethoprim)"),
+    )
+
+    with running_server(state) as base_url:
+        reply = _post(
+            f"{base_url}/api/chat",
+            {"message": "Which chemical compound has ATC code J01EE30?"},
+        )
+
+    assert reply["reply"]["route"] == "reverse_attribute_miss"
+    assert "could not find" in reply["reply"]["text"].lower()
+
+
 def test_web_can_load_headless_scenario_and_export_snapshot() -> None:
     state = HHRWebState()
     with running_server(state) as base_url:
