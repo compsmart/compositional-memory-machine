@@ -22,6 +22,8 @@ const els = {
   domainFilter: $("#domainFilter"),
   sourceFilter: $("#sourceFilter"),
   memoryScene: $("#memoryScene"),
+  memorySceneLoading: $("#memorySceneLoading"),
+  memorySceneLoadingText: $("#memorySceneLoadingText"),
   memoryFallback: $("#memoryFallback"),
   nodeInspector: $("#nodeInspector"),
   compositionalCard: $("#compositionalCard"),
@@ -48,6 +50,14 @@ async function api(path, options = {}) {
 function setBusy(button, busy) {
   if (!button) return;
   button.disabled = busy;
+}
+
+function setMemorySceneLoading(active, message = "Loading memory") {
+  if (!els.memorySceneLoading) return;
+  els.memorySceneLoading.classList.toggle("active", Boolean(active));
+  if (els.memorySceneLoadingText) {
+    els.memorySceneLoadingText.textContent = message;
+  }
 }
 
 function renderStatus(status) {
@@ -722,7 +732,7 @@ async function initMemoryGraph() {
 async function refresh() {
   const [status, facts, compositional, chat, banks] = await Promise.all([
     api("/api/status"),
-    api("/api/facts"),
+    api("/api/facts?fast=1&include_graph=0&include_chunks=0"),
     api("/api/demo/compositional"),
     api("/api/chat/history"),
     api("/api/memory-banks"),
@@ -797,6 +807,7 @@ els.resetDemoButton.addEventListener("click", async () => {
 
 els.loadBankButton.addEventListener("click", async () => {
   setBusy(els.loadBankButton, true);
+  setMemorySceneLoading(true, "Switching memory bank");
   try {
     const payload = await api("/api/memory-bank/select", {
       method: "POST",
@@ -808,13 +819,19 @@ els.loadBankButton.addEventListener("click", async () => {
       status: payload.status,
     });
     renderStatus(payload.status);
-    renderFacts(payload.facts?.facts || []);
-    renderCompositional(payload.compositional);
-    renderChatHistory(payload.chat?.history || []);
     renderMemoryBanks(payload.memory_banks);
+    const [facts, compositional, chat] = await Promise.all([
+      api("/api/facts?fast=1&include_graph=0&include_chunks=0"),
+      api("/api/demo/compositional"),
+      api("/api/chat/history"),
+    ]);
+    renderFacts(facts.facts || []);
+    renderCompositional(compositional);
+    renderChatHistory(chat.history || []);
   } catch (error) {
     renderError(els.ingestResult, error);
   } finally {
+    setMemorySceneLoading(false);
     setBusy(els.loadBankButton, false);
   }
 });
@@ -844,4 +861,7 @@ els.ingestDomain.value = "history";
 els.ingestSource.value = "web-ui";
 
 initMemoryGraph();
-refresh().catch((error) => renderChatError(error));
+setMemorySceneLoading(true, "Loading memory");
+refresh()
+  .catch((error) => renderChatError(error))
+  .finally(() => setMemorySceneLoading(false));

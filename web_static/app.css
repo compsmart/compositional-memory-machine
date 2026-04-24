@@ -365,6 +365,49 @@ button:disabled {
   height: 100%;
 }
 
+.scene-loading {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(255, 253, 248, 0.76);
+  backdrop-filter: blur(2px);
+  z-index: 4;
+}
+
+.scene-loading.active {
+  display: flex;
+}
+
+.scene-loading-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+
+.scene-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(40, 95, 157, 0.22);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: scene-spin 0.8s linear infinite;
+}
+
+@keyframes scene-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .scene-fallback {
   display: grid;
   min-height: 100%;

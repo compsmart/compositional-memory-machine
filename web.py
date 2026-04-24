@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import mimetypes
 import re
 import unicodedata
-from collections import Counter
-from dataclasses import asdict, is_dataclass
+from collections import Counter, OrderedDict
+from dataclasses import asdict, dataclass, is_dataclass
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import numpy as np
 
@@ -29,6 +30,19 @@ STATIC_DIR = Path(__file__).with_name("web_static")
 WORKSPACE_ROOT = Path(__file__).resolve().parent
 CHAT_INGEST_OBJECTS = {"apple", "meal", "seed", "soup", "sandwich", "water", "tea", "food"}
 CHAT_MOVE_OBJECTS = {"track", "road", "trail", "route", "path", "lane", "street"}
+BANK_CACHE_SIZE = 2
+
+
+@dataclass
+class BankRuntimeCacheEntry:
+    bank_id: str
+    loaded_archive_facts: int
+    path: Path | None
+    path_signature: tuple[int, int] | None
+    memory: AMM
+    chunk_memory: ChunkedKGMemory
+    graph: FactGraph
+    relation_registry: Any
 
 
 def to_jsonable(value: Any) -> Any:
@@ -60,6 +74,8 @@ class HHRWebState:
         self.seed = seed
         self._extractor = extractor
         self.bank_root = (bank_root or WORKSPACE_ROOT).resolve()
+        self._bank_runtime_cache: OrderedDict[str, BankRuntimeCacheEntry] = OrderedDict()
+        self._bank_fact_count_cache: dict[str, tuple[tuple[int, int], int]] = {}
         self.current_memory_bank_id = "seed"
         self.reset_demo()
 
@@ -88,13 +104,13 @@ class HHRWebState:
         self._build_language_demo()
         self._reset_chat_state()
         self.current_memory_bank_id = "seed"
+        self._store_bank_runtime_cache(bank_id="seed", path=None, loaded_archive_facts=0)
 
     def status(self) -> dict[str, Any]:
-        facts = self._list_facts()
         current_bank = self._current_memory_bank()
         return {
             "title": "HHR",
-            "stored_facts": len(facts),
+            "stored_facts": len(self.memory.records),
             "graph_facts": len(self.graph.edges()),
             "memory_records": len(self.memory.records),
             "chunk_count": len(self.chunk_memory.chunks),
@@ -108,13 +124,20 @@ class HHRWebState:
             "current_memory_bank_id": current_bank["id"],
         }
 
-    def facts(self, *, limit: int = 1000) -> dict[str, Any]:
-        facts = self._list_facts()
+    def facts(
+        self,
+        *,
+        limit: int = 1000,
+        include_graph: bool = True,
+        include_chunks: bool = True,
+        fast: bool = False,
+    ) -> dict[str, Any]:
+        facts = self._recent_facts(limit=limit) if fast else self._list_facts()
         return {
-            "total": len(facts),
-            "facts": facts[-limit:],
-            "graph": self._graph_payload(),
-            "chunks": self.chunk_memory.chunk_summaries(),
+            "total": len(self.memory.records),
+            "facts": facts if fast else facts[-limit:],
+            "graph": self._graph_payload() if include_graph else {"nodes": [], "edges": []},
+            "chunks": self.chunk_memory.chunk_summaries() if include_chunks else [],
         }
 
     def snapshot(self) -> dict[str, Any]:
@@ -310,6 +333,11 @@ class HHRWebState:
         for bank in self._memory_banks():
             if bank.get("path") == resolved:
                 self.current_memory_bank_id = str(bank["id"])
+                self._store_bank_runtime_cache(
+                    bank_id=self.current_memory_bank_id,
+                    path=resolved,
+                    loaded_archive_facts=loaded,
+                )
                 break
         return loaded
 
@@ -332,17 +360,23 @@ class HHRWebState:
             raise ValueError(f"unknown memory bank: {bank_id}")
         self.reset_demo()
         loaded = 0
-        if bank_id != "seed":
+        if bank_id == "seed":
+            self._store_bank_runtime_cache(bank_id="seed", path=None, loaded_archive_facts=0)
+        elif self._restore_bank_runtime_cache(bank_id, bank.get("path")):
+            loaded = self._cached_bank_loaded_count(bank_id)
+        else:
             loaded = preload_writer_from_jsonl(self.pipeline, bank["path"], limit=preload_limit)
+            self._store_bank_runtime_cache(
+                bank_id=bank_id,
+                path=bank["path"],
+                loaded_archive_facts=loaded,
+            )
         self.current_memory_bank_id = bank_id
         return {
             "selected_bank_id": bank_id,
             "selected_bank_label": bank["label"],
             "loaded_archive_facts": loaded,
             "status": self.status(),
-            "facts": self.facts(),
-            "chat": self.chat_history_payload(),
-            "compositional": self.demo_compositional(),
             "memory_banks": self.memory_banks_payload(),
         }
 
@@ -396,7 +430,7 @@ class HHRWebState:
             return banks
         for path in sorted(root.glob("**/facts.jsonl")):
             try:
-                fact_count = self._count_jsonl_lines(path)
+                fact_count = self._cached_jsonl_fact_count(path)
             except OSError:
                 fact_count = None
             relative_path = path.relative_to(self.bank_root)
@@ -423,6 +457,70 @@ class HHRWebState:
     def _count_jsonl_lines(path: Path) -> int:
         with path.open("r", encoding="utf-8") as handle:
             return sum(1 for line in handle if line.strip())
+
+    def _cached_jsonl_fact_count(self, path: Path) -> int:
+        resolved = path.resolve()
+        signature = self._path_signature(resolved)
+        cached = self._bank_fact_count_cache.get(str(resolved))
+        if cached is not None and cached[0] == signature:
+            return cached[1]
+        count = self._count_jsonl_lines(resolved)
+        self._bank_fact_count_cache[str(resolved)] = (signature, count)
+        return count
+
+    def _path_signature(self, path: Path | None) -> tuple[int, int] | None:
+        if path is None:
+            return None
+        stat = path.stat()
+        return (int(stat.st_mtime_ns), int(stat.st_size))
+
+    def _cached_bank_loaded_count(self, bank_id: str) -> int:
+        entry = self._bank_runtime_cache.get(bank_id)
+        return entry.loaded_archive_facts if entry is not None else 0
+
+    def _store_bank_runtime_cache(self, *, bank_id: str, path: Path | None, loaded_archive_facts: int) -> None:
+        entry = BankRuntimeCacheEntry(
+            bank_id=bank_id,
+            loaded_archive_facts=loaded_archive_facts,
+            path=None if path is None else Path(path).resolve(),
+            path_signature=self._path_signature(None if path is None else Path(path).resolve()),
+            memory=copy.deepcopy(self.memory),
+            chunk_memory=copy.deepcopy(self.chunk_memory),
+            graph=copy.deepcopy(self.graph),
+            relation_registry=copy.deepcopy(self.pipeline.relation_registry),
+        )
+        self._bank_runtime_cache[bank_id] = entry
+        self._bank_runtime_cache.move_to_end(bank_id)
+        while len(self._bank_runtime_cache) > BANK_CACHE_SIZE:
+            self._bank_runtime_cache.popitem(last=False)
+
+    def _restore_bank_runtime_cache(self, bank_id: str, path: Path | None) -> bool:
+        entry = self._bank_runtime_cache.get(bank_id)
+        if entry is None:
+            return False
+        if entry.path_signature != self._path_signature(path):
+            self._bank_runtime_cache.pop(bank_id, None)
+            return False
+        self._bank_runtime_cache.move_to_end(bank_id)
+        self.memory = copy.deepcopy(entry.memory)
+        self.chunk_memory = copy.deepcopy(entry.chunk_memory)
+        self.graph = copy.deepcopy(entry.graph)
+        self.pipeline = TextIngestionPipeline(
+            self.encoder,
+            self.memory,
+            self.graph,
+            chunk_memory=self.chunk_memory,
+            extractor=self._extractor or GeminiExtractor(),
+            relation_registry=copy.deepcopy(entry.relation_registry),
+        )
+        self.query = QueryEngine(
+            encoder=self.encoder,
+            memory=self.memory,
+            graph=self.graph,
+            chunk_memory=self.chunk_memory,
+            relation_registry=self.pipeline.relation_registry,
+        )
+        return True
 
     def _build_compositional_demo(self) -> None:
         self.value_store = VectorStore(dim=256, seed=self.seed)
@@ -1218,6 +1316,38 @@ class HHRWebState:
             )
         return facts
 
+    def _recent_facts(self, *, limit: int = 1000) -> list[dict[str, Any]]:
+        if limit <= 0:
+            return []
+        recent_records = list(self.memory.records.values())[-limit:]
+        facts: list[dict[str, Any]] = []
+        for record in recent_records:
+            payload = record.payload
+            if not {"subject", "verb", "object"}.issubset(payload):
+                continue
+            facts.append(
+                {
+                    "key": record.key,
+                    "subject": payload["subject"],
+                    "relation": payload["verb"],
+                    "object": payload["object"],
+                    "confidence": float(payload.get("confidence", 1.0)),
+                    "source": str(payload.get("source", "seed")),
+                    "kind": str(payload.get("kind", "explicit")),
+                    "domain": str(payload.get("domain", "unknown")),
+                    "chunk_id": payload.get("chunk_id"),
+                    "provenance": to_jsonable(payload.get("provenance", {})),
+                    "metadata": {
+                        "domain": str(payload.get("domain", "unknown")),
+                        "chunk_id": payload.get("chunk_id"),
+                        "raw_relation": payload.get("raw_relation"),
+                        "normalized_relation": payload.get("normalized_relation"),
+                        "matched_alias": bool(payload.get("matched_alias", False)),
+                    },
+                }
+            )
+        return facts
+
     def _graph_payload(self) -> dict[str, Any]:
         edges = [to_jsonable(edge) for edge in self.graph.edges()]
         node_names = sorted({edge["source"] for edge in edges} | {edge["target"] for edge in edges})
@@ -1257,6 +1387,7 @@ class HHRWebHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
         try:
             if parsed.path == "/":
                 self._send_file(STATIC_DIR / "index.html")
@@ -1265,7 +1396,18 @@ class HHRWebHandler(BaseHTTPRequestHandler):
             elif parsed.path == "/api/status":
                 self._send_json(self.state.status())
             elif parsed.path == "/api/facts":
-                self._send_json(self.state.facts())
+                limit = int(params.get("limit", ["1000"])[0])
+                include_graph = params.get("include_graph", ["1"])[0] != "0"
+                include_chunks = params.get("include_chunks", ["1"])[0] != "0"
+                fast = params.get("fast", ["0"])[0] == "1"
+                self._send_json(
+                    self.state.facts(
+                        limit=limit,
+                        include_graph=include_graph,
+                        include_chunks=include_chunks,
+                        fast=fast,
+                    )
+                )
             elif parsed.path == "/api/chat/history":
                 self._send_json(self.state.chat_history_payload())
             elif parsed.path == "/api/snapshot":

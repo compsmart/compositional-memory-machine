@@ -134,6 +134,7 @@ def test_web_status_and_facts_routes() -> None:
     with running_server(HHRWebState()) as base_url:
         status = _get(f"{base_url}/api/status")
         facts = _get(f"{base_url}/api/facts")
+        fast_facts = _get(f"{base_url}/api/facts?fast=1&include_graph=0&include_chunks=0&limit=5")
         chat = _get(f"{base_url}/api/chat/history")
         snapshot = _get(f"{base_url}/api/snapshot")
         home = _get_text(f"{base_url}/")
@@ -147,6 +148,10 @@ def test_web_status_and_facts_routes() -> None:
     assert status["perfect_chain_budget"] == 12
     assert facts["total"] == 20
     assert len(facts["chunks"]) == 5
+    assert fast_facts["total"] == 20
+    assert len(fast_facts["facts"]) == 5
+    assert fast_facts["graph"] == {"nodes": [], "edges": []}
+    assert fast_facts["chunks"] == []
     assert chat["history"][0]["route"] == "ready"
     assert len(facts["graph"]["nodes"]) >= 10
     assert len(facts["graph"]["edges"]) == 20
